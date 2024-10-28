@@ -8,13 +8,14 @@ from setuptools import setup, find_packages
 
 setup(
     name="caminopy",
-    version="0.1.2",
+    version="0.1.1",
     description="Collection of Algorithms for Mixed-Integer Nonlinear Optimization",
     url="https://github.com/minlp-toolbox/CAMINO",
     author="Andrea Ghezzi, Wim Van Roy",
     author_email="andrea.ghezzi@imtek.uni-freiburg.de, wim.vr@hotmail.com",
     license="GPL-3.0",
     packages=find_packages(exclude=["tests"]),
+    python_requires=">=3.8",
     install_requires=[
         "numpy >= 1.24.4",
         "pandas >= 2.0.3",
