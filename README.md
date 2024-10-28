@@ -113,7 +113,7 @@ If you find this project useful, please consider giving it a :star: or citing it
   month = oct,
   title = {CAMINO: Collection of Algorithms for Mixed-Integer Nonlinear Optimization},
   url = {https://github.com/minlp-toolbox/CAMINO},
-  version = {0.1.1},
+  version = {0.1.2},
   year = {2024}
 }
 ```

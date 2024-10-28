@@ -7,8 +7,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="camino",
-    version="0.1.1",
+    name="caminopy",
+    version="0.1.2",
     description="Collection of Algorithms for Mixed-Integer Nonlinear Optimization",
     url="https://github.com/minlp-toolbox/CAMINO",
     author="Andrea Ghezzi, Wim Van Roy",
@@ -16,18 +16,17 @@ setup(
     license="GPL-3.0",
     packages=find_packages(exclude=["tests"]),
     install_requires=[
-        "numpy",
-        "pandas",
-        "casadi",
-        "scipy",
-        "pytz",
-        "matplotlib",
-        "parameterized",
-        "timeout-decorator",
-        "tox",
-        "colored",
-        "seaborn",
-        "argcomplete",
+        "numpy >= 1.24.4",
+        "pandas >= 2.0.3",
+        "casadi >= 3.6.1",
+        "scipy >= 1.10.1",
+        "pytz >= 2024.2",
+        "matplotlib >= 3.7.5",
+        "parameterized >= 0.9.0",
+        "timeout-decorator >= 0.5.0",
+        "tox >= 4.23.2",
+        "colored >= 1.4.4",
+        "argcomplete >= 3.5.1",
     ],
 
     classifiers=[
