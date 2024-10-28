@@ -9,7 +9,12 @@ from setuptools import setup, find_packages
 setup(
     name="camino",
     version="0.1.1",
-    packages=find_packages(exclude=['tests']),
+    description="Collection of Algorithms for Mixed-Integer Nonlinear Optimization",
+    url="https://github.com/minlp-toolbox/CAMINO",
+    author="Andrea Ghezzi, Wim Van Roy",
+    author_email="andrea.ghezzi@imtek.uni-freiburg.de, wim.vr@hotmail.com",
+    license="GPL-3.0",
+    packages=find_packages(exclude=["tests"]),
     install_requires=[
         "numpy",
         "pandas",
@@ -23,5 +28,20 @@ setup(
         "colored",
         "seaborn",
         "argcomplete",
+    ],
+
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ]
 )
