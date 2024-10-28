@@ -3,35 +3,54 @@ This software package provides a Python/CasADi-based implementation of several a
 
 ## Installation and usage
 
-Set up and activate a fresh Python virtual environment (Python >= 3.7 should work)
+Set up and activate a fresh Python virtual environment (**required** Python >= 3.8)
 
-From the root of the repository
 ```
-pip3 install -e .
-python3 camino <mode> <solver> <problem>
+virtualenv env --python=python3
+source env/bin/activate
+```
+
+### Option 1: from PyPi
+```
+pip install caminopy
+python -m camino <mode> <solver> <problem>
 ```
 
 **Example**: running outer approximation solver (`oa`) on the example `dummy`
 ```
-python3 camino run oa dummy
+python -m camino run oa dummy
 ```
-
 
 More info by running
 ```
-python3 camino -h
+python -m camino -h
 ```
 
+### Option 2: from GitHub
+From the root of the repository
+```
+pip install caminopy
+python camino <mode> <solver> <problem>
+```
 
+More info by running
+```
+python camino -h
+```
 
-You can enable or change options using environmental variables:
-| Environmental variable |     Value    | Description                 |
+### Setting environment variables
+
+You can enable or change options using environment variables ([default]):
+| Environment variable |     Value    | Description                 |
 | ---------------------- | ------------ | ----------------------------|
-|         DEBUG          |  True/False  | Toggle debugging output     |
-|         LOG_DATA       |  True/False  | Toggle saving statistics    |
-|        MIP_SOLVER      | gurobi/highs | Configure MIP solver        |
+|         DEBUG          |  True/[False]  | Toggle debugging output     |
+|         LOG_DATA       |  True/[False]  | Toggle saving statistics    |
+|        MIP_SOLVER      | [gurobi]/highs | Configure MIP solver        |
 
-
+**Example:** To enable DEBUG mode type in your terminal
+```
+export DEBUG=True
+```
 
 ### Available MINLP solvers/algorithms
 
@@ -64,10 +83,10 @@ You can enable or change options using environmental variables:
 | mip | Solve the given MILP/MIQP |  | (x) |
 
 #### Warm starting
-It is possible to warm start every solver with the solution of another one by concatenating with a `+` the desired solvers when executing `python3 camino`.
+It is possible to warm start every solver with the solution of another one by concatenating with a `+` the desired solvers when executing `python3 camino` or `python3 -m camino`.
 For instance, to use the solution of the feasibility pump as a warm start to sequential Benders-based MIQP, execute the following:
 ```
-python3 camino run fp+s-b-miqp <problem>
+python camino run fp+s-b-miqp <problem>
 
 ```
 
