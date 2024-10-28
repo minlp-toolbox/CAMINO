@@ -12,30 +12,30 @@ source env/bin/activate
 
 ### Option 1: from PyPi
 ```
-pip3 install caminopy
-python3 -m camino <mode> <solver> <problem>
+pip install caminopy
+python -m camino <mode> <solver> <problem>
 ```
 
 **Example**: running outer approximation solver (`oa`) on the example `dummy`
 ```
-python3 -m camino run oa dummy
+python -m camino run oa dummy
 ```
 
 More info by running
 ```
-python3 -m camino -h
+python -m camino -h
 ```
 
 ### Option 2: from GitHub
 From the root of the repository
 ```
-pip3 install caminopy
-python3 camino <mode> <solver> <problem>
+pip install caminopy
+python camino <mode> <solver> <problem>
 ```
 
 More info by running
 ```
-python3 camino -h
+python camino -h
 ```
 
 ### Setting environment variables
@@ -86,7 +86,7 @@ export DEBUG=True
 It is possible to warm start every solver with the solution of another one by concatenating with a `+` the desired solvers when executing `python3 camino` or `python3 -m camino`.
 For instance, to use the solution of the feasibility pump as a warm start to sequential Benders-based MIQP, execute the following:
 ```
-python3 camino run fp+s-b-miqp <problem>
+python camino run fp+s-b-miqp <problem>
 
 ```
 
