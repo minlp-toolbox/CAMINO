@@ -9,7 +9,7 @@ The MinlpProblem contain the equations, indices of integer variables, special
 data to speed up the calculations and meta data.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Callable, Any
 import casadi as ca
 
@@ -97,4 +97,4 @@ class MinlpProblem:
     f_qp: Optional[Any] = None
 
     # Meta data of the problem
-    meta: MetaData = MetaData()
+    meta: MetaData = field(default_factory=MetaData)
