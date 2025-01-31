@@ -94,7 +94,7 @@ class Settings:
     CONSTRAINT_INT_TOL: float = 1e-2  # Due to rounding, this will be almost EPS
     CONSTRAINT_TOL: float = 1e-5
     BENDERS_LB: float = -1e16
-    _MIP_SOLVER: str = "gurobi"
+    _MIP_SOLVER: str = "highs"
 
     WITH_DEBUG: bool = to_bool(environ.get("DEBUG", False))
     WITH_LOG_DATA: bool = to_bool(environ.get("LOG_DATA", False))
@@ -115,7 +115,7 @@ class Settings:
 
     AMPL_EXPORT_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {})
     IPOPT_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {
-        "ipopt.linear_solver": "ma27",
+        "ipopt.linear_solver": "mumps",
     })
     BONMIN_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {
         "bonmin.time_limit": Settings.TIME_LIMIT,
