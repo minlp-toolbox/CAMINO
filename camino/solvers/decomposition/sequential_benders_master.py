@@ -6,7 +6,7 @@
 import numpy as np
 import casadi as ca
 from camino.solvers import Stats, MinlpProblem, MinlpData
-from camino.utils import colored
+from camino.utils import colored, tic, toc
 from camino.settings import GlobalSettings, Settings
 from camino.solvers.decomposition.benders_master import BendersMasterMILP
 from camino.solvers.utils import Constraints, get_solutions_pool, any_equal
@@ -446,6 +446,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     f"Expected Range lb={self.internal_lb}  ub={self.y_N_val}")
 
     def update_relaxed_solution(self, nlpdata: MinlpData):
+        """Update the benders region using the relaxed solution."""
+        tic()
         for solved, sol in zip(nlpdata.solved_all, nlpdata.prev_solutions):
             if solved:
                 # check if new best solution found
@@ -458,6 +460,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 raise ValueError("The relaxed NLP is not feasible.")
 
         self._gradient_corrections_old_cuts()
+        self.add_python_solver_time(toc())
 
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
@@ -591,7 +594,9 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve."""
+        tic()
         self.add_solutions(nlpdata, integers_relaxed)
+        self.add_python_solver_time(toc())
 
         self.update_options(integers_relaxed)
         if self._with_lb_milp:

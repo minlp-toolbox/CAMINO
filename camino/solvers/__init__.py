@@ -51,7 +51,7 @@ class SolverClass(ABC):
             )
 
         if "t_wall_my_solver" in stats:
-            t_wall = stats["t_proc_my_solver"]
+            t_wall = stats["t_wall_my_solver"]
         elif "t_wall_total" in stats:
             t_wall = stats["t_wall_total"]
         else:
@@ -75,6 +75,10 @@ class SolverClass(ABC):
         if self.settings.WITH_LOG_DATA:
             self.stats.save()
         return stats["success"], stats
+
+    def add_python_solver_time(self, time):
+        """Add solver time."""
+        self.stats["t_python_solver"] += time
 
 
 class MiSolverClass(SolverClass):

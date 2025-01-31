@@ -95,7 +95,7 @@ class FeasibilityNlpSolver(SolverClass):
                 success, _ = self.collect_stats("F-NLP", sol=sol_new)
                 if not success:
                     print("FNLP not solved")
-                    raise Exception()
+                    raise Exception("FNLP not solved!")
 
                 # Maintain that it is caused due to infeasibility!!!
                 success_out.append(False)
