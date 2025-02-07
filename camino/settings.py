@@ -132,6 +132,7 @@ class Settings:
             "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.PoolSearchMode": 1,
             "gurobi.PoolSolutions": 5,
+            "gurobi.Threads": 1,
         }
     })
 
