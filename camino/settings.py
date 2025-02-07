@@ -94,7 +94,7 @@ class Settings:
     CONSTRAINT_INT_TOL: float = 1e-2  # Due to rounding, this will be almost EPS
     CONSTRAINT_TOL: float = 1e-5
     BENDERS_LB: float = -1e16
-    _MIP_SOLVER: str = "gurobi"
+    _MIP_SOLVER: str = "highs"
 
     WITH_DEBUG: bool = to_bool(environ.get("DEBUG", False))
     WITH_LOG_DATA: bool = to_bool(environ.get("LOG_DATA", False))
@@ -131,8 +131,7 @@ class Settings:
             "gurobi.FeasibilityTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.PoolSearchMode": 1,
-            "gurobi.PoolSolutions": 5,
-            "gurobi.Threads": 1,
+            "gurobi.PoolSolutions": 1,
         }
     })
 

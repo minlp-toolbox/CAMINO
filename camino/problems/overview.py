@@ -358,11 +358,11 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
-        "gurobi.MIPGap": 0.10,
+        "gurobi.MIPGap": 1e-3,
         "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 1,
+        "gurobi.PoolSearchMode": 1,
+        "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         "gurobi.output_flag": 0,
