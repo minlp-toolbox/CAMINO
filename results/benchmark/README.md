@@ -6,7 +6,7 @@ Download the nl files here: https://www.minlplib.org/minlplib_nl.zip
 
 See the list of problem instances below.
 
-## Run with shot
+## Run with `SHOT`
 
 In the tools folder, you can find two scripts:
 
@@ -15,7 +15,7 @@ In the tools folder, you can find two scripts:
 - read_shot.py
   *This script converts the result file to a single csv file based on the problem list.*
 
-## Run with algorithm of camino
+## Run with algorithm of `CAMINO`
 
 - run using the batch runner
 ```
