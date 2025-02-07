@@ -19,7 +19,7 @@ def create_and_return(folder):
 @dataclass
 class _GlobalSettings:
     _lock: bool = False
-    _CASADI_VAR: Any = ca.SX
+    _CASADI_VAR: Any = ca.MX
     SOURCE_FOLDER: str = path.dirname(path.abspath(__file__))
     _DATA_FOLDER: str = path.join(SOURCE_FOLDER, "../data")
     _IMG_DIR: str = path.join(SOURCE_FOLDER, "../results/figures")
@@ -94,7 +94,7 @@ class Settings:
     CONSTRAINT_INT_TOL: float = 1e-2  # Due to rounding, this will be almost EPS
     CONSTRAINT_TOL: float = 1e-5
     BENDERS_LB: float = -1e16
-    _MIP_SOLVER: str = "highs"
+    _MIP_SOLVER: str = "gurobi"
 
     WITH_DEBUG: bool = to_bool(environ.get("DEBUG", False))
     WITH_LOG_DATA: bool = to_bool(environ.get("LOG_DATA", False))
@@ -131,7 +131,7 @@ class Settings:
             "gurobi.FeasibilityTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.PoolSearchMode": 1,
-            "gurobi.PoolSolutions": 1,
+            "gurobi.PoolSolutions": 5,
         }
     })
 

@@ -32,7 +32,7 @@ def batch_runner(algorithm, target, nl_files):
             "algorithm": algorithm,
             "data": total_stats
         }, overview_target)
-    breakpoint()
+
     overview_target = path.join(target, "overview.json")
     start = time()
     total_to_compute = len(nl_files)

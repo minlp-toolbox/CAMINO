@@ -219,7 +219,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _add_infeasible_cut_closest_point(self, sol):
         """Add infeasible cut closest point."""
-        # Rotate currently around x, but preferrably around x_infeasible
+        # Rotate currently around x, but preferably around x_infeasible
         dx = (sol['x_infeasible'] - sol['x'])[self.idx_x_integer]
         dx_min = abs(min(dx.full()))
         dx_max = abs(max(dx.full()))
