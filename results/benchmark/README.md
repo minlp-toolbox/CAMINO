@@ -10,10 +10,11 @@ See the list of problem instances below.
 
 In the tools folder, you can find two scripts:
 
-- run_shot.py
-  *With this script, you can run all problem instances for SHOT given the root folder of the nl instances*
+- python3 run_shot.py
+  *With this script, you can run all problem instances for SHOT given the root folder of the nl instances. Run this script in the folder where you find the SHOT binary.*
 - read_shot.py
   *This script converts the result file to a single csv file based on the problem list.*
+  *Usage: python3 read_shot.py convex_set.csv <path-to-srl-files> output.csv*
 
 ## Run with algorithm of `CAMINO`
 

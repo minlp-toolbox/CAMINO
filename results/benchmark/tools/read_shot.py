@@ -46,13 +46,14 @@ def get_data(name, osrl_file):
         return [name, "NAN", "NAN", "NAN", "NAN"]
 
 
-if argv != 4:
+if len(argv) != 4:
+    print(argv)
     print("Usage: python read_shot.py <problem_list> <base_path-output-files> <output_path>")
     exit(1)
 
 
 with open(argv[1], "r") as f:
-    problems = [key.split(".")[0] for key in f.readlines()]
+    problems = [key.split(".")[0].split(",")[0] for key in f.readlines()]
 
 base_path = argv[2]
 output_path = argv[3]
