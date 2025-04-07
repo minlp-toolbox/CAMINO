@@ -32,12 +32,12 @@ def latexify(fig_width=None, fig_height=None):
     params = {
         # "backend": "ps",
         "text.latex.preamble": r"\usepackage{gensymb} \usepackage{amsmath}",
-        "axes.labelsize": 10,  # fontsize for x and y labels (was 10)
-        "axes.titlesize": 10,
+        "axes.labelsize": 9,  # fontsize for x and y labels (was 9)
+        "axes.titlesize": 9,
         "lines.linewidth": 2,
-        "legend.fontsize": 10,  # was 10
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
+        "legend.fontsize": 9,  # was 9
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
         "text.usetex": True,
         "figure.figsize": [fig_width, fig_height],
         "font.family": "serif",
@@ -63,7 +63,10 @@ def compute_ratio(val_min, val_ref, corr=True):
         if np.isnan(jval):
             ratios.append(np.inf)
         else:
-            ratios.append(max(jval / imin, 1.0))
+            if imin==0:
+                ratios.append(np.nan)
+            else:
+                ratios.append(max(jval / imin, 1.0))
 
     return ratios
 
@@ -91,38 +94,33 @@ def collect_bins_plot(values, name, style, color, min_val=None, max_val=None, ax
 
 def to_float(val):
     """Convert to float."""
-    if val == "NAN":
-        return np.inf
+    if type(val) == str:
+        if ("Objective" in val) or ("feasible" in val) or ("Error" in val) or ("Calling" in val) or ("g_val" in val) or ("CRASH" in val) or ("FAILED" in val):
+            return np.inf
+        elif val == "NAN":
+            return np.inf
+        else:
+            return float(val)
     else:
         return float(val)
 
 
 latexify(6, 4)
 data = pd.read_csv(argv[1])
-key = "conv"
-print(data)
-scale = 120  # int(input("Amount (e.g. 120):"))
+key = argv[2]
+assert (key == "cvx" or key == "noncvx")
+total_entries = data.shape[0]  # int(input("Amount (e.g. 120):"))
 
-solvers = ["bonmin", "shot"]
-solver_names = ["Bonmin", "SHOT"]
-solvers_calctime = ['bonmin.solvertime', 'shot.calctime']
+solvers = ["bonmin", f"shot_{key}prob", "sbmiqp"]
+solver_names = ["Bonmin", "SHOT", "sbmiqp"]
+solvers_calctime = ['bonmin.total_time', f'shot_{key}prob.calctime', "sbmiqp.total_time"]
 
-if "trmi.solvertime" in data:
-    solvers.append("trmi")
-    solver_names.append("S-B-MIQP")
-    solvers_calctime.append('trmi.solvertime')
+timing = ["load_time", "python_time", "solver_time"]
+data["bonmin.total_time"] = np.sum(data[["bonmin" + "." + t for t in timing]].map(to_float), axis=1)
+data["sbmiqp.total_time"] = np.sum(data[["sbmiqp" + "." + t for t in timing]].map(to_float), axis=1)
 
-if "trmi+.solvertime" in data:
-    solvers.append("trmi+")
-    solver_names.append("S-B-MIQP with $\mathrm{LB} = V_k$")
-    solvers_calctime.append('trmi+.solvertime')
-
-
-# data.query("convex == True")
-values = np.array(data[solvers_calctime]).tolist()
-data['min.calctime'] = [np.min(
-    [to_float(a) for a in args]
-) for args in values]
+data[solvers_calctime] = data[solvers_calctime].map(to_float)
+data['min.calctime'] = np.min(data[solvers_calctime], axis=1)
 
 for s, sc in zip(solvers, solvers_calctime):
     data[f'{s}.ratio_time'] = compute_ratio(
@@ -148,30 +146,45 @@ styles = [
 ]
 colors = ["blue", "green", "orange", "red"]
 
-fig, axs = plt.subplots(1, 2, figsize=(6, 3))
+fig, axs = plt.subplots(1, 2, figsize=(6, 3), sharey=True)
 print(data.keys())
 for s, name, style, color in zip(solvers, solver_names, styles, colors):
     subdata = data.query(f"`{s}.ratio_obj` < 1e5")
     collect_bins_plot(subdata[f"{s}.ratio_obj"], name, style, color, min_val=1, max_val=1e5, ax=axs[0])
 axs[0].set_xlabel("Objective value ratio")
 axs[0].set_xscale('log')
+
+axs[0].axhline(total_entries, linestyle="-", color='k', linewidth=1, alpha=0.7)
+
 axs[0].set_xlim(0.9, 1e3)
-# axs[0].set_ylim(0, 160)
-axs[0].set_ylim(0, 120)
+
+if key == "cvx":
+    axs[0].set_ylim(0, 120)
+elif key == "noncvx":
+    axs[0].set_ylim(0, )
+axs[0].grid(linewidth=1, linestyle=":")
 
 for s, name, style, color in zip(solvers, solver_names, styles, colors):
     subdata = data.query(f"`{s}.ratio_obj` < 1.01")
     collect_bins_plot(subdata[f"{s}.ratio_time"], name, style, color, min_val=1, max_val=1e3, ax=axs[1])
-axs[1].set_ylabel("Problems solved")
 axs[1].set_xlabel("Time performance index $t / t_{\\min}$")
 axs[1].set_xscale('log')
-axs[1].set_xlim(0.9, 1e3)
-# axs[1].set_ylim(0, 160)
-axs[1].set_ylim(0, 120)
 
+axs[1].axhline(total_entries, linestyle="-", color='k', linewidth=1, alpha=0.7)
+
+axs[1].set_xlim(0.9, 1e3)
+
+if key == "cvx":
+    axs[0].set_ylim(0, 120)
+elif key == "noncvx":
+    axs[0].set_ylim(0, )
+
+axs[1].grid(linewidth=1, linestyle=":")
+
+axs[0].set_ylabel("Problems solved")
 axs[0].legend(loc="lower right")
 # axs[0].legend(loc="upper left")
 
 plt.tight_layout()
-# plt.savefig(f"benchmark_comb_conv.pdf")
+plt.savefig(f"benchmark_merged_{key}.pdf")
 plt.show()
