@@ -1,6 +1,6 @@
 from sys import argv
 import csv
-from benders_exp.json_tools import read_json
+from camino.utils.data import read_json
 from os import path
 
 if argv[1] == argv[2]:

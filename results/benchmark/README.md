@@ -10,11 +10,11 @@ See the list of problem instances below.
 
 In the tools folder, you can find two scripts:
 
-- python3 run_shot.py
+- `run_shot.py`
   *With this script, you can run all problem instances for SHOT given the root folder of the nl instances. Run this script in the folder where you find the SHOT binary.*
-- read_shot.py
+- `read_shot.py`
   *This script converts the result file to a single csv file based on the problem list.*
-  *Usage: python3 read_shot.py convex_set.csv <path-to-srl-files> output.csv*
+  Usage: `python3 read_shot.py convex_set.csv <path-to-srl-files> output.csv`
 
 ## Run with algorithm of `CAMINO`
 
@@ -23,9 +23,9 @@ In the tools folder, you can find two scripts:
 python -m camino batch <solver> <output-folder> <list-of-nl-files>
 ```
 - When finished, convert the generated json file to a csv file using `to_csv.py`
-- Join all resulting csv files into a single csv file using `join_csv.py`:
+- Join all resulting csv files into a single csv file using `join_data.py`:
 ```
-python join_csv.py <output-file> <data-set-csv-file> <all-other-result-csv-files>
+python join_data.py <output-file> <data-set-csv-file> <all-other-result-csv-files>
 ```
 
 ## Problem instances

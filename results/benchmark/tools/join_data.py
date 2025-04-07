@@ -15,9 +15,9 @@ if path.exists(csv_out):
 data = {}
 with open(dataset, "r") as f:
     cf = csv.reader(f)
-    headers = next(cf)[2:]
+    headers = next(cf)[1:]
     for row in cf:
-        data[row[1]] = row[2:]
+        data[row[0]] = row[1:]
 
 for subset in other_csvs:
     basename = path.basename(subset).split(".")[0]
