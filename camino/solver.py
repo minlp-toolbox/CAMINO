@@ -26,6 +26,7 @@ SOLVER_MODES = {
     "oa-qp-i": OuterApproximationQPImproved,
     "s-v-miqp": SequentialVoronoiMIQP,
     "s-b-miqp": SequentialBendersMIQP,
+    "s-b-miqp-early-exit": lambda *args, **kwargs: SequentialBendersMIQP(*args, **kwargs, early_exit=True),
     "s-tr-milp": SequentialTrustRegionMILP,
     "fp": FeasibilityPump,
     "ofp": ObjectiveFeasibilityPump,
