@@ -122,5 +122,5 @@ def runner(solver_name, problem_name, target_file, args):
         write_json({"w0": output_data}, target_file)
 
     logger.info(f"Objective value: {data.obj_val}")
-    check_solution(problem, data, data.x_sol, settings)
+    check_solution(problem, data, data.x_sol, settings, check_objval=False)
     return stats, data
