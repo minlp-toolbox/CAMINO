@@ -346,28 +346,28 @@ def create_from_nl_file(file, compiled=True):
     s.OBJECTIVE_TOL = 1e-5
     s.CONSTRAINT_TOL = 1e-5
     s.CONSTRAINT_INT_TOL = 1e-2
-    s.MINLP_TOLERANCE = 0.01
-    s.MINLP_TOLERANCE_ABS = 0.01
-    s.BRMIQP_GAP = 1e-3
-    s.LBMILP_GAP = 1e-3
+    s.MINLP_TOLERANCE = 1e-3
+    s.MINLP_TOLERANCE_ABS = 1e-3
+    s.BRMIQP_GAP = 0.1
+    s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
     s.TIME_LIMIT_SOLVER_ONLY = False
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
-        "ipopt.mu_target": 1e-3,
+        # "ipopt.mu_target": 1e-3,
         "ipopt.max_iter": 1000,
-        "ipopt.print_level": 0,
+        # "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
-        "gurobi.MIPGap": 1e-3,
+        "gurobi.MIPGap": 0.1,
         "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.PoolSearchMode": 1,
-        "gurobi.PoolSolutions": 5,
+        "gurobi.PoolSearchMode": 0,
+        "gurobi.PoolSolutions": 1,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
-        "gurobi.output_flag": 0,
+        # "gurobi.output_flag": 0,
     }
     s.BONMIN_SETTINGS["bonmin.time_limit"] = s.TIME_LIMIT
     return problem, data, s
