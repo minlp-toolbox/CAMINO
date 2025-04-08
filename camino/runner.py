@@ -9,7 +9,7 @@ from camino.solver import MinlpSolver
 from camino.problem import MetaDataOcp
 from camino.settings import Settings
 from camino.problems.overview import PROBLEMS
-from camino.utils import make_bounded, logger
+from camino.utils import make_bounded, logger, colored
 from camino.utils.data import write_json, read_json
 from camino.utils.validate import check_solution
 
@@ -82,7 +82,7 @@ def runner(solver_name, problem_name, target_file, args):
     if problem_name not in PROBLEMS:
         raise Exception(f"No {problem_name=}, available: {PROBLEMS.keys()}")
 
-    logger.info(f"Load problem {problem_name}")
+    colored(f"Load problem {args[0].split('/')[-1]}", color="green")
     if args is None:
         args = []
 

@@ -285,13 +285,13 @@ class BendersRegionMasters(BendersMasterMILP):
         jac_g_k = self.jac_g(x_sol, nlpdata.p)
         if self.idx_g_conv is not None:
             for i in self.idx_g_conv:
-                colored("Add OA cut.", "blue")
                 if not np.isinf(nlpdata.ubg[i]):
                     self.g_infeasible_oa.add(
                         x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T)
                 else:
                     self.g_infeasible_oa.add(
                         x_sol, - g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T)
+            colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue")
 
     def _lowerapprox_oa(self, x, nlpdata):
         """Add outer approximation-based cuts for the objective value, the gradient is corrected when needed to keep the current best point feasible."""
