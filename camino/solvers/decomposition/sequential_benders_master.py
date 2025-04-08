@@ -456,8 +456,6 @@ class BendersRegionMasters(BendersMasterMILP):
                         # warm start with relaxed solution
                         self.sol_best['x'] = sol['x'][:self.nr_x_orig]
                     self.internal_lb = float(sol['f'])
-            else:
-                raise ValueError("The relaxed NLP is not feasible.")
 
         self._gradient_corrections_old_cuts()
         self.add_python_solver_time(toc())
