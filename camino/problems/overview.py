@@ -351,23 +351,23 @@ def create_from_nl_file(file, compiled=True):
     s.BRMIQP_GAP = 0.1
     s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
-    s.TIME_LIMIT_SOLVER_ONLY = False
+    s.TIME_LIMIT_SOLVER_ONLY = True
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
-        # "ipopt.mu_target": 1e-3,
+        "ipopt.mu_target": 1e-3,
         "ipopt.max_iter": 1000,
-        # "ipopt.print_level": 0,
+        "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
-        "gurobi.MIPGap": 0.1,
+        "gurobi.MIPGap": 0.10,
         "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 1,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
-        # "gurobi.output_flag": 0,
+        "gurobi.output_flag": 0,
     }
     s.BONMIN_SETTINGS["bonmin.time_limit"] = s.TIME_LIMIT
     return problem, data, s

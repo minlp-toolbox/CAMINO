@@ -31,15 +31,11 @@ class LowerApproximation:
         self.multipliers = []
         self.x = x
         self.nu = nu
-        self.is_corrected = []
 
     def add(self, point, offset, gradient, gradient_corrected=None):
         """Add a lower approximation cut."""
         if gradient_corrected is None:
             gradient_corrected = gradient
-            self.is_corrected.append(False)
-        else:
-            self.is_corrected.append(True)
 
         self.nr += 1
         self.x_lin.append(point)
@@ -188,9 +184,8 @@ class BendersRegionMasters(BendersMasterMILP):
     def _gradient_amplification(self):
         """Amplify the gradient of every new cut with the chosen rho."""
         for i, m in enumerate(self.g_lowerapprox.multipliers):
-            if self.g_lowerapprox.is_corrected[i]:
-                if m != self.trust_region_feasibility_rho:
-                    self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
+            if m != self.trust_region_feasibility_rho:
+                self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
 
     def _gradient_corrections_old_cuts(self):
         x_sol_best_bin = self.sol_best['x'][self.idx_x_integer]
@@ -206,7 +201,6 @@ class BendersRegionMasters(BendersMasterMILP):
                     self.g_lowerapprox.g[i], self.g_lowerapprox.dg_corrected[i],
                     self.settings
                 )
-                self.g_lowerapprox.is_corrected[i] = True
                 logger.debug(f"Correcting gradient for lower approx {i}")
 
     # Infeasibility cuts
