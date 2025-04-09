@@ -346,16 +346,16 @@ def create_from_nl_file(file, compiled=True):
     s.OBJECTIVE_TOL = 1e-5
     s.CONSTRAINT_TOL = 1e-5
     s.CONSTRAINT_INT_TOL = 1e-2
-    s.MINLP_TOLERANCE = 1e-3
-    s.MINLP_TOLERANCE_ABS = 1e-3
+    s.MINLP_TOLERANCE = 1e-2
+    s.MINLP_TOLERANCE_ABS = 1e-2
     s.BRMIQP_GAP = 0.1
     s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
-    s.TIME_LIMIT_SOLVER_ONLY = True
+    s.TIME_LIMIT_SOLVER_ONLY = False
+    s.USE_RELAXED_AS_WARMSTART = True
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
-        "ipopt.mu_target": 1e-3,
         "ipopt.max_iter": 1000,
         "ipopt.print_level": 0,
     }
