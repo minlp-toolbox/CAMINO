@@ -357,7 +357,8 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.max_iter": 1000,
-        "ipopt.constr_viol_tol": s.CONSTRAINT_TOL
+        "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
+        "ipopt.bound_relax_factor": 1e-9,
         # "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {

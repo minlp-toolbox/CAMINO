@@ -13,10 +13,10 @@ from camino.utils.conversion import to_0d
 
 
 class FeasibilityNlpSolver(SolverClass):
-    """Create benders master problem."""
+    """Create solver for feasible NLP."""
 
     def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings):
-        """Create benders master MILP."""
+        """Create solver for feasible NLP."""
         super(FeasibilityNlpSolver, self).__init__(problem, stats, s)
         options = regularize_options(s.IPOPT_SETTINGS, {}, s)
 
