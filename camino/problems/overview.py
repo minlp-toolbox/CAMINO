@@ -343,8 +343,8 @@ def create_from_nl_file(file, compiled=True):
     set_constraint_types(problem, *inspect_problem(problem, data))
     s = Settings()
 
-    s.OBJECTIVE_TOL = 1e-5
-    s.CONSTRAINT_TOL = 1e-5
+    s.OBJECTIVE_TOL = 1e-8
+    s.CONSTRAINT_TOL = 1e-8
     s.CONSTRAINT_INT_TOL = 1e-2
     s.MINLP_TOLERANCE = 1e-2
     s.MINLP_TOLERANCE_ABS = 1e-2
@@ -357,14 +357,16 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.max_iter": 1000,
+        "ipopt.constr_viol_tol": s.CONSTRAINT_TOL
         # "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
         "gurobi.MIPGap": 0.1,
         "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 1,
+        "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         # "gurobi.output_flag": 0,

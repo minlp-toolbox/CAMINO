@@ -92,7 +92,7 @@ class Settings:
     EPS: float = 1e-6
     OBJECTIVE_TOL: float = 1e-5
     CONSTRAINT_INT_TOL: float = 1e-2  # Due to rounding, this will be almost EPS
-    CONSTRAINT_TOL: float = 1e-5
+    CONSTRAINT_TOL: float = 1e-4
     BENDERS_LB: float = -1e16
     _MIP_SOLVER: str = "highs"
 
