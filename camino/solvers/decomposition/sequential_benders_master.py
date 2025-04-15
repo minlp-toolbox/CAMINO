@@ -6,7 +6,7 @@
 import numpy as np
 import casadi as ca
 from camino.solvers import Stats, MinlpProblem, MinlpData
-from camino.utils import colored, tic, toc
+from camino.utils import colored, toc
 from camino.settings import GlobalSettings, Settings
 from camino.solvers.decomposition.benders_master import BendersMasterMILP
 from camino.solvers.utils import Constraints, get_solutions_pool, any_equal
@@ -453,7 +453,6 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_relaxed_solution(self, nlpdata: MinlpData):
         """Update the benders region using the relaxed solution."""
-        tic()
         for solved, sol in zip(nlpdata.solved_all, nlpdata.prev_solutions):
             if solved:
                 # check if new best solution found
@@ -600,7 +599,6 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve."""
-        tic()
         self.add_solutions(nlpdata, integers_relaxed)
         self.add_python_solver_time(toc())
 

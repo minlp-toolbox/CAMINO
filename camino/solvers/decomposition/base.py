@@ -9,7 +9,7 @@ import numpy as np
 from camino.solvers import MiSolverClass, Stats, MinlpProblem, MinlpData, Settings
 from camino.solvers.utils import get_termination_condition
 from camino.solvers.subsolvers.nlp import NlpSolver
-from camino.utils import colored, logging, toc
+from camino.utils import colored, logging, toc, tic
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class GenericDecomposition(MiSolverClass):
     def solve(self, data: MinlpData, *args, **kwargs) -> MinlpData:
         """Solve the problem."""
         logger.info("Solver initialized.")
+        tic()
         # Benders algorithm
         feasible = True
         x_hat = np.nan * np.empty(data.x0.shape[0])

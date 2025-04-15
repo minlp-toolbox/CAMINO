@@ -20,15 +20,9 @@ class FindClosestNlpSolver(SolverClass):
         super(FindClosestNlpSolver, self).__init__(problem, stats, s)
         options = regularize_options(
             s.IPOPT_SETTINGS, {
-                "ipopt.mu_strategy": "adaptive",
-                "ipopt.mu_target": min(
-                    1e-5,
-                    s.IPOPT_SETTINGS.get("ipopt.mu_target", 1e-5),
-                ),
                 "calc_multipliers":  True,
                 "jit": s.WITH_JIT
             }, s)
-
         self.idx_x_integer = problem.idx_x_integer
         x_hat = GlobalSettings.CASADI_VAR.sym("x_hat", len(self.idx_x_integer))
         x_best = GlobalSettings.CASADI_VAR.sym(
