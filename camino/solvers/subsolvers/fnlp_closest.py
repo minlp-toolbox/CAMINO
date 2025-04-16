@@ -85,13 +85,10 @@ class FindClosestNlpSolver(SolverClass):
                 sol_new['x_infeasible'] = sol['x']
                 success, _ = self.collect_stats("FC-NLP", sol=sol_new)
                 if not success:
-                    print("FC-NLP not solved")
-                if float(sol_new['f']) < self.settings.CONSTRAINT_INT_TOL**2:
-                    success_out.append(True)
-                    sols_out.append(sol)
-                else:
-                    success_out.append(False)
-                    sols_out.append(sol_new)
+                    logger.warning(colored("FC-NLP not solved", "yellow"))
+
+                success_out.append(False)
+                sols_out.append(sol_new)
 
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out

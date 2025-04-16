@@ -58,14 +58,15 @@ class GenericDecomposition(MiSolverClass):
             # Solve NLP(y^k)
             data = self.nlp.solve(data, set_x_bin=True)
 
-            # Is there a feasible success?
-            self.update_best_solutions(data)
 
             # Is there any infeasible?
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
                 data = self.fnlp.solve(data)
                 logger.info(colored("Feasibility NLP solved.", "yellow"))
+
+            # Is there a feasible success?
+            self.update_best_solutions(data)
 
             # Solve master^k and set lower bound:
             data = self.master.solve(data)
