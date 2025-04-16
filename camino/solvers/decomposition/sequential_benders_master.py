@@ -355,10 +355,10 @@ class BendersRegionMasters(BendersMasterMILP):
             f_hess = self.f_hess(self.sol_best['x'], nlpdata.p)
             if self.hessian_not_psd:
                 min_eigen_value = np.linalg.eigh(f_hess.full())[0][0]
-                logger.info(
-                    colored(f"Negative eigenvalue detected {min_eigen_value}.", "red"))
                 if min_eigen_value < 0:
                     f_hess -= min_eigen_value * ca.DM.eye(self.nr_x_orig)
+                    logger.info(
+                        colored(f"Negative eigenvalue detected {min_eigen_value}.", "red"))
                 else:
                     self.hessian_not_psd = False
 

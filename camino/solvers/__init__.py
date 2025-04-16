@@ -40,26 +40,13 @@ class SolverClass(ABC):
         else:
             stats = solver.stats()
 
-        if "t_proc_my_solver" in stats:
-            t_proc = stats["t_proc_my_solver"]
-        elif "t_proc_total" in stats:
-            t_proc = stats["t_proc_total"]
-        else:
-            logger.info(colored(f"t_proc_total not found for {algo_name}"))
-            t_proc = sum(
-                [v for k, v in stats.items() if "t_proc" in k]
-            )
+        t_proc = sum(
+            [v for k, v in stats.items() if "t_proc" in k]
+        )
 
-        if "t_wall_my_solver" in stats:
-            t_wall = stats["t_wall_my_solver"]
-        elif "t_wall_total" in stats:
-            t_wall = stats["t_wall_total"]
-        else:
-            logger.info(
-                colored(f"t_wall_total not found for {algo_name}", "red"))
-            t_wall = sum(
-                [v for k, v in stats.items() if "t_wall" in k]
-            )
+        t_wall = sum(
+            [v for k, v in stats.items() if "t_wall" in k]
+        )
         self.stats[f"{algo_name}.time"] += t_proc
         self.stats[f"{algo_name}.time_wall"] += t_wall
         self.stats[f"{algo_name}.iter"] += max(

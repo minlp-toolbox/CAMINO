@@ -9,7 +9,11 @@ import numpy as np
 from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData, \
     regularize_options
 from camino.settings import GlobalSettings, Settings
+from camino.utils import colored
 from camino.utils.conversion import to_0d
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FindClosestNlpSolver(SolverClass):
