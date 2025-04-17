@@ -109,9 +109,12 @@ def to_float(val):
 
 def create_performance_profile(df, solver_columns, problem_column=None, tau_max=10, num_points=100,
                               log_scale=True, name="perf_plot",
-                              xlabel="Performance ratio", ylabel="Fraction of problems solved"):
+                              xlabel="Within this factor of the best", ylabel="Fraction of problems solved"):
     """
-    Create a performance profile plot comparing multiple solvers.
+    Create a performance profile plot comparing multiple solvers with support for both
+    positive and negative values, and properly handling infinite values.
+    Assumes smaller values are better.
+
     Parameters:
     -----------
     df : pandas.DataFrame
@@ -144,14 +147,11 @@ def create_performance_profile(df, solver_columns, problem_column=None, tau_max=
         problems = data.index
     else:
         problems = data[problem_column].unique()
-
     n_problems = len(problems)
     n_solvers = len(solver_columns)
-
     # Initialize performance ratios matrix
     perf_ratios = np.full((n_problems, n_solvers), np.nan)
-
-    # Calculate performance ratios for each problem
+    # Process each problem
     for i, problem in enumerate(problems):
         if problem_column is None:
             problem_data = data.loc[problem, solver_columns]
@@ -160,25 +160,46 @@ def create_performance_profile(df, solver_columns, problem_column=None, tau_max=
         else:
             problem_data = data[data[problem_column] == problem][solver_columns]
 
-        # Skip problems with all NaN or non-positive values
-        if problem_data.isna().all().all() or (problem_data <= 0).all().all():
-            continue
-
-        # Get best performance among all solvers for this problem
-        best_perf = problem_data.min().min()
-
-        # If best performance is 0 or NaN, skip this problem
-        if best_perf <= 0 or np.isnan(best_perf) or np.isinf(best_perf):
-            continue
-
-        # Calculate performance ratios
+        # Extract values for all solvers for this problem
+        values = []
+        valid_solvers = []
         for j, solver in enumerate(solver_columns):
-            value = problem_data[solver].iloc[0]
-            # Skip if solver failed (NaN or non-positive value)
-            if np.isnan(value) or value <= 0 or np.isinf(value):
+            if solver in problem_data.columns:
+                val = problem_data[solver].iloc[0]
+                # Filter out NaN and infinite values
+                if pd.notna(val) and not np.isinf(val):
+                    values.append(val)
+                    valid_solvers.append(solver)
+
+        # If no valid values, skip this problem
+        if len(values) == 0:
+            continue
+        values = np.array(values)
+        # Handle negative values by transforming to a positive scale while preserving order
+        min_value = np.min(values)
+        # If all values are negative or mix of negative and positive
+        if min_value < 0:
+            # Transform values to ensure the best performance is positive
+            transformed_values = values - min_value + 1
+            # Find the best (smallest) transformed value
+            best_perf = np.min(transformed_values)
+            # Calculate performance ratios using transformed values
+            for idx, solver in enumerate(valid_solvers):
+                # print(f"{transformed_values[idx]=}, {best_perf=}")
+                solver_j = solver_columns.index(solver)
+                perf_ratios[i, solver_j] = transformed_values[idx] / best_perf
+        else:
+            # For all positive values, use standard calculation
+            best_perf = np.min(values)
+            # Calculate performance ratios
+            for idx, solver in enumerate(valid_solvers):
+                solver_j = solver_columns.index(solver)
+                # print(f"{values[idx]=}, {best_perf=}")
+                perf_ratios[i, solver_j] = values[idx] / best_perf
+        # Mark missing, invalid, or infinite values as infinity in performance ratio
+        for j, solver in enumerate(solver_columns):
+            if solver not in valid_solvers:
                 perf_ratios[i, j] = np.inf
-            else:
-                perf_ratios[i, j] = value / best_perf
 
     # Create range of tau values (performance ratios)
     if log_scale:
