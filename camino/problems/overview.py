@@ -350,7 +350,7 @@ def create_from_nl_file(file, compiled=True):
     s.MINLP_TOLERANCE_ABS = 1e-2
     s.BRMIQP_GAP = 0.1
     s.LBMILP_GAP = 0.01
-    s.TIME_LIMIT = 900
+    s.TIME_LIMIT = 300
     s.TIME_LIMIT_SOLVER_ONLY = False
     s.USE_RELAXED_AS_WARMSTART = True
     s.IPOPT_SETTINGS = {
@@ -361,6 +361,14 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.bound_relax_factor": 0,
         "ipopt.honor_original_bounds": "yes",
         # "ipopt.print_level": 0,
+        # # Options used within Bonmin
+        # "ipopt.mu_strategy": "adaptive",
+        # "ipopt.mu_oracle": "probing",
+        # "ipopt.gamma_phi": 1e-8,
+        # "ipopt.gamma_theta": 1e-4,
+        # "ipopt.required_infeasibility_reduction": 0.1,
+        # "ipopt.expect_infeasible_problem": "yes",
+        # "ipopt.warm_start_init_point": "yes",
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
         "gurobi.MIPGap": 0.1,
@@ -380,7 +388,7 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
         "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
-        "bonmin.bound_relax_factor": 1e-10,
+        "bonmin.bound_relax_factor": 1e-14,
         "bonmin.honor_original_bounds": "yes",
         "bonmin.linear_solver": "ma27",
     }
