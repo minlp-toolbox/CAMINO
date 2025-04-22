@@ -26,20 +26,21 @@ def check_solution(problem: MinlpProblem, data: MinlpData, x_star, s: Settings, 
     print(f"Objective value {f_val} (real) vs {data.obj_val}")
     msg = []
     if check_objval and abs(to_float(data.obj_val) - f_val) > s.OBJECTIVE_TOL:
-        msg.append("Objective value wrong!")
+        msg.append(f"Objective value wrong, with error {abs(to_float(data.obj_val) - f_val) - s.OBJECTIVE_TOL}")
     if np.any(data.lbx > x_star + s.CONSTRAINT_TOL):
-        msg.append(f"Lbx > x* for indices:\n{np.nonzero(data.lbx > x_star).T}")
+        msg.append(f"Lbx > x* for indices:\n{np.nonzero(data.lbx > x_star + s.CONSTRAINT_TOL).T}")
     if np.any(data.ubx < x_star - s.CONSTRAINT_TOL):
-        msg.append(f"Ubx > x* for indices:\n{np.nonzero(data.ubx < x_star).T}")
+        msg.append(f"Ubx > x* for indices:\n{np.nonzero(data.ubx < x_star - s.CONSTRAINT_TOL).T}")
     if np.any(lbg > g_val + s.CONSTRAINT_TOL):
-        msg.append(f"{g_val=}  {lbg=}")
-        msg.append("Lbg > g(x*,p) for indices:\n"
-                   f"{np.nonzero(lbg > g_val)}")
+        msg.append("Lbg > g(x*,p) + tol:\n"
+                   f"{(lbg - g_val - s.CONSTRAINT_TOL)[np.nonzero(lbg - g_val - s.CONSTRAINT_TOL >0)]}")
+        msg.append("for indices:\n"
+                   f"{np.nonzero(lbg - g_val - s.CONSTRAINT_TOL >0)}")
     if np.any(ubg < g_val - s.CONSTRAINT_TOL):
-        msg.append(f"{g_val=}  {ubg=}")
-        msg.append("Ubg < g(x*,p) for indices:\n"
-                   f"{np.nonzero(ubg < g_val)}")
-
+        msg.append("Ubg < g(x*,p) - tol:\n"
+                   f"{(g_val - ubg - s.CONSTRAINT_TOL)[np.nonzero(g_val - ubg - s.CONSTRAINT_TOL > 0)]}")
+        msg.append("for indices:\n"
+                   f"{np.nonzero(g_val - ubg - s.CONSTRAINT_TOL > 0)}")
     check_integer_feasible(problem.idx_x_integer, x_star, s, throws=throws)
     if msg:
         msg = "\n".join(msg)
