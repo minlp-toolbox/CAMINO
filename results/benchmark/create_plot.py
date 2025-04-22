@@ -238,14 +238,15 @@ key = argv[2]
 assert (key == "cvx" or key == "noncvx")
 total_entries = data.shape[0]  # int(input("Amount (e.g. 120):"))
 
-# solvers = ["bonmin", f"shot_{key}prob", f"{key}_sbmiqp"]
-# solver_names = ["Bonmin", "SHOT", "sbmiqp"]
-# solvers_calctime = ['bonmin.calc_time', f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"]
+solvers = [f"{key}_bonmin", f"shot_{key}prob", f"{key}_sbmiqp"]
+solver_names = ["Bonmin", "SHOT", "sbmiqp"]
+solvers_calctime = [f'{key}_bonmin.solver_time', f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"] # TODO bonmin calc_time
+solvers_obj = [f"{key}_bonmin.obj", f'shot_{key}prob.obj', f"{key}_sbmiqp.obj"]
 
-solvers = [f"shot_{key}prob", f"{key}_sbmiqp"]
-solver_names = ["SHOT", "sbmiqp"]
-solvers_calctime = [f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"]
-solvers_obj = [f'shot_{key}prob.obj', f"{key}_sbmiqp.obj"]
+# solvers = [f"shot_{key}prob", f"{key}_sbmiqp"]
+# solver_names = ["SHOT", "sbmiqp"]
+# solvers_calctime = [f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"]
+# solvers_obj = [f'shot_{key}prob.obj', f"{key}_sbmiqp.obj"]
 
 
 data[solvers_calctime] = data[solvers_calctime].map(to_float)
