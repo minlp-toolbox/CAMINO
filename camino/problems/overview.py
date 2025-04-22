@@ -373,7 +373,18 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         # "gurobi.output_flag": 0,
     }
-    s.BONMIN_SETTINGS["bonmin.time_limit"] = s.TIME_LIMIT
+    s.BONMIN_SETTINGS = {
+        "bonmin.time_limit": s.TIME_LIMIT,
+        "bonmin.tree_search_strategy": "dive",
+        "bonmin.node_comparison": "best-bound",
+        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
+        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.bound_relax_factor": 1e-10,
+        "bonmin.honor_original_bounds": "yes",
+        "bonmin.linear_solver": "ma27",
+    }
+
     return problem, data, s
 
 
