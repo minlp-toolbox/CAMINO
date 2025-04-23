@@ -54,7 +54,8 @@ def batch_runner(algorithm, target, nl_files):
         makedirs(target, exist_ok=True)
         total_stats = [["id", "path", "obj",
                         "load_time", "calc_time",
-                        "solver_time", "python_time", "iter_nr"]]
+                        "solver_time", "python_time", "iter_nr",
+                        "NLP_runs", "FNLP_runs", "MIQP_runs", "MILP_runs"]]
         i_start = 0
 
     for i in range(i_start, len(nl_files)):
@@ -68,7 +69,8 @@ def batch_runner(algorithm, target, nl_files):
             total_stats.append([
                 i, nl_file, data.obj_val,
                 stats["total_time_loading"], stats["total_time_calc"],
-                stats['t_solver_total'], stats['t_python_solver'], stats["iter_nr"]])
+                stats['t_solver_total'], stats['t_python_solver'], stats["iter_nr"],
+                stats["NLP.runs"], stats["FC-NLP.runs"], stats["BR-MIQP.runs"], stats["LB-MILP.runs"]])
         except Exception as e:
             print(f"{e}")
             total_stats.append(
