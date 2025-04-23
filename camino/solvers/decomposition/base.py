@@ -49,6 +49,11 @@ class GenericDecomposition(MiSolverClass):
 
         if self.first_relaxed:
             data = self.nlp.solve(data)
+            if not np.all(data.solved_all):
+                # Solve NLPF(y^k)
+                data = self.fnlp.solve(data)
+                logger.info(colored("Feasibility NLP solved.", "yellow"))
+
             self.stats['lb'] = data.obj_val
             data = self.master.solve(data, integers_relaxed=True)
 

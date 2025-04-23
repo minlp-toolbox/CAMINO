@@ -44,6 +44,8 @@ class FindClosestNlpSolver(SolverClass):
             "x": problem.x,
             "p": ca.vertcat(problem.p, x_hat, x_best)
         }, options)
+        self.original_objective = ca.Function("original_objective", [problem.x, problem.p], [problem.f])
+        self.original_g_constraint = ca.Function("original_g_constraint", [problem.x, problem.p], [problem.g])
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """Solve NLP."""
@@ -87,9 +89,21 @@ class FindClosestNlpSolver(SolverClass):
                 if not success:
                     logger.warning(colored("FC-NLP not solved", "yellow"))
 
-                success_out.append(False)
-                sols_out.append(sol_new)
-
+                if float(sol_new['f']) < self.settings.CONSTRAINT_INT_TOL**2:
+                    polished_x = to_0d(sol_new['x'])
+                    polished_x[self.idx_x_integer] = np.round(polished_x[self.idx_x_integer])
+                    sol_new['f'] = self.original_objective(polished_x, nlpdata.p)
+                    sol_new['g'] = self.original_g_constraint(polished_x, nlpdata.p)
+                    print(f"{np.nonzero(to_0d(sol_new['g']) - to_0d(nlpdata.ubg) - self.settings.CONSTRAINT_TOL > 0)}")
+                    print(f"{np.nonzero(-sol_new['g'] + nlpdata.lbg - self.settings.CONSTRAINT_TOL > 0)}")
+                    sol_new['x'] = polished_x
+                    nlpdata.x0 = polished_x
+                    success_out.append(True)
+                    sols_out.append(sol_new)
+                else:
+                    success_out.append(False)
+                    sols_out.append(sol_new)
+        # breakpoint()
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out
         return nlpdata
