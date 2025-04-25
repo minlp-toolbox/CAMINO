@@ -232,22 +232,31 @@ def create_performance_profile(df, solver_columns, problem_column=None, tau_max=
     return fig, ax
 
 
+if len(argv) != 3:
+    print("Usage: python create_plot.py <data_file.csv> <key>")
+    print("key: cvx or noncvx")
+    exit(1)
+
 latexify(6, 4)
 data = pd.read_csv(argv[1])
 key = argv[2]
 assert (key == "cvx" or key == "noncvx")
 total_entries = data.shape[0]  # int(input("Amount (e.g. 120):"))
 
-solvers = [f"{key}_bonmin", f"shot_{key}prob", f"{key}_sbmiqp"]
-solver_names = ["Bonmin", "SHOT", "sbmiqp"]
-solvers_calctime = [f'{key}_bonmin.solver_time', f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"] # TODO bonmin calc_time
-solvers_obj = [f"{key}_bonmin.obj", f'shot_{key}prob.obj', f"{key}_sbmiqp.obj"]
 
-# solvers = [f"shot_{key}prob", f"{key}_sbmiqp"]
-# solver_names = ["SHOT", "sbmiqp"]
-# solvers_calctime = [f'shot_{key}prob.calctime', f"{key}_sbmiqp.calc_time"]
-# solvers_obj = [f'shot_{key}prob.obj', f"{key}_sbmiqp.obj"]
+solvers = [f"{key}_bonmin", f"{key}_shot_st", f"{key}_sbmiqp", f"{key}_sbmiqp_lb"]
+solver_names = ["Bonmin", "SHOT", "S-B-MIQP", "S-B-MIQP with $LB = V_k$"]
+solvers_calctime = [
+    solver + ".total_time" if "shot" not in solver else f"{solver}.calctime"
+    for solver in solvers
+]
+solvers_obj = [f"{solver}.obj" for solver in solvers]
 
+# timing = ["load_time", "python_time", "solver_time"]
+timing = ["python_time", "solver_time"]
+data[f"{key}_bonmin.total_time"] = np.sum(data[[f"{key}_bonmin" + "." + t for t in timing]].map(to_float), axis=1)
+data[f"{key}_sbmiqp.total_time"] = np.sum(data[[f"{key}_sbmiqp" + "." + t for t in timing]].map(to_float), axis=1)
+data[f"{key}_sbmiqp_lb.total_time"] = np.sum(data[[f"{key}_sbmiqp_lb" + "." + t for t in timing]].map(to_float), axis=1)
 
 data[solvers_calctime] = data[solvers_calctime].map(to_float)
 data[solvers_obj] = data[solvers_obj].map(to_float)
