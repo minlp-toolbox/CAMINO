@@ -24,7 +24,6 @@ class FindClosestNlpSolver(SolverClass):
         super(FindClosestNlpSolver, self).__init__(problem, stats, s)
         options = regularize_options(
             s.IPOPT_SETTINGS, {
-                "calc_multipliers":  True,
                 "jit": s.WITH_JIT
             }, s)
         self.idx_x_integer = problem.idx_x_integer

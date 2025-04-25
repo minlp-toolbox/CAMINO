@@ -445,9 +445,9 @@ class BendersRegionMasters(BendersMasterMILP):
 
         if relaxed:
             self.options[self.mipgap_options_str] = 1.0
-            # self.options[self.mipgap_options_str] = self.mipgap_miqp
         else:
             self.options[self.mipgap_options_str] = self.mipgap_miqp
+
         logger.info(f"MIP Gap set to {self.mipgap_miqp} - "
                     f"Expected Range lb={self.internal_lb}  ub={self.y_N_val}")
 
