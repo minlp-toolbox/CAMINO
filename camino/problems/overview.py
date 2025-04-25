@@ -369,6 +369,8 @@ def create_from_nl_file(file, compiled=True):
         # "ipopt.required_infeasibility_reduction": 0.1,
         # "ipopt.expect_infeasible_problem": "yes",
         # "ipopt.warm_start_init_point": "yes",
+
+        "ipopt.print_level": 0,
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
         "gurobi.MIPGap": 0.1,
@@ -380,6 +382,7 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         # "gurobi.output_flag": 0,
+        "gurobi.output_flag": 0,
     }
     s.BONMIN_SETTINGS = {
         "bonmin.time_limit": s.TIME_LIMIT,
@@ -392,6 +395,7 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.honor_original_bounds": "yes",
         "bonmin.linear_solver": "ma27",
     }
+    s.WITH_DEBUG = False
 
     return problem, data, s
 
