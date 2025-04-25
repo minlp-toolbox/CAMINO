@@ -481,7 +481,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     nlpdata, success, stats, self.settings,
                     solution, self.idx_x_integer
                 )
-                return nlpdata, True
+                return nlpdata
             elif solution['f'] > self.y_N_val:
                 self.early_lb_milp = True
 
