@@ -42,12 +42,12 @@ def latexify(fig_width=None, fig_height=None):
     params = {
         # "backend": "ps",
         "text.latex.preamble": r"\usepackage{gensymb} \usepackage{amsmath}",
-        "axes.labelsize": 9,  # fontsize for x and y labels (was 9)
-        "axes.titlesize": 9,
-        "lines.linewidth": 2,
-        "legend.fontsize": 9,  # was 9
-        "xtick.labelsize": 9,
-        "ytick.labelsize": 9,
+        "axes.labelsize": 8,  # fontsize for x and y labels (was 8)
+        "axes.titlesize": 8,
+        "lines.linewidth": 1,
+        "legend.fontsize": 8,  # was 8
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
         "text.usetex": True,
         "figure.figsize": [fig_width, fig_height],
         "font.family": "serif",
@@ -221,14 +221,14 @@ def create_performance_profile(df, solver_columns, problem_column=None, tau_max=
         tau_values = np.linspace(1, tau_max, num_points)
 
     # Initialize the plot
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(3, 2))
 
     # Plot performance profiles for each solver
     for j, solver in enumerate(solver_columns):
         # For each tau value, calculate the fraction of problems where the solver's
         # performance ratio is less than or equal to tau
         profile = [np.sum(perf_ratios[:, j] <= tau) / n_problems for tau in tau_values]
-        ax.plot(tau_values, profile, marker='', linewidth=2, label=legend_labels[j],
+        ax.plot(tau_values, profile, marker='', label=legend_labels[j],
                 color=MCOLORS[j], linestyle=LINESTYLES[j])
 
     # Configure the plot
@@ -239,7 +239,11 @@ def create_performance_profile(df, solver_columns, problem_column=None, tau_max=
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid(True, linestyle='--', alpha=0.7)
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.set_yticks(np.linspace(0,1,6))
+    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # if title=="Objective":
+    ax.legend(ncols=2, columnspacing=0.7, handlelength=1.5)
+
     ax.set_title(title)
     plt.tight_layout()
     plt.savefig(f"figures/{datetime.now().strftime('%m-%d')}_{name}.pdf")
@@ -259,8 +263,8 @@ assert (key == "cvx" or key == "noncvx")
 total_entries = data.shape[0]  # int(input("Amount (e.g. 120):"))
 
 
-solvers = [f"{key}_bonmin", f"{key}_shot_st", f"{key}_shot_mt", f"{key}_sbmiqp", f"{key}_sbmiqp_lb"]
-solver_names = ["Bonmin", "SHOT-st", "SHOT-mt", "S-B-MIQP", "S-B-MIQP with $LB = V_k$"]
+solvers = [f"{key}_bonmin", f"{key}_shot_st", f"{key}_sbmiqp",]
+solver_names = ["Bonmin", "SHOT", "S-B-MIQP",]
 solvers_obj = [f"{solver}.obj" for solver in solvers]
 solvers_calctime = [
     solver + ".calc_time" if "shot" not in solver else f"{solver}.calctime"
@@ -277,9 +281,11 @@ for solver in solvers:
 
 
 # New plots:
-create_performance_profile(data, solvers_calctime, tau_max=1e5, name=f'{key}_calc_time_profile', title="total time", legend_labels=solver_names)
-create_performance_profile(data, solvers_obj, tau_max=1e5, name=f'{key}_obj_profile', title="objective", legend_labels=solver_names)
+create_performance_profile(data, solvers_calctime, tau_max=1e5, name=f'{key}_calc_time_profile', title="Wall time", legend_labels=solver_names)
+create_performance_profile(data, solvers_obj, log_scale=True, tau_max=1e5, name=f'{key}_obj_profile', title="Objective", legend_labels=solver_names)
 
+plt.show()
+raise
 # Plot in the arXiv paper:
 for s, sc in zip(solvers, solvers_calctime):
     data[f'{s}.ratio_time'] = compute_ratio(
@@ -332,5 +338,5 @@ axs[0].legend(loc="lower right")
 # axs[0].legend(loc="upper left")
 
 plt.tight_layout()
-plt.savefig(f"figures/{datetime.now().strftime('%m-%d')}_benchmark_merged_{key}_1.pdf")
+plt.savefig(f"figures/{datetime.now().strftime('%m-%d')}_benchmark_merged_{key}.pdf")
 plt.show()
