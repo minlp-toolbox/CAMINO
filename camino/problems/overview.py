@@ -346,8 +346,8 @@ def create_from_nl_file(file, compiled=True):
     s.OBJECTIVE_TOL = 1e-8
     s.CONSTRAINT_TOL = 1e-8
     s.CONSTRAINT_INT_TOL = 1e-3
-    s.MINLP_TOLERANCE = 1e-3
-    s.MINLP_TOLERANCE_ABS = 1e-3
+    s.MINLP_TOLERANCE = 1e-2
+    s.MINLP_TOLERANCE_ABS = 1e-2
     s.BRMIQP_GAP = 0.1
     s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
@@ -358,8 +358,8 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.max_iter": 1000,
         "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
-        "ipopt.bound_relax_factor": 0,
-        "ipopt.honor_original_bounds": "yes",
+        # "ipopt.bound_relax_factor": 0,
+        # "ipopt.honor_original_bounds": "yes",
         # "ipopt.print_level": 0,
         # # Options used within Bonmin
         # "ipopt.mu_strategy": "adaptive",
