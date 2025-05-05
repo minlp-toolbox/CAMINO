@@ -231,7 +231,7 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.sol_best is not None:
             sigma = max(
                 float(ca.dot(multiplier * dx,
-                      self.sol_best['x'][self.idx_x_integer] - self.sol['x'][self.idx_x_integer])),
+                      self.sol_best['x'][self.idx_x_integer] - sol['x'][self.idx_x_integer])),
                 0
             )
         else:
@@ -474,6 +474,7 @@ class BendersRegionMasters(BendersMasterMILP):
             need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
             (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
             max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
+
         if not need_lb_milp:
             constraint = self.internal_lb + self.alpha_kronqvist * \
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
@@ -495,7 +496,8 @@ class BendersRegionMasters(BendersMasterMILP):
             else:
                 self.trust_region_fails = True
                 colored("Failed solving BR-MIQP.", "red")
-                need_lb_milp = True
+                if not self.early_exit:
+                    need_lb_milp = True
 
         if need_lb_milp:
             solution, success, stats = self._solve_lb_milp_problem(nlpdata)
@@ -579,7 +581,7 @@ class BendersRegionMasters(BendersMasterMILP):
                             infeas = ca.norm_2(
                                 sol['x_infeasible'][:self.nr_x_orig] -
                                 sol['x'][:self.nr_x_orig]
-                            ) ** 2  # TODO: probably here we dont need the square since we want only a distance.
+                            )
                         else:
                             # Use regular benders
                             g = sol['g']
