@@ -119,7 +119,7 @@ class BendersRegionMasters(BendersMasterMILP):
         # Settings
         self.alpha_kronqvist = s.ALPHA_KRONQVIST
         self.trust_region_feasibility_rho = s.RHO_AMPLIFICATION
-        self.sol_infeasibility = 0.0
+        self.sol_infeasibility = np.inf
 
         if s.WITH_DEBUG:
             self.problem = problem
@@ -231,7 +231,7 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.sol_best is not None:
             sigma = max(
                 float(ca.dot(multiplier * dx,
-                      self.sol_best['x'][self.idx_x_integer])),
+                      self.sol_best['x'][self.idx_x_integer] - self.sol['x'][self.idx_x_integer])),
                 0
             )
         else:
@@ -468,7 +468,10 @@ class BendersRegionMasters(BendersMasterMILP):
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
-        need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
+        if self.early_exit:
+            need_lb_milp = False
+        else:
+            need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
             (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
             max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
         if not need_lb_milp:
