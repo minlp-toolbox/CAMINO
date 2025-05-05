@@ -119,7 +119,7 @@ class BendersRegionMasters(BendersMasterMILP):
         # Settings
         self.alpha_kronqvist = s.ALPHA_KRONQVIST
         self.trust_region_feasibility_rho = s.RHO_AMPLIFICATION
-        self.sol_infeasibility = 0.0
+        self.sol_infeasibility = np.inf
 
         if s.WITH_DEBUG:
             self.problem = problem
@@ -231,7 +231,7 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.sol_best is not None:
             sigma = max(
                 float(ca.dot(multiplier * dx,
-                      self.sol_best['x'][self.idx_x_integer])),
+                      self.sol_best['x'][self.idx_x_integer] - self.sol['x'][self.idx_x_integer])),
                 0
             )
         else:
