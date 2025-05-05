@@ -52,7 +52,7 @@ def batch_runner(algorithm, target, nl_files):
         i_start += 1
     else:
         makedirs(target, exist_ok=True)
-        total_stats = [["id", "path", "obj",
+        total_stats = [["id", "path", "obj", "dual_obj",
                         "load_time", "calc_time",
                         "solver_time", "python_time", "iter_nr",
                         "NLP_runs", "FNLP_runs", "MIQP_runs", "MILP_runs"]]
@@ -67,7 +67,7 @@ def batch_runner(algorithm, target, nl_files):
             stats.print()
             stats.save(path.join(target, f"stats_{i}.pkl"))
             total_stats.append([
-                i, nl_file, data.obj_val,
+                i, nl_file, data.obj_val, stats.data['lb'],
                 stats["total_time_loading"], stats["total_time_calc"],
                 stats['t_solver_total'], stats['t_python_solver'], stats["iter_nr"],
                 stats["NLP.runs"], stats["FC-NLP.runs"], stats["BR-MIQP.runs"], stats["LB-MILP.runs"]])
