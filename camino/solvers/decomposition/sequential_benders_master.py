@@ -468,7 +468,10 @@ class BendersRegionMasters(BendersMasterMILP):
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
-        need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
+        if self.early_exit:
+            need_lb_milp = False
+        else:
+            need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
             (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
             max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
         if not need_lb_milp:
