@@ -263,8 +263,8 @@ assert (key == "cvx" or key == "noncvx")
 total_entries = data.shape[0]  # int(input("Amount (e.g. 120):"))
 
 
-solvers = [f"{key}_bonmin", f"{key}_shot_st", f"{key}_sbmiqp",]
-solver_names = ["Bonmin", "SHOT", "S-B-MIQP",]
+solvers = [f"{key}_bonmin", f"{key}_shot_st", f"{key}_sbmiqp", f"{key}_sbmiqp_lb",]
+solver_names = ["Bonmin", "SHOT", "S-B-MIQP", "S-B-MIQP-ee"]
 solvers_obj = [f"{solver}.obj" for solver in solvers]
 solvers_calctime = [
     solver + ".calc_time" if "shot" not in solver else f"{solver}.calctime"
