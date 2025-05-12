@@ -536,9 +536,8 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
-        if self.obj_inf_sol > obj_inf_sol:
-            self.obj_inf_sol = obj_inf_sol
-            colored(f"New upper bound: Inf {self.obj_inf_sol}", "red")
+        self.sol_infeasibility = obj_inf_sol
+        colored(f"Infeasible solution new upper bound: {self.sol_infeasibility}", "red")
         if not self.sol_best_feasible:
             self.sol_best = sol
 
@@ -586,7 +585,6 @@ class BendersRegionMasters(BendersMasterMILP):
                             )
 
                         if infeas < self.sol_infeasibility:
-                            sol['x'] = sol.get('x_infeasible', sol['x'])
                             self.update_sol_infeas(sol, infeas)
 
                     colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
@@ -611,13 +609,13 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def reset(self, nlpdata: MinlpData):
         """Reset data."""
-        self.g_lowerapprox = LowerApproximation(self._x_bin, self._nu)
-        self.g_lowerapprox_oa = LowerApproximation(self._x, self._nu)
-        self.g_infeasible = LowerApproximation(self._x_bin, 0)
-        self.g_infeasible_oa = LowerApproximation(self._x, 0)
+        self.g_lowerapprox = LowerApproximation(self._x_bin, self._nu)  # Benders' cut: f_i + lambda_y_i.T (y - y_i) <= 0
+        self.g_lowerapprox_oa = LowerApproximation(self._x, self._nu) # OA cut for objective: f_i + grad_f_i (x - x_i) <= 0
+        self.g_infeasible = LowerApproximation(self._x_bin, 0)  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) + sigma <= 0
+        self.g_infeasible_oa = LowerApproximation(self._x, 0)  # If g_i is cvx: g_i - ubg_i + jac_g_i.T (x - x_sol) <= 0
         self.internal_lb = -ca.inf
         self.sol_best_feasible = False
-        self.obj_inf_sol = ca.inf
+        self.sol_infeasibility = ca.inf
         self.sol_best = nlpdata._sol  # take a point as initialization
         self.y_N_val = 1e15  # Should be inf but can not at the moment ca.inf
         self.with_oa_conv_cuts = True
