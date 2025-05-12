@@ -112,7 +112,7 @@ class BendersRegionMasters(BendersMasterMILP):
     """Mixing the idea from Moritz with a slightly altered version of benders masters."""
 
     def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings,
-                 with_benders_master=True, early_exit=False):
+                 with_lb_milp=True):
         """Create the benders constraint MILP."""
         super(BendersRegionMasters, self).__init__(
             problem, data, stats, s, with_lin_bounds=False)
@@ -168,8 +168,7 @@ class BendersRegionMasters(BendersMasterMILP):
         elif self.settings.MIP_SOLVER == "highs":
             self.mipgap_options_str = 'highs.mip_rel_gap'
         self.options_master[self.mipgap_options_str] = self.mipgap_milp
-        self.early_exit = early_exit
-        self._with_lb_milp = with_benders_master
+        self.with_lb_milp = with_lb_milp
         self.hessian_not_psd = problem.hessian_not_psd
         self.reset(data)
 
@@ -464,10 +463,8 @@ class BendersRegionMasters(BendersMasterMILP):
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
-        if self.early_exit:
-            need_lb_milp = False
-        else:
-            need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
+
+        need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
             (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
             max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
 
@@ -476,7 +473,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
             solution, success, stats = self._solve_br_miqp_problem(
                 nlpdata, constraint)
-            if self.early_exit and solution['f'] > self.y_N_val:
+            if solution['f'] > self.y_N_val:
                 nlpdata = get_solutions_pool(
                     nlpdata, success, stats, self.settings,
                     solution, self.idx_x_integer
@@ -492,8 +489,7 @@ class BendersRegionMasters(BendersMasterMILP):
             else:
                 self.trust_region_fails = True
                 colored("Failed solving BR-MIQP.", "red")
-                if not self.early_exit:
-                    need_lb_milp = True
+                need_lb_milp = True
 
         if need_lb_milp:
             solution, success, stats = self._solve_lb_milp_problem(nlpdata)
@@ -602,7 +598,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.add_python_solver_time(toc())
 
         self.update_options(integers_relaxed)
-        if self._with_lb_milp:
+        if self.with_lb_milp:
             return self._solve_mix(nlpdata)
         else:
             return self._solve_tr_only(nlpdata)
