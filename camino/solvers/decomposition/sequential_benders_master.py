@@ -223,11 +223,7 @@ class BendersRegionMasters(BendersMasterMILP):
         dx = (sol['x_infeasible'] - sol['x'])[self.idx_x_integer]
         dx_min = abs(min(dx.full()))
         dx_max = abs(max(dx.full()))
-        multiplier = 1 / max(dx_min, dx_max)
-        if multiplier > 1000:
-            sol['x'][self.idx_x_integer] -= 10 * dx
-            multiplier = 1000
-
+        multiplier = min(1 / max(dx_min, dx_max), 1000)
         if self.sol_best is not None:
             sigma = max(
                 float(ca.dot(multiplier * dx,
@@ -238,7 +234,7 @@ class BendersRegionMasters(BendersMasterMILP):
             sigma = 0
 
         self.g_infeasible.add(
-            sol['x'][self.idx_x_integer], sigma, multiplier * dx)
+            sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
         colored("Adding infeasible cut for closest point.", "blue")
 
     def _add_infeasible_cut(self, x_sol, lam_g_sol, nlpdata: MinlpData):
