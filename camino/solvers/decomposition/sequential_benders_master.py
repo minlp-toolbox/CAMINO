@@ -420,7 +420,11 @@ class BendersRegionMasters(BendersMasterMILP):
             lbg=lbg, ubg=ubg
         )
         success, stats = self.collect_stats("LB-MILP", solver, solution)
-        if not success:
+        if (stats['return_status'] == "TIME_LIMIT" and not np.any(np.isnan(solution['x'].full()))):
+            colored(f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})")
+            success = True
+            solution['x'] = solution['x'][:-1]
+        elif not success:
             if not self.sol_best_feasible:
                 raise Exception(
                     "Problem can not be solved - Feasible zone is empty")
