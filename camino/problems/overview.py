@@ -362,7 +362,7 @@ def create_from_nl_file(file, compiled=True):
         "ipopt.mu_oracle": "probing",
         # "ipopt.bound_relax_factor": 0,
         # "ipopt.honor_original_bounds": "yes",
-        # "ipopt.print_level": 0,
+        "ipopt.print_level": 0,
         # # Options used within Bonmin
         # "ipopt.gamma_phi": 1e-8,
         # "ipopt.gamma_theta": 1e-4,
@@ -379,7 +379,7 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.PoolSolutions": 1,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
-        # "gurobi.output_flag": 0,
+        "gurobi.output_flag": 0,
     }
     s.BONMIN_SETTINGS = {
         "bonmin.time_limit": s.TIME_LIMIT,
