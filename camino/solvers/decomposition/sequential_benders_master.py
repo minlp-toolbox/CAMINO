@@ -589,8 +589,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
                     self._add_infeasibility_cut(sol, nlpdata)
 
-                if self.with_oa_conv_cuts:
-                    self._add_oa(sol['x'], nlpdata)
+            if self.with_oa_conv_cuts: # Add OA cuts only for first solution in the pool to avoid slow down
+                self._add_oa(nlpdata.prev_solutions[0]['x'], nlpdata)
 
             if needs_trust_region_update:
                 self._gradient_amplification()
