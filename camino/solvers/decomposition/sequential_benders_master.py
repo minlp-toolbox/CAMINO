@@ -468,7 +468,7 @@ class BendersRegionMasters(BendersMasterMILP):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
 
-        need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp or \
+        need_lb_milp = np.isinf(self.internal_lb) or \
             (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
             max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
 
@@ -477,16 +477,14 @@ class BendersRegionMasters(BendersMasterMILP):
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
             solution, success, stats = self._solve_br_miqp_problem(
                 nlpdata, constraint)
-            if solution['f'] > self.y_N_val:
-                nlpdata = get_solutions_pool(
-                    nlpdata, success, stats, self.settings,
-                    solution, self.idx_x_integer
-                )
-                return nlpdata
-            elif solution['f'] > self.y_N_val:
-                self.early_lb_milp = True
 
             if success:
+                if solution['f'] > self.y_N_val:
+                    nlpdata = get_solutions_pool(
+                        nlpdata, success, stats, self.settings,
+                        solution, self.idx_x_integer
+                    )
+                    need_lb_milp = True
                 if any_equal(solution['x'], [sol['x'] for sol in nlpdata.best_solutions], self.idx_x_integer):
                     colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow")
                     need_lb_milp = True
@@ -519,15 +517,16 @@ class BendersRegionMasters(BendersMasterMILP):
         self.options[self.mipgap_options_str] = self.mipgap_miqp
         solution, success, stats = self._solve_br_miqp_problem(
             nlpdata, constraint)
-        if not success:
-            if not self.sol_best_feasible:
-                raise Exception("Problem can not be solved")
-            solution = self.sol_best
-            nlpdata.prev_solutions = [self.sol_best]
-            nlpdata.solved_all = [True]
-        else:
+        if success:
             nlpdata = get_solutions_pool(nlpdata, success, stats, self.settings,
                                          solution, self.idx_x_integer)
+        else:
+            if self.sol_best_feasible:
+                solution = self.sol_best
+                nlpdata.prev_solutions = [self.sol_best]
+                nlpdata.solved_all = [True]
+            else:
+                Exception("Problem can not be solved")
         return nlpdata
 
     def compute_lb(self, x_sol):
@@ -620,7 +619,6 @@ class BendersRegionMasters(BendersMasterMILP):
         self.y_N_val = 1e15  # Should be inf but can not at the moment ca.inf
         self.with_oa_conv_cuts = True
         self.trust_region_fails = False
-        self.early_lb_milp = False
 
     def warmstart(self, nlpdata: MinlpData):
         """Warmstart with new data."""
