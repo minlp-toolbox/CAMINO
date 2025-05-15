@@ -376,7 +376,7 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
         "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 1,
+        "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         "gurobi.output_flag": 0,
