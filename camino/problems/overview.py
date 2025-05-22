@@ -388,8 +388,6 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
         "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
-        "bonmin.bound_relax_factor": 1e-14,
-        "bonmin.honor_original_bounds": "yes",
         "bonmin.linear_solver": "ma27",
     }
     s.WITH_DEBUG = False
