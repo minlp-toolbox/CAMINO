@@ -343,31 +343,55 @@ def create_from_nl_file(file, compiled=True):
     set_constraint_types(problem, *inspect_problem(problem, data))
     s = Settings()
 
-    s.OBJECTIVE_TOL = 1e-5
-    s.CONSTRAINT_TOL = 1e-5
-    s.CONSTRAINT_INT_TOL = 1e-2
-    s.MINLP_TOLERANCE = 0.01
-    s.MINLP_TOLERANCE_ABS = 0.01
+    s.OBJECTIVE_TOL = 1e-8
+    s.CONSTRAINT_TOL = 1e-8
+    s.CONSTRAINT_INT_TOL = 1e-3
+    s.MINLP_TOLERANCE = 1e-2
+    s.MINLP_TOLERANCE_ABS = 1e-2
+    s.BRMIQP_GAP = 0.1
+    s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
-    s.TIME_LIMIT_SOLVER_ONLY = True
+    s.TIME_LIMIT_SOLVER_ONLY = False
+    s.USE_RELAXED_AS_WARMSTART = True
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
-        "ipopt.mu_target": 1e-3,
         "ipopt.max_iter": 1000,
+        "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
+        # "ipopt.mu_strategy": "adaptive",
+        # "ipopt.mu_oracle": "probing",
+        # "ipopt.bound_relax_factor": 0,
+        # "ipopt.honor_original_bounds": "yes",
         "ipopt.print_level": 0,
+        # # Options used within Bonmin
+        # "ipopt.gamma_phi": 1e-8,
+        # "ipopt.gamma_theta": 1e-4,
+        # "ipopt.required_infeasibility_reduction": 0.1,
+        # "ipopt.expect_infeasible_problem": "yes",
+        # "ipopt.warm_start_init_point": "yes",
     }
     s.MIP_SETTINGS_ALL["gurobi"] = {
-        "gurobi.MIPGap": 0.10,
+        "gurobi.MIPGap": 0.1,
         "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 1,
+        "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
         "gurobi.output_flag": 0,
     }
-    s.BONMIN_SETTINGS["bonmin.time_limit"] = s.TIME_LIMIT
+    s.BONMIN_SETTINGS = {
+        "bonmin.time_limit": s.TIME_LIMIT,
+        "bonmin.tree_search_strategy": "dive",
+        "bonmin.node_comparison": "best-bound",
+        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
+        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.linear_solver": "ma27",
+    }
+    s.WITH_DEBUG = False
+
     return problem, data, s
 
 

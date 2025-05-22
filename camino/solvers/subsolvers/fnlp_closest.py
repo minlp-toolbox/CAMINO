@@ -9,7 +9,11 @@ import numpy as np
 from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData, \
     regularize_options
 from camino.settings import GlobalSettings, Settings
+from camino.utils import colored
 from camino.utils.conversion import to_0d
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FindClosestNlpSolver(SolverClass):
@@ -20,15 +24,8 @@ class FindClosestNlpSolver(SolverClass):
         super(FindClosestNlpSolver, self).__init__(problem, stats, s)
         options = regularize_options(
             s.IPOPT_SETTINGS, {
-                "ipopt.mu_strategy": "adaptive",
-                "ipopt.mu_target": min(
-                    1e-5,
-                    s.IPOPT_SETTINGS.get("ipopt.mu_target", 1e-5),
-                ),
-                "calc_multipliers":  True,
                 "jit": s.WITH_JIT
             }, s)
-
         self.idx_x_integer = problem.idx_x_integer
         x_hat = GlobalSettings.CASADI_VAR.sym("x_hat", len(self.idx_x_integer))
         x_best = GlobalSettings.CASADI_VAR.sym(
@@ -87,13 +84,10 @@ class FindClosestNlpSolver(SolverClass):
                 sol_new['x_infeasible'] = sol['x']
                 success, _ = self.collect_stats("FC-NLP", sol=sol_new)
                 if not success:
-                    print("FC-NLP not solved")
-                if float(sol_new['f']) < self.settings.CONSTRAINT_INT_TOL**2:
-                    success_out.append(True)
-                    sols_out.append(sol)
-                else:
-                    success_out.append(False)
-                    sols_out.append(sol_new)
+                    logger.warning(colored("FC-NLP not solved", "yellow"))
+
+                success_out.append(False)
+                sols_out.append(sol_new)
 
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out

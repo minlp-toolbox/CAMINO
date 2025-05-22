@@ -9,7 +9,7 @@ import numpy as np
 from camino.solvers import MiSolverClass, Stats, MinlpProblem, MinlpData, Settings
 from camino.solvers.utils import get_termination_condition
 from camino.solvers.subsolvers.nlp import NlpSolver
-from camino.utils import colored, logging, toc
+from camino.utils import colored, logging, toc, tic
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class GenericDecomposition(MiSolverClass):
     def solve(self, data: MinlpData, *args, **kwargs) -> MinlpData:
         """Solve the problem."""
         logger.info("Solver initialized.")
+        tic()
         # Benders algorithm
         feasible = True
         x_hat = np.nan * np.empty(data.x0.shape[0])
@@ -57,14 +58,15 @@ class GenericDecomposition(MiSolverClass):
             # Solve NLP(y^k)
             data = self.nlp.solve(data, set_x_bin=True)
 
-            # Is there a feasible success?
-            self.update_best_solutions(data)
 
             # Is there any infeasible?
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
                 data = self.fnlp.solve(data)
                 logger.info(colored("Feasibility NLP solved.", "yellow"))
+
+            # Is there a feasible success?
+            self.update_best_solutions(data)
 
             # Solve master^k and set lower bound:
             data = self.master.solve(data)

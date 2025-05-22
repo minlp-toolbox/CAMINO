@@ -8,6 +8,7 @@ import casadi as ca
 from camino.solvers import MiSolverClass, Stats, MinlpProblem, MinlpData, \
     regularize_options
 from camino.settings import Settings
+from camino.utils import tic, toc
 
 
 class BonminSolver(MiSolverClass):
@@ -42,6 +43,7 @@ class BonminSolver(MiSolverClass):
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """Solve MINLP."""
+        tic()
         nlpdata.prev_solution = self.solver(
             x0=nlpdata.x0,
             lbx=nlpdata.lbx, ubx=nlpdata.ubx,
@@ -50,6 +52,7 @@ class BonminSolver(MiSolverClass):
         )
         nlpdata.solved, stats = self.collect_stats(
             "MINLP", sol=nlpdata.prev_solutions[-1])
+        self.stats['total_time_calc'] = toc(reset=True)
         return nlpdata
 
     def reset(self, nlpdata: MinlpData):

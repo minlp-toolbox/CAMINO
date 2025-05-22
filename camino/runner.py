@@ -9,7 +9,7 @@ from camino.solver import MinlpSolver
 from camino.problem import MetaDataOcp
 from camino.settings import Settings
 from camino.problems.overview import PROBLEMS
-from camino.utils import make_bounded, logger
+from camino.utils import make_bounded, logger, colored
 from camino.utils.data import write_json, read_json
 from camino.utils.validate import check_solution
 
@@ -19,7 +19,7 @@ def batch_runner(algorithm, target, nl_files):
     from os import makedirs, path
     from time import time
 
-    def do_write(overview_target, start, i, mode_name, total_stats):
+    def do_write(overview_target, start, i, algorithm, total_stats):
         time_now = time() - start
         total_time = time_now / (i + 1) * total_to_compute
         write_json({
@@ -29,7 +29,7 @@ def batch_runner(algorithm, target, nl_files):
             "progress": (i+1) / total_to_compute,
             "time_remaining_est": total_time - time_now,
             "time_total_est": total_time,
-            "mode": mode_name,
+            "algorithm": algorithm,
             "data": total_stats
         }, overview_target)
 
@@ -39,7 +39,7 @@ def batch_runner(algorithm, target, nl_files):
     if path.exists(overview_target):
         data = read_json(overview_target)
         total_stats = data['data']
-        mode_name = data["mode"]
+        algorithm = data["algorithm"]
         i_start = data['done']
         start -= data["time"]
         if total_stats[-1][0] != i_start:
@@ -48,29 +48,35 @@ def batch_runner(algorithm, target, nl_files):
                 nl_files[i_start],
                 -ca.inf, "FAILED", "CRASH"
             ])
-        do_write(overview_target, start, i_start, mode_name, total_stats)
+        do_write(overview_target, start, i_start, algorithm, total_stats)
         i_start += 1
     else:
         makedirs(target, exist_ok=True)
-        total_stats = [["id", "path", "obj",
-                        "load_time", "calctime",
-                        "solvertime", "iter_nr", "nr_int"]]
+        total_stats = [["id", "path", "obj", "dual_obj",
+                        "load_time", "calc_time",
+                        "solver_time", "python_time", "iter_nr",
+                        "NLP_runs", "FNLP_runs", "MIQP_runs", "MILP_runs"]]
         i_start = 0
 
     for i in range(i_start, len(nl_files)):
         nl_file = nl_files[i]
         try:
-            stats, data = runner(mode_name, "nl_file", None, [nl_file])
+            stats, data = runner(algorithm, "nl_file", None, [nl_file])
             stats["x_star"] = data.x_sol
             stats["f_star"] = data.obj_val
             stats.print()
             stats.save(path.join(target, f"stats_{i}.pkl"))
+            total_stats.append([
+                i, nl_file, data.obj_val, stats.data['lb'],
+                stats["total_time_loading"], stats["total_time_calc"],
+                stats['t_solver_total'], stats['t_python_solver'], stats["iter_nr"],
+                stats["NLP.runs"], stats["FC-NLP.runs"], stats["BR-MIQP.runs"], stats["LB-MILP.runs"]])
         except Exception as e:
             print(f"{e}")
             total_stats.append(
                 [i, nl_file, -ca.inf, "FAILED", f"{e}"]
             )
-        do_write(overview_target, start, i, mode_name, total_stats)
+        do_write(overview_target, start, i, algorithm, total_stats)
 
 
 def runner(solver_name, problem_name, target_file, args):
@@ -78,7 +84,7 @@ def runner(solver_name, problem_name, target_file, args):
     if problem_name not in PROBLEMS:
         raise Exception(f"No {problem_name=}, available: {PROBLEMS.keys()}")
 
-    logger.info(f"Load problem {problem_name}")
+    colored(f"Load problem {args[0].split('/')[-1]}", color="green")
     if args is None:
         args = []
 

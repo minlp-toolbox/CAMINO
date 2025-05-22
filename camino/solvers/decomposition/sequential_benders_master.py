@@ -6,7 +6,7 @@
 import numpy as np
 import casadi as ca
 from camino.solvers import Stats, MinlpProblem, MinlpData
-from camino.utils import colored
+from camino.utils import colored, toc
 from camino.settings import GlobalSettings, Settings
 from camino.solvers.decomposition.benders_master import BendersMasterMILP
 from camino.solvers.utils import Constraints, get_solutions_pool, any_equal
@@ -31,11 +31,15 @@ class LowerApproximation:
         self.multipliers = []
         self.x = x
         self.nu = nu
+        self.is_corrected = []
 
     def add(self, point, offset, gradient, gradient_corrected=None):
         """Add a lower approximation cut."""
         if gradient_corrected is None:
             gradient_corrected = gradient
+            self.is_corrected.append(False)
+        else:
+            self.is_corrected.append(True)
 
         self.nr += 1
         self.x_lin.append(point)
@@ -108,14 +112,14 @@ class BendersRegionMasters(BendersMasterMILP):
     """Mixing the idea from Moritz with a slightly altered version of benders masters."""
 
     def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings,
-                 with_benders_master=True, early_exit=False):
+                 with_lb_milp=True):
         """Create the benders constraint MILP."""
         super(BendersRegionMasters, self).__init__(
             problem, data, stats, s, with_lin_bounds=False)
         # Settings
         self.alpha_kronqvist = s.ALPHA_KRONQVIST
         self.trust_region_feasibility_rho = s.RHO_AMPLIFICATION
-        self.sol_infeasibility = 0.0
+        self.sol_infeasibility = np.inf
 
         if s.WITH_DEBUG:
             self.problem = problem
@@ -164,8 +168,7 @@ class BendersRegionMasters(BendersMasterMILP):
         elif self.settings.MIP_SOLVER == "highs":
             self.mipgap_options_str = 'highs.mip_rel_gap'
         self.options_master[self.mipgap_options_str] = self.mipgap_milp
-        self.early_exit = early_exit
-        self._with_lb_milp = with_benders_master
+        self.with_lb_milp = with_lb_milp
         self.hessian_not_psd = problem.hessian_not_psd
         self.reset(data)
 
@@ -184,8 +187,9 @@ class BendersRegionMasters(BendersMasterMILP):
     def _gradient_amplification(self):
         """Amplify the gradient of every new cut with the chosen rho."""
         for i, m in enumerate(self.g_lowerapprox.multipliers):
-            if m != self.trust_region_feasibility_rho:
-                self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
+            if self.g_lowerapprox.is_corrected[i]:
+                if m != self.trust_region_feasibility_rho:
+                    self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
 
     def _gradient_corrections_old_cuts(self):
         x_sol_best_bin = self.sol_best['x'][self.idx_x_integer]
@@ -201,6 +205,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     self.g_lowerapprox.g[i], self.g_lowerapprox.dg_corrected[i],
                     self.settings
                 )
+                self.g_lowerapprox.is_corrected[i] = True
                 logger.debug(f"Correcting gradient for lower approx {i}")
 
     # Infeasibility cuts
@@ -213,26 +218,22 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _add_infeasible_cut_closest_point(self, sol):
         """Add infeasible cut closest point."""
-        # Rotate currently around x, but preferrably around x_infeasible
+        # Rotate currently around x, but preferably around x_infeasible
         dx = (sol['x_infeasible'] - sol['x'])[self.idx_x_integer]
         dx_min = abs(min(dx.full()))
         dx_max = abs(max(dx.full()))
-        multiplier = 1 / max(dx_min, dx_max)
-        if multiplier > 1000:
-            sol['x'][self.idx_x_integer] -= 10 * dx
-            multiplier = 1000
-
+        multiplier = min(1 / max(dx_min, dx_max), 1000)
         if self.sol_best is not None:
             sigma = max(
                 float(ca.dot(multiplier * dx,
-                      self.sol_best['x'][self.idx_x_integer])),
+                      self.sol_best['x'][self.idx_x_integer] - sol['x'][self.idx_x_integer])),
                 0
             )
         else:
             sigma = 0
 
         self.g_infeasible.add(
-            sol['x'][self.idx_x_integer], sigma, multiplier * dx)
+            sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
         colored("Adding infeasible cut for closest point.", "blue")
 
     def _add_infeasible_cut(self, x_sol, lam_g_sol, nlpdata: MinlpData):
@@ -279,13 +280,13 @@ class BendersRegionMasters(BendersMasterMILP):
         jac_g_k = self.jac_g(x_sol, nlpdata.p)
         if self.idx_g_conv is not None:
             for i in self.idx_g_conv:
-                colored("Add OA cut.", "blue")
                 if not np.isinf(nlpdata.ubg[i]):
                     self.g_infeasible_oa.add(
                         x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T)
                 else:
                     self.g_infeasible_oa.add(
                         x_sol, - g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T)
+            colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue")
 
     def _lowerapprox_oa(self, x, nlpdata):
         """Add outer approximation-based cuts for the objective value, the gradient is corrected when needed to keep the current best point feasible."""
@@ -349,10 +350,10 @@ class BendersRegionMasters(BendersMasterMILP):
             f_hess = self.f_hess(self.sol_best['x'], nlpdata.p)
             if self.hessian_not_psd:
                 min_eigen_value = np.linalg.eigh(f_hess.full())[0][0]
-                logger.info(
-                    colored(f"Negative eigenvalue detected {min_eigen_value}.", "red"))
                 if min_eigen_value < 0:
                     f_hess -= min_eigen_value * ca.DM.eye(self.nr_x_orig)
+                    logger.info(
+                        colored(f"Negative eigenvalue detected {min_eigen_value}.", "red"))
                 else:
                     self.hessian_not_psd = False
 
@@ -419,7 +420,11 @@ class BendersRegionMasters(BendersMasterMILP):
             lbg=lbg, ubg=ubg
         )
         success, stats = self.collect_stats("LB-MILP", solver, solution)
-        if not success:
+        if (stats['return_status'] == "TIME_LIMIT" and not np.any(np.isnan(solution['x'].full()))):
+            colored(f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})")
+            success = True
+            solution['x'] = solution['x'][:-1]
+        elif not success:
             if not self.sol_best_feasible:
                 raise Exception(
                     "Problem can not be solved - Feasible zone is empty")
@@ -438,14 +443,15 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = self.y_N_val
 
         if relaxed:
-            # self.options['gurobi.MIPGap'] = 1.0
-            self.options[self.mipgap_options_str] = self.mipgap_miqp
+            self.options[self.mipgap_options_str] = 1.0
         else:
             self.options[self.mipgap_options_str] = self.mipgap_miqp
+
         logger.info(f"MIP Gap set to {self.mipgap_miqp} - "
                     f"Expected Range lb={self.internal_lb}  ub={self.y_N_val}")
 
     def update_relaxed_solution(self, nlpdata: MinlpData):
+        """Update the benders region using the relaxed solution."""
         for solved, sol in zip(nlpdata.solved_all, nlpdata.prev_solutions):
             if solved:
                 # check if new best solution found
@@ -454,30 +460,31 @@ class BendersRegionMasters(BendersMasterMILP):
                         # warm start with relaxed solution
                         self.sol_best['x'] = sol['x'][:self.nr_x_orig]
                     self.internal_lb = float(sol['f'])
-            else:
-                raise ValueError("The relaxed NLP is not feasible.")
 
         self._gradient_corrections_old_cuts()
+        self.add_python_solver_time(toc())
 
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
-        need_lb_milp = np.isinf(self.internal_lb) or self.early_lb_milp
+
+        need_lb_milp = np.isinf(self.internal_lb) or \
+            (max(self.stats["BR-MIQP.iter"]-self.stats["best_iter"], 0) - \
+            max(self.stats["LB-MILP.iter"]-self.stats["best_iter"], 0) >= 3)
+
         if not need_lb_milp:
             constraint = self.internal_lb + self.alpha_kronqvist * \
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
             solution, success, stats = self._solve_br_miqp_problem(
                 nlpdata, constraint)
-            if self.early_exit and solution['f'] > self.y_N_val:
-                nlpdata = get_solutions_pool(
-                    nlpdata, success, stats, self.settings,
-                    solution, self.idx_x_integer
-                )
-                return nlpdata, True
-            elif solution['f'] > self.y_N_val:
-                self.early_lb_milp = True
 
             if success:
+                if solution['f'] > self.y_N_val:
+                    nlpdata = get_solutions_pool(
+                        nlpdata, success, stats, self.settings,
+                        solution, self.idx_x_integer
+                    )
+                    need_lb_milp = True
                 if any_equal(solution['x'], [sol['x'] for sol in nlpdata.best_solutions], self.idx_x_integer):
                     colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow")
                     need_lb_milp = True
@@ -510,15 +517,16 @@ class BendersRegionMasters(BendersMasterMILP):
         self.options[self.mipgap_options_str] = self.mipgap_miqp
         solution, success, stats = self._solve_br_miqp_problem(
             nlpdata, constraint)
-        if not success:
-            if not self.sol_best_feasible:
-                raise Exception("Problem can not be solved")
-            solution = self.sol_best
-            nlpdata.prev_solutions = [self.sol_best]
-            nlpdata.solved_all = [True]
-        else:
+        if success:
             nlpdata = get_solutions_pool(nlpdata, success, stats, self.settings,
                                          solution, self.idx_x_integer)
+        else:
+            if self.sol_best_feasible:
+                solution = self.sol_best
+                nlpdata.prev_solutions = [self.sol_best]
+                nlpdata.solved_all = [True]
+            else:
+                Exception("Problem can not be solved")
         return nlpdata
 
     def compute_lb(self, x_sol):
@@ -527,9 +535,8 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
-        if self.obj_inf_sol > obj_inf_sol:
-            self.obj_inf_sol = obj_inf_sol
-            colored(f"New upper bound: Inf {self.obj_inf_sol}", "red")
+        self.sol_infeasibility = obj_inf_sol
+        colored(f"Infeasible solution new upper bound: {self.sol_infeasibility}", "red")
         if not self.sol_best_feasible:
             self.sol_best = sol
 
@@ -568,7 +575,7 @@ class BendersRegionMasters(BendersMasterMILP):
                             infeas = ca.norm_2(
                                 sol['x_infeasible'][:self.nr_x_orig] -
                                 sol['x'][:self.nr_x_orig]
-                            ) ** 2  # TODO: probably here we dont need the square since we want only a distance.
+                            )
                         else:
                             # Use regular benders
                             g = sol['g']
@@ -577,14 +584,13 @@ class BendersRegionMasters(BendersMasterMILP):
                             )
 
                         if infeas < self.sol_infeasibility:
-                            sol['x'] = sol.get('x_infeasible', sol['x'])
                             self.update_sol_infeas(sol, infeas)
 
                     colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
                     self._add_infeasibility_cut(sol, nlpdata)
 
-                if self.with_oa_conv_cuts:
-                    self._add_oa(sol['x'], nlpdata)
+            if self.with_oa_conv_cuts: # Add OA cuts only for first solution in the pool to avoid slow down
+                self._add_oa(nlpdata.prev_solutions[0]['x'], nlpdata)
 
             if needs_trust_region_update:
                 self._gradient_amplification()
@@ -592,27 +598,27 @@ class BendersRegionMasters(BendersMasterMILP):
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve."""
         self.add_solutions(nlpdata, integers_relaxed)
+        self.add_python_solver_time(toc())
 
         self.update_options(integers_relaxed)
-        if self._with_lb_milp:
+        if self.with_lb_milp:
             return self._solve_mix(nlpdata)
         else:
             return self._solve_tr_only(nlpdata)
 
     def reset(self, nlpdata: MinlpData):
         """Reset data."""
-        self.g_lowerapprox = LowerApproximation(self._x_bin, self._nu)
-        self.g_lowerapprox_oa = LowerApproximation(self._x, self._nu)
-        self.g_infeasible = LowerApproximation(self._x_bin, 0)
-        self.g_infeasible_oa = LowerApproximation(self._x, 0)
+        self.g_lowerapprox = LowerApproximation(self._x_bin, self._nu)  # Benders' cut: f_i + lambda_y_i.T (y - y_i) <= 0
+        self.g_lowerapprox_oa = LowerApproximation(self._x, self._nu) # OA cut for objective: f_i + grad_f_i (x - x_i) <= 0
+        self.g_infeasible = LowerApproximation(self._x_bin, 0)  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) + sigma <= 0
+        self.g_infeasible_oa = LowerApproximation(self._x, 0)  # If g_i is cvx: g_i - ubg_i + jac_g_i.T (x - x_sol) <= 0
         self.internal_lb = -ca.inf
         self.sol_best_feasible = False
-        self.obj_inf_sol = ca.inf
+        self.sol_infeasibility = ca.inf
         self.sol_best = nlpdata._sol  # take a point as initialization
         self.y_N_val = 1e15  # Should be inf but can not at the moment ca.inf
         self.with_oa_conv_cuts = True
         self.trust_region_fails = False
-        self.early_lb_milp = False
 
     def warmstart(self, nlpdata: MinlpData):
         """Warmstart with new data."""

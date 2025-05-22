@@ -87,6 +87,9 @@ class NlpSolver(SolverClass):
                     gk = self.g(sol_new['x'], nlpdata.p).full()
                     if np.all(gk <= nlpdata.ubg) and np.all(gk >= nlpdata.lbg):
                         success = True
+                    # if np.all(gk <= nlpdata.ubg + self.settings.CONSTRAINT_TOL) and \
+                    #         np.all(gk >= nlpdata.lbg - self.settings.CONSTRAINT_TOL):
+                    #     success = True
             if not success:
                 logger.warning(colored("NLP not solved.", "yellow"))
 
