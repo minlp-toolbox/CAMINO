@@ -1,7 +1,7 @@
 # CAMINO: Collection of Algorithms for Mixed-Integer Nonlinear Optimization
 This software package provides a Python/CasADi-based implementation of several algorithms for solving mixed-integer nonlinear programs (MINLPs).
 
-## Installation 
+## Installation
 
 Set up and activate a fresh Python virtual environment (**required** Python >= 3.8)
 
@@ -27,6 +27,11 @@ python -m camino -h
 ```
 
 ### Option 2: from GitHub
+Clone the repository and open the directory
+```
+git clone git@github.com:minlp-toolbox/CAMINO.git
+cd CAMINO
+```
 From the root of the repository
 ```
 pip install .
@@ -65,7 +70,7 @@ You can provide any of the solvers together with a problem such as "dummy", "to_
 
 ### Batch runner
 
-A second commandline option to use the library is by running a large set of external nl-files. 
+A second commandline option to use the library is by running a large set of external nl-files.
 ```
 python -m camino batch <solver> <output-folder> <nl-files>
 ```
@@ -77,7 +82,7 @@ In the folder `docs/` we provide two python scripts `example.py` and `stats_anal
 - `example.py` shows how to a user can define its own MINLP and call one of the algorithm implemented in this library to solve it.
 - `stats_analysis.py` shows how one can retrieve the statistics stored by running the algorithms. More advanced statistics analysis is left to the user.\
   **Note that:** to save stats set the env variable `LOG_DATA=1` by runnning `export LOG_DATA=1` from a terminal console.
-  
+
 ## Options
 
 ### Setting environment variables
@@ -96,7 +101,7 @@ export DEBUG=True
 
 ### Available MINLP solvers/algorithms
 
-**New?**: the algorithm is novel and created by the authors of this software.
+**New?**: the algorithm is novel and created by the authors of this software.\
 **CVX guarantee?**: the algorithm converges to the global optimum when a *convex* MINLP is given.
 
 | Solvers | Description                                                  | New?                                              | CVX guarantee? |
@@ -107,8 +112,9 @@ export DEBUG=True
 | oa-qp | Quadratic outer approximation ([Fletcher, Leyffer, 1994](http://dx.doi.org/10.1007/BF01581153)) |  |  |
 | oa-i | Outer approximation improved with safeguard for nonlinear constraints| x | x |
 | oa-qp-i | Quadratic outer approximation improved with safeguard for nonlinear constraints| x |  |
-| s-v-miqp | Sequential Voronoi-based MIQP with exact or Gauss-Newton Hessian ([Ghezzi et al, 2023](https://publications.syscop.de/Ghezzi2023a.pdf)) |  |  |
 | s-b-miqp | Sequential Benders-based MIQP ([Ghezzi, Van Roy, et al, 2024](https://arxiv.org/pdf/2404.11786)) | x | x |
+| s-b-miqp-early-exit | S-B-MIQP with heuristic for early termination ([Ghezzi, Van Roy, et al, 2024](https://arxiv.org/pdf/2404.11786)) | x |  |
+| s-v-miqp | Sequential Voronoi-based MIQP with exact or Gauss-Newton Hessian ([Ghezzi et al, 2023](https://publications.syscop.de/Ghezzi2023a.pdf)) |  |  |
 | s-tr-milp | Sequential MILP trust region approach ([De Marchi, 2023](https://doi.org/10.48550/arXiv.2310.17285)) *Accept only linear constraints!*| |
 | fp | Feasibility Pump for MINLP ([Bertacco, et al, 2007](https://doi.org/10.1016/j.disopt.2006.10.001)) |  |  |
 | ofp | Objective Feasibility Pump for MINLP ([Sharma, et al, 2016](https://doi.org/10.1007/s10589-015-9792-y)) |  |  |
@@ -122,7 +128,7 @@ export DEBUG=True
 | cia | Combinatorial Integral Approximation ([Sager, et al, 2011](https://link.springer.com/article/10.1007/s00186-011-0355-4)) using `pycombina` ([Buerger, et al, 2020](https://publications.syscop.de/Buerger2020a.pdf)) -- installation instructions below|  |  |
 | nlp | Solve the canonical relaxation of the MINLP (integers are relaxed to continuous variables) |  |  |
 | nlp-fxd | Fix the integer variables of the MINLP and solve the corresponding NLP|  |  |
-| mip | Solve the given MILP/MIQP |  | (x) |
+| mip | Solve the given MILP/MIQP |  | x |
 
 ### Warmstart
 
@@ -138,7 +144,7 @@ Some examples we provided make use of CasADi subroutines (e.g., `bspline`) which
 ```
 .../casadi/core/function_internal.cpp:2013: 'eval_sx' not defined for BSplineInterpolant
 ```
-Please goto `settings.py` and update the default value for `_CASADI_VAR` to `ca.MX`.
+Please go to `settings.py` and update the default value for `_CASADI_VAR` to `ca.MX`.
 
 ## Citing
 

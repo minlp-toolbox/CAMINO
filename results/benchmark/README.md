@@ -1,9 +1,6 @@
 # Benchmark
 
-To reproduce the results of the benchmark in our first paper, 
-
-Download the nl files here: https://www.minlplib.org/minlplib_nl.zip 
-
+To reproduce the results of the benchmark in our paper, download the nl files here: https://www.minlplib.org/minlplib_nl.zip\
 See the list of problem instances below.
 
 ## Run with `SHOT`
@@ -27,6 +24,11 @@ python -m camino batch <solver> <output-folder> <list-of-nl-files>
 ```
 python join_data.py <output-file> <data-set-csv-file> <all-other-result-csv-files>
 ```
+
+## Fast csv generation via shell script
+In the folder `results/benchmark` we provide the script `combine_files.sh` that allows one to quickly generate the summary of the results by merging the results using `bonmin`, `s-b-miqp`, `s-b-miqp-early-exit`, `shot`.\
+`combine_file.sh` runs in order `to_csv.py`, `read_shot.py`, and `join_data.py`.\
+Check the shell script or edit to adapt it to your code and saved data.
 
 ## Problem instances
 
