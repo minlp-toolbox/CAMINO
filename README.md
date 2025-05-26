@@ -6,7 +6,7 @@ This software package provides a Python/CasADi-based implementation of several a
 Set up and activate a fresh Python virtual environment (**required** Python >= 3.8)
 
 ```
-virtualenv env --python=python3
+python -m venv env
 source env/bin/activate
 ```
 
