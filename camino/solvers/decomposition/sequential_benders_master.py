@@ -561,13 +561,14 @@ class BendersRegionMasters(BendersMasterMILP):
                     (sol['x'][:self.nr_x_orig] - self.sol_best['x'])[self.idx_x_integer])
                 if solved:
                     self._gradient_correction(sol['x'], sol['lam_x'], nlpdata)
-                    self._lowerapprox_oa(sol['x'], nlpdata)
                     needs_trust_region_update = True
                     if float(sol['f']) + self.settings.EPS < self.y_N_val:
                         sol['x'] = sol['x'][:self.nr_x_orig]
                         self.update_sol(sol)
                     colored(
                         f"Regular Cut {float(sol['f']):.3f} - {nonzero}.", "blue")
+                    # if self.with_oa_conv_cuts:
+                    #     self._lowerapprox_oa(sol['x'], nlpdata)
                 else:
                     if not self.sol_best_feasible:
                         if 'x_infeasible' in sol:
@@ -589,7 +590,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
                     self._add_infeasibility_cut(sol, nlpdata)
 
-            if self.with_oa_conv_cuts: # Add OA cuts only for first solution in the pool to avoid slow down
+            if self.with_oa_conv_cuts: # Add OA cuts on constraints only for first solution in the pool to avoid slow down
                 self._add_oa(nlpdata.prev_solutions[0]['x'], nlpdata)
 
             if needs_trust_region_update:
