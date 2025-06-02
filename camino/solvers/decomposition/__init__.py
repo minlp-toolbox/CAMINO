@@ -157,10 +157,12 @@ class SequentialBendersMIQP(GenericDecomposition):
 
     def __init__(
         self, problem: MinlpProblem, data: MinlpData, stats: Stats,
-        settings: Settings, termination_type="std", with_lb_milp=True
+        settings: Settings, termination_type="std", with_lb_milp=True,
+        with_milp_only=False
     ):
         """Generic decomposition algorithm."""
-        master = BendersRegionMasters(problem, data, stats, settings, with_lb_milp=with_lb_milp)
+        master = BendersRegionMasters(problem, data, stats, settings, with_lb_milp=with_lb_milp,
+                                      with_milp_only=with_milp_only)
         fnlp = FindClosestNlpSolver(problem, stats, settings)
         GenericDecomposition.__init__(
             self, problem, data, stats, settings,
