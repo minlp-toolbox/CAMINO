@@ -508,14 +508,14 @@ class BendersRegionMasters(BendersMasterMILP):
         return nlpdata
 
     def _solve_milp_only(self, nlpdata: MinlpData):
-        """Solve MINLP only."""
+        """Solve lower bound MILP only (LB-MILP)."""
         solution, success, stats = self._solve_lb_milp_problem(nlpdata)
         self.internal_lb = float(solution['f'])
         return get_solutions_pool(nlpdata, success, stats, self.settings,
                                   solution, self.idx_x_integer)
 
     def _solve_tr_only(self, nlpdata: MinlpData):
-        """Preparation for solving Benders region problem only (BR-MIQP)."""
+        """Solve Benders region problem only (BR-MIQP)."""
         if self.internal_lb > -ca.inf:
             constraint = self.internal_lb + self.alpha_kronqvist * \
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
