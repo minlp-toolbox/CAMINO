@@ -112,7 +112,7 @@ class BendersRegionMasters(BendersMasterMILP):
     """Mixing the idea from Moritz with a slightly altered version of benders masters."""
 
     def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings,
-                 with_lb_milp=True):
+                 with_lb_milp=True, with_milp_only=False):
         """Create the benders constraint MILP."""
         super(BendersRegionMasters, self).__init__(
             problem, data, stats, s, with_lin_bounds=False)
@@ -169,6 +169,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.mipgap_options_str = 'highs.mip_rel_gap'
         self.options_master[self.mipgap_options_str] = self.mipgap_milp
         self.with_lb_milp = with_lb_milp
+        self.with_milp_only = with_milp_only
         self.hessian_not_psd = problem.hessian_not_psd
         self.reset(data)
 
@@ -506,8 +507,15 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions[i]["f"] = self.internal_lb
         return nlpdata
 
+    def _solve_milp_only(self, nlpdata: MinlpData):
+        """Solve lower bound MILP only (LB-MILP)."""
+        solution, success, stats = self._solve_lb_milp_problem(nlpdata)
+        self.internal_lb = float(solution['f'])
+        return get_solutions_pool(nlpdata, success, stats, self.settings,
+                                  solution, self.idx_x_integer)
+
     def _solve_tr_only(self, nlpdata: MinlpData):
-        """Preparation for solving Benders region problem only (BR-MIQP)."""
+        """Solve Benders region problem only (BR-MIQP)."""
         if self.internal_lb > -ca.inf:
             constraint = self.internal_lb + self.alpha_kronqvist * \
                 (self.y_N_val - self.internal_lb)  # Kronqvist's trick
@@ -602,7 +610,10 @@ class BendersRegionMasters(BendersMasterMILP):
 
         self.update_options(integers_relaxed)
         if self.with_lb_milp:
-            return self._solve_mix(nlpdata)
+            if self.with_milp_only:
+                return self._solve_milp_only(nlpdata)
+            else:
+                return self._solve_mix(nlpdata)
         else:
             return self._solve_tr_only(nlpdata)
 
