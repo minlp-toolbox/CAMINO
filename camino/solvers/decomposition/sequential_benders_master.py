@@ -171,6 +171,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.with_lb_milp = with_lb_milp
         self.with_milp_only = with_milp_only
         self.hessian_not_psd = problem.hessian_not_psd
+        self.with_oa_conv_cuts = True
         self.reset(data)
 
     def _check_cut_valid(self, g, grad_g, x_best, x_sol, x_sol_obj):
@@ -187,10 +188,18 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _gradient_amplification(self):
         """Amplify the gradient of every new cut with the chosen rho."""
+        # Amplification of Benders' cuts
         for i, m in enumerate(self.g_lowerapprox.multipliers):
             if self.g_lowerapprox.is_corrected[i]:
                 if m != self.trust_region_feasibility_rho:
                     self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
+        # Amplification of OA objective cuts
+        if len(self.g_lowerapprox_oa.g) > 0:
+            for i, m in enumerate(self.g_lowerapprox_oa.multipliers):
+                if self.g_lowerapprox_oa.is_corrected[i]:
+                    if m != self.trust_region_feasibility_rho:
+                        self.g_lowerapprox_oa.multipliers[i] = self.trust_region_feasibility_rho
+
 
     def _gradient_corrections_old_cuts(self):
         x_sol_best_bin = self.sol_best['x'][self.idx_x_integer]
@@ -575,8 +584,8 @@ class BendersRegionMasters(BendersMasterMILP):
                         self.update_sol(sol)
                     colored(
                         f"Regular Cut {float(sol['f']):.3f} - {nonzero}.", "blue")
-                    # if self.with_oa_conv_cuts:
-                    #     self._lowerapprox_oa(sol['x'], nlpdata)
+                    if self.with_oa_conv_cuts:
+                        self._lowerapprox_oa(sol['x'], nlpdata)
                 else:
                     if not self.sol_best_feasible:
                         if 'x_infeasible' in sol:
@@ -629,7 +638,6 @@ class BendersRegionMasters(BendersMasterMILP):
         self.sol_infeasibility = ca.inf
         self.sol_best = nlpdata._sol  # take a point as initialization
         self.y_N_val = 1e15  # Should be inf but can not at the moment ca.inf
-        self.with_oa_conv_cuts = True
         self.trust_region_fails = False
 
     def warmstart(self, nlpdata: MinlpData):
