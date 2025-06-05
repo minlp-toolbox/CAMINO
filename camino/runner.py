@@ -8,7 +8,7 @@ import casadi as ca
 from camino.solver import MinlpSolver
 from camino.problem import MetaDataOcp
 from camino.settings import Settings
-from camino.problems.overview import PROBLEMS
+from camino.problems.problem_collection import PROBLEMS
 from camino.utils import make_bounded, logger, colored
 from camino.utils.data import write_json, read_json
 from camino.utils.validate import check_solution

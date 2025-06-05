@@ -6,7 +6,7 @@
 
 import unittest
 from parameterized import parameterized
-from camino.problems.overview import PROBLEMS
+from camino.problems.problem_collection import PROBLEMS
 from camino.solver import SOLVER_MODES
 from camino.settings import Settings
 from camino.runner import runner

@@ -2,7 +2,7 @@
 # Copyright (C) 2024  Andrea Ghezzi, Wim Van Roy, Sebastian Sager, Moritz Diehl
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Problems from the MINLP lib."""
+"""Example on how to manually specify a problem from the MINLPlib"""
 
 from camino.problems.dsc import Description
 import casadi as ca
@@ -29,8 +29,3 @@ def alan():
     dsc.leq(x4 - b8, 0)
     dsc.leq(b5 + b6 + b7 + b8, 3)
     return dsc.get_problem(), dsc.get_data()
-
-
-MINLP_PROBLEMS = {
-    "alan": alan
-}
