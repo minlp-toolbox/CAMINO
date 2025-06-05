@@ -9,7 +9,6 @@ from camino.problems import MinlpProblem, MinlpData, \
     MetaDataOcp
 import casadi as ca
 import numpy as np
-from camino.problems.minlp import MINLP_PROBLEMS
 
 
 def create_from_nl_file(file, compiled=True):
@@ -114,5 +113,3 @@ def create_from_nl_file(file, compiled=True):
     s.WITH_DEBUG = False
 
     return problem, data, s
-
-MINLP_PROBLEMS.update({"nl_file": create_from_nl_file})

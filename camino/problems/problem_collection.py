@@ -16,7 +16,8 @@ from camino.problems.double_tank import create_double_tank_problem2
 from camino.problems.solarsys import create_stcs_problem
 from camino.problems.gearbox import create_simple_gearbox, create_gearbox, \
     create_gearbox_int
-from camino.problems.load_problem_from_nl_file import MINLP_PROBLEMS
+from camino.problems.load_problem_from_nl_file import create_from_nl_file
+from camino.problems.minlp import alan
 from camino.utils.conversion import to_bool
 from camino.problems.time_opt import time_opt_car
 from camino.problems.sto_based import particle_trajectory
@@ -497,9 +498,10 @@ PROBLEMS = {
     "from_sto": create_from_sto,
     "from_nlpsol_dsc": create_from_nlpsol_description,
     "to_car": time_opt_car,
-    "particle": particle_trajectory
+    "particle": particle_trajectory,
+    "alan": alan,
+    "nl_file": create_from_nl_file,
 }
-PROBLEMS.update(MINLP_PROBLEMS)
 
 
 if __name__ == '__main__':
