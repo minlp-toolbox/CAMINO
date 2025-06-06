@@ -17,7 +17,7 @@ from camino.problems.solarsys import create_stcs_problem
 from camino.problems.gearbox import create_simple_gearbox, create_gearbox, \
     create_gearbox_int
 from camino.problems.load_problem_from_nl_file import create_from_nl_file
-from camino.problems.minlp import alan
+from camino.problems.manual_formulation_from_minlplib import alan
 from camino.utils.conversion import to_bool
 from camino.problems.time_opt import time_opt_car
 from camino.problems.sto_based import particle_trajectory
