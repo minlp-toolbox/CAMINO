@@ -165,8 +165,10 @@ class BendersRegionMasters(BendersMasterMILP):
         self.mipgap_milp = s.LBMILP_GAP
         if self.settings.MIP_SOLVER == "gurobi":
             self.mipgap_options_str = "gurobi.MIPGap"
+            self.mip_timelimit_options_str = "gurobi.TimeLimit"
         elif self.settings.MIP_SOLVER == "highs":
             self.mipgap_options_str = 'highs.mip_rel_gap'
+            self.mip_timelimit_options_str = "highs.time_limit"
         self.options_master[self.mipgap_options_str] = self.mipgap_milp
         self.with_lb_milp = with_lb_milp
         self.with_milp_only = with_milp_only
@@ -376,6 +378,8 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
             self.g_oa_objective + self.g_oa_cvx_constraints
 
+        available_time = self.settings.TIME_LIMIT - toc()
+        self.options[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_constraint_{self.g_benders.nr}", self.settings.MIP_SOLVER, {
                 "f": f, "g": g_total.eq,
@@ -416,6 +420,8 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
 
+        available_time = self.settings.TIME_LIMIT - toc()
+        self.options_master[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_with_{self.g_benders.nr}_cut", self.settings.MIP_SOLVER, {
                 "f": self._nu, "g": g,
@@ -540,6 +546,9 @@ class BendersRegionMasters(BendersMasterMILP):
             self.g_oa_objective + self.g_oa_cvx_constraints
 
         self.options[self.mipgap_options_str] = 1.0
+        available_time = self.settings.TIME_LIMIT - toc()
+        self.options[self.mip_timelimit_options_str] = available_time
+        self.options
         solver = ca.qpsol(
             "milp_from_relaxed_solution", self.settings.MIP_SOLVER, {
                 "f": f, "g": g_total.eq,
