@@ -43,7 +43,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     F = integrate_rk4(x, u, xdot, dt, m_steps=1)
 
     Xk = dsc.add_parameters("Xk0", 1, p_val[0])
-    BigM = 1e3
+    BigM = 1e2
     Uprev = None
     for k in range(N):
         Uk = dsc.sym("Uk", 1, lb=0, ub=1, w0=1, discrete=True)
@@ -70,7 +70,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
 
         # Integrate till the end of the interval
         Xk_end = F(Xk, Uk)
-        dsc.f += 0.5 * (Xk - Xref) ** 2
+        dsc.f += (Xk - Xref) ** 2
         dsc.r += [r(Xk, Xref)]
 
         # New NLP variable for state at end of interval
@@ -78,7 +78,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
         dsc.eq(Xk_end, Xk)
 
         Uprev = Uk
-    dsc.f += 0.5 * (Xk - Xref) ** 2
+    dsc.f += (Xk - Xref) ** 2
 
     problem = dsc.get_problem()
     meta = MetaDataOcp(
@@ -96,9 +96,24 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     s = Settings()
     s.USE_RELAXED_AS_WARMSTART = False
     s.CONSTRAINT_INT_TOL = 1e-5
+    s.MINLP_TOLERANCE_ABS = 1e-4
+    s.MINLP_TOLERANCE = 1e-4
+    s.IPOPT_SETTINGS.update({
+        "ipopt.linear_solver": "ma27",
+        "ipopt.max_iter": 1000,
+        })
     s.MIP_SETTINGS_ALL["gurobi"].update(
         {"gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
-         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL, })
+         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        #  "gurobi.Threads": 1,
+        # "gurobi.PoolSearchMode": 0,
+        "gurobi.PoolSolutions": 2,
+         })
+    s.BONMIN_SETTINGS.update({
+        "bonmin.allowable_fraction_gap": s.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": s.MINLP_TOLERANCE_ABS,
+        "bonmin.linear_solver": "ma27",
+        })
     return problem, data, s
 
 
