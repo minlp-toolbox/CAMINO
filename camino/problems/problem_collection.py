@@ -31,7 +31,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     """
     dt = 0.05
     N = 30
-    min_uptime = 2  # in time steps
+    min_uptime = 1  # in time steps
 
     dsc = Description()
     x = GlobalSettings.CASADI_VAR.sym('x')  # state
