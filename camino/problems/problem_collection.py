@@ -16,7 +16,8 @@ from camino.problems.double_tank import create_double_tank_problem2
 from camino.problems.solarsys import create_stcs_problem
 from camino.problems.gearbox import create_simple_gearbox, create_gearbox, \
     create_gearbox_int
-from camino.problems.minlp import MINLP_PROBLEMS
+from camino.problems.load_problem_from_nl_file import create_from_nl_file
+from camino.problems.manual_formulation_from_minlplib import alan
 from camino.utils.conversion import to_bool
 from camino.problems.time_opt import time_opt_car
 from camino.problems.sto_based import particle_trajectory
@@ -30,7 +31,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     """
     dt = 0.05
     N = 30
-    min_uptime = 2  # in time steps
+    min_uptime = 1  # in time steps
 
     dsc = Description()
     x = GlobalSettings.CASADI_VAR.sym('x')  # state
@@ -42,7 +43,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     F = integrate_rk4(x, u, xdot, dt, m_steps=1)
 
     Xk = dsc.add_parameters("Xk0", 1, p_val[0])
-    BigM = 1e3
+    BigM = 1e2
     Uprev = None
     for k in range(N):
         Uk = dsc.sym("Uk", 1, lb=0, ub=1, w0=1, discrete=True)
@@ -69,7 +70,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
 
         # Integrate till the end of the interval
         Xk_end = F(Xk, Uk)
-        dsc.f += 0.5 * (Xk - Xref) ** 2
+        dsc.f += (Xk - Xref) ** 2
         dsc.r += [r(Xk, Xref)]
 
         # New NLP variable for state at end of interval
@@ -77,7 +78,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
         dsc.eq(Xk_end, Xk)
 
         Uprev = Uk
-    dsc.f += 0.5 * (Xk - Xref) ** 2
+    dsc.f += (Xk - Xref) ** 2
 
     problem = dsc.get_problem()
     meta = MetaDataOcp(
@@ -95,9 +96,24 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     s = Settings()
     s.USE_RELAXED_AS_WARMSTART = False
     s.CONSTRAINT_INT_TOL = 1e-5
+    s.MINLP_TOLERANCE_ABS = 1e-4
+    s.MINLP_TOLERANCE = 1e-4
+    s.IPOPT_SETTINGS.update({
+        "ipopt.linear_solver": "ma27",
+        "ipopt.max_iter": 1000,
+        })
     s.MIP_SETTINGS_ALL["gurobi"].update(
         {"gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
-         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL, })
+         "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        #  "gurobi.Threads": 1,
+        # "gurobi.PoolSearchMode": 0,
+        "gurobi.PoolSolutions": 2,
+         })
+    s.BONMIN_SETTINGS.update({
+        "bonmin.allowable_fraction_gap": s.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": s.MINLP_TOLERANCE_ABS,
+        "bonmin.linear_solver": "ma27",
+        })
     return problem, data, s
 
 
@@ -291,110 +307,6 @@ def counter_example_nonconvexity():
     data = MinlpData(x0=np.array([-4, 2]), _lbx=np.array([-5, -5]), _ubx=np.array([5, 5]),
                      _ubg=[], _lbg=[], p=[])
     return problem, data
-
-
-def create_from_nl_file(file, compiled=True):
-    """Load from NL file."""
-    from camino.utils.cache import CachedFunction, return_func
-    import hashlib
-    # Create an NLP instance
-    nl = ca.NlpBuilder()
-
-    # Parse an NL-file
-    nl.import_nl(file, {"verbose": False})
-    print(f"Loading MINLP with: {nl.repr()}")
-
-    if not isinstance(nl.x[0], GlobalSettings.CASADI_VAR):
-        raise Exception(
-            f"Set GlobalSettings.CASADI_VAR to {type(nl.x[0])} in defines!")
-
-    idx = np.where(np.array(nl.discrete))
-
-    if compiled:
-        key = str(hashlib.md5(file.encode()).hexdigest())[:64]
-        x = ca.vcat(nl.x)
-        problem = MinlpProblem(
-            x=x,
-            f=CachedFunction(f"f_{key}", return_func(
-                ca.Function("f", [x], [nl.f])))(x),
-            g=CachedFunction(f"g_{key}", return_func(
-                ca.Function("g", [x], [ca.vcat(nl.g)])))(x),
-            idx_x_integer=idx[0].tolist(),
-            p=[]
-        )
-    else:
-        problem = MinlpProblem(
-            x=ca.vcat(nl.x),
-            f=nl.f, g=ca.vcat(nl.g),
-            idx_x_integer=idx[0].tolist(),
-            p=[]
-        )
-    if nl.f.is_constant():
-        raise Exception("No objective!")
-
-    problem.hessian_not_psd = True
-    data = MinlpData(x0=np.array(nl.x_init),
-                     _lbx=np.array(nl.x_lb),
-                     _ubx=np.array(nl.x_ub),
-                     _lbg=np.array(nl.g_lb),
-                     _ubg=np.array(nl.g_ub), p=[])
-
-    from camino.solvers import inspect_problem, set_constraint_types
-    set_constraint_types(problem, *inspect_problem(problem, data))
-    s = Settings()
-
-    s.OBJECTIVE_TOL = 1e-8
-    s.CONSTRAINT_TOL = 1e-8
-    s.CONSTRAINT_INT_TOL = 1e-3
-    s.MINLP_TOLERANCE = 1e-2
-    s.MINLP_TOLERANCE_ABS = 1e-2
-    s.BRMIQP_GAP = 0.1
-    s.LBMILP_GAP = 0.01
-    s.TIME_LIMIT = 300
-    s.TIME_LIMIT_SOLVER_ONLY = False
-    s.USE_RELAXED_AS_WARMSTART = True
-    s.IPOPT_SETTINGS = {
-        "ipopt.linear_solver": "ma27",
-        "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
-        "ipopt.max_iter": 1000,
-        "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
-        # "ipopt.mu_strategy": "adaptive",
-        # "ipopt.mu_oracle": "probing",
-        # "ipopt.bound_relax_factor": 0,
-        # "ipopt.honor_original_bounds": "yes",
-        "ipopt.print_level": 0,
-        # # Options used within Bonmin
-        # "ipopt.gamma_phi": 1e-8,
-        # "ipopt.gamma_theta": 1e-4,
-        # "ipopt.required_infeasibility_reduction": 0.1,
-        # "ipopt.expect_infeasible_problem": "yes",
-        # "ipopt.warm_start_init_point": "yes",
-    }
-    s.MIP_SETTINGS_ALL["gurobi"] = {
-        "gurobi.MIPGap": 0.1,
-        "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.Heuristics": 0.05,
-        "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 5,
-        "gurobi.Threads": 1,
-        "gurobi.TimeLimit": s.TIME_LIMIT / 2,
-        "gurobi.output_flag": 0,
-    }
-    s.BONMIN_SETTINGS = {
-        "bonmin.time_limit": s.TIME_LIMIT,
-        "bonmin.tree_search_strategy": "dive",
-        "bonmin.node_comparison": "best-bound",
-        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
-        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
-        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
-        "bonmin.linear_solver": "ma27",
-        "bonmin.bound_relax_factor": 1e-14,
-        "bonmin.honor_original_bounds": "yes",
-    }
-    s.WITH_DEBUG = False
-
-    return problem, data, s
 
 
 def reduce_list(data):
@@ -597,14 +509,14 @@ PROBLEMS = {
     "gearbox_complx": create_gearbox,
     "nonconvex": counter_example_nonconvexity,
     "unstable_ocp": create_ocp_unstable_system,
-    "nl_file": create_from_nl_file,
     "nosnoc": create_from_nosnoc,
     "from_sto": create_from_sto,
     "from_nlpsol_dsc": create_from_nlpsol_description,
     "to_car": time_opt_car,
-    "particle": particle_trajectory
+    "particle": particle_trajectory,
+    "alan": alan,
+    "nl_file": create_from_nl_file,
 }
-PROBLEMS.update(MINLP_PROBLEMS)
 
 
 if __name__ == '__main__':

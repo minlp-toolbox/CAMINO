@@ -165,12 +165,15 @@ class BendersRegionMasters(BendersMasterMILP):
         self.mipgap_milp = s.LBMILP_GAP
         if self.settings.MIP_SOLVER == "gurobi":
             self.mipgap_options_str = "gurobi.MIPGap"
+            self.mip_timelimit_options_str = "gurobi.TimeLimit"
         elif self.settings.MIP_SOLVER == "highs":
             self.mipgap_options_str = 'highs.mip_rel_gap'
+            self.mip_timelimit_options_str = "highs.time_limit"
         self.options_master[self.mipgap_options_str] = self.mipgap_milp
         self.with_lb_milp = with_lb_milp
         self.with_milp_only = with_milp_only
         self.hessian_not_psd = problem.hessian_not_psd
+        self.with_oa_conv_cuts = True
         self.reset(data)
 
     def _check_cut_valid(self, g, grad_g, x_best, x_sol, x_sol_obj):
@@ -187,26 +190,34 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _gradient_amplification(self):
         """Amplify the gradient of every new cut with the chosen rho."""
-        for i, m in enumerate(self.g_lowerapprox.multipliers):
-            if self.g_lowerapprox.is_corrected[i]:
+        # Amplification of Benders' cuts
+        for i, m in enumerate(self.g_benders.multipliers):
+            if self.g_benders.is_corrected[i]:
                 if m != self.trust_region_feasibility_rho:
-                    self.g_lowerapprox.multipliers[i] = self.trust_region_feasibility_rho
+                    self.g_benders.multipliers[i] = self.trust_region_feasibility_rho
+        # Amplification of OA objective cuts
+        if len(self.g_oa_objective.g) > 0:
+            for i, m in enumerate(self.g_oa_objective.multipliers):
+                if self.g_oa_objective.is_corrected[i]:
+                    if m != self.trust_region_feasibility_rho:
+                        self.g_oa_objective.multipliers[i] = self.trust_region_feasibility_rho
+
 
     def _gradient_corrections_old_cuts(self):
         x_sol_best_bin = self.sol_best['x'][self.idx_x_integer]
         # Check and correct - if necessary - all the points in memory
-        for i in range(self.g_lowerapprox.nr - 1):
+        for i in range(self.g_benders.nr - 1):
             # New corrections based on previously corrected gradients
             if not self._check_cut_valid(
-                    self.g_lowerapprox.g[i], self.g_lowerapprox.dg_corrected[i],
-                    x_sol_best_bin, self.g_lowerapprox.x_lin[i], self.y_N_val
+                    self.g_benders.g[i], self.g_benders.dg_corrected[i],
+                    x_sol_best_bin, self.g_benders.x_lin[i], self.y_N_val
             ):
-                self.g_lowerapprox.dg_corrected[i] = compute_gradient_correction(
-                    x_sol_best_bin, self.g_lowerapprox.x_lin[i], self.y_N_val,
-                    self.g_lowerapprox.g[i], self.g_lowerapprox.dg_corrected[i],
+                self.g_benders.dg_corrected[i] = compute_gradient_correction(
+                    x_sol_best_bin, self.g_benders.x_lin[i], self.y_N_val,
+                    self.g_benders.g[i], self.g_benders.dg_corrected[i],
                     self.settings
                 )
-                self.g_lowerapprox.is_corrected[i] = True
+                self.g_benders.is_corrected[i] = True
                 logger.debug(f"Correcting gradient for lower approx {i}")
 
     # Infeasibility cuts
@@ -233,7 +244,7 @@ class BendersRegionMasters(BendersMasterMILP):
         else:
             sigma = 0
 
-        self.g_infeasible.add(
+        self.g_infeasibility.add(
             sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
         colored("Adding infeasible cut for closest point.", "blue")
 
@@ -270,9 +281,9 @@ class BendersRegionMasters(BendersMasterMILP):
                 x_sol_best_bin, x_bin_new, 0, g_bar_k, grad_g_bar_k,
                 self.settings
             )
-            self.g_infeasible.add(x_bin_new, g_bar_k, grad_g_bar_k, grad_corr)
+            self.g_infeasibility.add(x_bin_new, g_bar_k, grad_g_bar_k, grad_corr)
         else:
-            self.g_infeasible.add(x_bin_new, g_bar_k, grad_g_bar_k)
+            self.g_infeasibility.add(x_bin_new, g_bar_k, grad_g_bar_k)
         colored("Adding standard infeasible cut.", "blue")
 
     def _add_oa(self, x_sol, nlpdata: MinlpData):
@@ -282,10 +293,10 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.idx_g_conv is not None:
             for i in self.idx_g_conv:
                 if not np.isinf(nlpdata.ubg[i]):
-                    self.g_infeasible_oa.add(
+                    self.g_oa_cvx_constraints.add(
                         x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T)
                 else:
-                    self.g_infeasible_oa.add(
+                    self.g_oa_cvx_constraints.add(
                         x_sol, - g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T)
             colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue")
 
@@ -299,9 +310,9 @@ class BendersRegionMasters(BendersMasterMILP):
                 self.sol_best['x'], x, self.y_N_val, f_k, f_grad,
                 self.settings
             )
-            self.g_lowerapprox_oa.add(x, f_k, f_grad, grad_corr)
+            self.g_oa_objective.add(x, f_k, f_grad, grad_corr)
         else:
-            self.g_lowerapprox_oa.add(x, f_k, f_grad)
+            self.g_oa_objective.add(x, f_k, f_grad)
 
     def _gradient_correction(self, x_sol, lam_x_sol, nlpdata: MinlpData):
         """Correct gradient of the existing lower approximation cuts."""
@@ -319,10 +330,10 @@ class BendersRegionMasters(BendersMasterMILP):
                 x_sol_best_bin, x_bin_new, self.y_N_val, f_k, lambda_k,
                 self.settings
             )
-            self.g_lowerapprox.add(x_bin_new, f_k, lambda_k, grad_corr)
+            self.g_benders.add(x_bin_new, f_k, lambda_k, grad_corr)
             logger.debug("Correcting new gradient at current best point")
         else:
-            self.g_lowerapprox.add(x_bin_new, f_k, lambda_k)
+            self.g_benders.add(x_bin_new, f_k, lambda_k)
 
     def _get_g_linearized(self, x, dx, nlpdata):
         if not self.sol_best_feasible and self.trust_region_fails:
@@ -364,11 +375,13 @@ class BendersRegionMasters(BendersMasterMILP):
         # Order seems to be important!
         g_cur_lin = self._get_g_linearized(self.sol_best['x'], dx, nlpdata)
 
-        g_total = g_cur_lin + self.g_lowerapprox + self.g_infeasible + \
-            self.g_lowerapprox_oa + self.g_infeasible_oa
+        g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
+            self.g_oa_objective + self.g_oa_cvx_constraints
 
+        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        self.options[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
-            f"benders_constraint_{self.g_lowerapprox.nr}", self.settings.MIP_SOLVER, {
+            f"benders_constraint_{self.g_benders.nr}", self.settings.MIP_SOLVER, {
                 "f": f, "g": g_total.eq,
                 "x": self._x, "p": self._nu
             }, self.options  # + {"error_on_fail": False}
@@ -400,15 +413,17 @@ class BendersRegionMasters(BendersMasterMILP):
             g_cur_lin = Constraints()
         else:
             g_cur_lin = self._get_g_linearized(self.sol_best['x'], dx, nlpdata)
-        g_total = g_cur_lin + self.g_lowerapprox + self.g_infeasible + \
-            self.g_lowerapprox_oa + self.g_infeasible_oa
+        g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
+            self.g_oa_objective + self.g_oa_cvx_constraints
 
         # Add extra constraint (one step OA):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
 
+        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        self.options_master[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
-            f"benders_with_{self.g_lowerapprox.nr}_cut", self.settings.MIP_SOLVER, {
+            f"benders_with_{self.g_benders.nr}_cut", self.settings.MIP_SOLVER, {
                 "f": self._nu, "g": g,
                 "x": ca.vertcat(self._x, self._nu),
             }, self.options_master
@@ -507,12 +522,51 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions[i]["f"] = self.internal_lb
         return nlpdata
 
-    def _solve_milp_only(self, nlpdata: MinlpData):
+    def _solve_milp_only(self, nlpdata: MinlpData, integers_relaxed: bool):
         """Solve lower bound MILP only (LB-MILP)."""
-        solution, success, stats = self._solve_lb_milp_problem(nlpdata)
-        self.internal_lb = float(solution['f'])
+        if integers_relaxed:
+            solution, success, stats = self._solve_milp_from_relaxed_solution(nlpdata)
+        else:
+            solution, success, stats = self._solve_lb_milp_problem(nlpdata)
+            self.internal_lb = float(solution['f'])
         return get_solutions_pool(nlpdata, success, stats, self.settings,
                                   solution, self.idx_x_integer)
+
+    def _solve_milp_from_relaxed_solution(self, nlpdata: MinlpData):
+        constraint = self.internal_lb + self.alpha_kronqvist * \
+                (self.y_N_val - self.internal_lb)  # Kronqvist's trick
+        dx = self._x - self.sol_best['x']
+        f_k = self.f(self.sol_best['x'], nlpdata.p)
+        f_lin = self.grad_f_x(self.sol_best['x'], nlpdata.p)
+        f = f_k + f_lin.T @ dx
+        # Order seems to be important!
+        g_cur_lin = self._get_g_linearized(self.sol_best['x'], dx, nlpdata)
+
+        g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
+            self.g_oa_objective + self.g_oa_cvx_constraints
+
+        self.options[self.mipgap_options_str] = 1.0
+        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        self.options[self.mip_timelimit_options_str] = available_time
+        self.options
+        solver = ca.qpsol(
+            "milp_from_relaxed_solution", self.settings.MIP_SOLVER, {
+                "f": f, "g": g_total.eq,
+                "x": self._x, "p": self._nu
+            }, self.options  # + {"error_on_fail": False}
+        )
+
+        solution = solver(
+            x0=self.sol_best['x'],
+            lbx=nlpdata.lbx, ubx=nlpdata.ubx,
+            lbg=g_total.lb,
+            ubg=g_total.ub,
+            p=[constraint]
+        )
+        success, stats = self.collect_stats("R-MILP", solver, solution)
+        if (stats['return_status'] == "TIME_LIMIT" and not np.any(np.isnan(solution['x'].full()))):
+            success = True
+        return solution, success, stats
 
     def _solve_tr_only(self, nlpdata: MinlpData):
         """Solve Benders region problem only (BR-MIQP)."""
@@ -539,7 +593,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def compute_lb(self, x_sol):
         """Compute LB."""
-        return np.max(self.g_lowerapprox(x_sol[self.idx_x_integer], 0))
+        return np.max(self.g_benders(x_sol[self.idx_x_integer], 0))
 
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
@@ -569,13 +623,14 @@ class BendersRegionMasters(BendersMasterMILP):
                     (sol['x'][:self.nr_x_orig] - self.sol_best['x'])[self.idx_x_integer])
                 if solved:
                     self._gradient_correction(sol['x'], sol['lam_x'], nlpdata)
-                    self._lowerapprox_oa(sol['x'], nlpdata)
                     needs_trust_region_update = True
                     if float(sol['f']) + self.settings.EPS < self.y_N_val:
                         sol['x'] = sol['x'][:self.nr_x_orig]
                         self.update_sol(sol)
                     colored(
                         f"Regular Cut {float(sol['f']):.3f} - {nonzero}.", "blue")
+                    if self.with_oa_conv_cuts:
+                        self._lowerapprox_oa(sol['x'], nlpdata)
                 else:
                     if not self.sol_best_feasible:
                         if 'x_infeasible' in sol:
@@ -597,7 +652,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
                     self._add_infeasibility_cut(sol, nlpdata)
 
-            if self.with_oa_conv_cuts: # Add OA cuts only for first solution in the pool to avoid slow down
+            if self.with_oa_conv_cuts: # Add OA constraint cuts only for first solution in the pool to avoid slow down
                 self._add_oa(nlpdata.prev_solutions[0]['x'], nlpdata)
 
             if needs_trust_region_update:
@@ -611,7 +666,10 @@ class BendersRegionMasters(BendersMasterMILP):
         self.update_options(integers_relaxed)
         if self.with_lb_milp:
             if self.with_milp_only:
-                return self._solve_milp_only(nlpdata)
+                if integers_relaxed: # For computing y_0, we solve a BR-MILP with gap = 1 (similar to s-b-miqp but here it is milp only, i.e., no Hessian)
+                    return self._solve_milp_only(nlpdata, integers_relaxed=integers_relaxed)
+                else:
+                    return self._solve_milp_only(nlpdata, integers_relaxed=integers_relaxed)
             else:
                 return self._solve_mix(nlpdata)
         else:
@@ -619,16 +677,15 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def reset(self, nlpdata: MinlpData):
         """Reset data."""
-        self.g_lowerapprox = LowerApproximation(self._x_bin, self._nu)  # Benders' cut: f_i + lambda_y_i.T (y - y_i) <= 0
-        self.g_lowerapprox_oa = LowerApproximation(self._x, self._nu) # OA cut for objective: f_i + grad_f_i (x - x_i) <= 0
-        self.g_infeasible = LowerApproximation(self._x_bin, 0)  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) + sigma <= 0
-        self.g_infeasible_oa = LowerApproximation(self._x, 0)  # If g_i is cvx: g_i - ubg_i + jac_g_i.T (x - x_sol) <= 0
+        self.g_benders = LowerApproximation(self._x_bin, self._nu)  # Benders' cut: J_i + lambda_y_i.T (y - y_i) <= 0
+        self.g_oa_objective = LowerApproximation(self._x, self._nu) # OA cut for objective: f_i + grad_f_i (x - x_i) <= 0
+        self.g_infeasibility = LowerApproximation(self._x_bin, 0)  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) + sigma <= 0
+        self.g_oa_cvx_constraints = LowerApproximation(self._x, 0)  # If g_i is cvx: g_i - ubg_i + jac_g_i.T (x - x_sol) <= 0
         self.internal_lb = -ca.inf
         self.sol_best_feasible = False
         self.sol_infeasibility = ca.inf
         self.sol_best = nlpdata._sol  # take a point as initialization
         self.y_N_val = 1e15  # Should be inf but can not at the moment ca.inf
-        self.with_oa_conv_cuts = True
         self.trust_region_fails = False
 
     def warmstart(self, nlpdata: MinlpData):
