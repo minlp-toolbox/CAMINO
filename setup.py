@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="caminopy",
-    version="0.1.2",
+    version="0.1.3",
     description="Collection of Algorithms for Mixed-Integer Nonlinear Optimization",
     url="https://github.com/minlp-toolbox/CAMINO",
     author="Andrea Ghezzi, Wim Van Roy",
