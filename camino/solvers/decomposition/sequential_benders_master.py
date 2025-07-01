@@ -235,21 +235,9 @@ class BendersRegionMasters(BendersMasterMILP):
         dx_min = abs(min(dx.full()))
         dx_max = abs(max(dx.full()))
         multiplier = min(1 / max(dx_min, dx_max), 1000)
-        # if self.sol_best is not None:
-        #     sigma = max(
-        #         float(ca.dot(multiplier * dx,
-        #               self.sol_best['x'][self.idx_x_integer] - sol['x'][self.idx_x_integer])),
-        #         0
-        #     )
-        # else:
-            # sigma = 0
-        # self.g_infeasibility.add(
-        #     sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
 
-        # TODO: fix correction!
         if self.sol_best_feasible:
             if not self._check_cut_valid(0, dx * multiplier, self.sol_best['x'][self.idx_x_integer], sol['x'][self.idx_x_integer], 0):
-                breakpoint()
                 grad_corr = compute_gradient_correction(
                     self.sol_best['x'][self.idx_x_integer],
                     sol['x'][self.idx_x_integer],
@@ -257,6 +245,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     self.settings
                 )
                 self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx, grad_corr)
+            else:
+                self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx)
         else:
             self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx)
         colored("Adding infeasible cut for closest point.", "blue")
