@@ -247,7 +247,7 @@ class BendersRegionMasters(BendersMasterMILP):
         #     sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
 
         # TODO: fix correction!
-        if self.sol_best is not None:
+        if self.sol_best_feasible:
             if not self._check_cut_valid(0, dx * multiplier, self.sol_best['x'][self.idx_x_integer], sol['x'][self.idx_x_integer], 0):
                 breakpoint()
                 grad_corr = compute_gradient_correction(
