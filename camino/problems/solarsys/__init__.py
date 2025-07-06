@@ -208,49 +208,53 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     w = ca.vertcat(*dsc.w)
 
     # Add min uptime
-    for k in range(-1, n_steps + 1):
-        for i in range(system.nb):
+    for i in range(system.nb):
+        for k in range(n_steps):
             uptime = 0
             it = 0
             for dt in ambient.time_steps[max(0, k):]:
                 uptime += dt.total_seconds()
                 if uptime < min_up_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(- w[idx_k] + w[idx_k_1] - w[idx_k_dt], 0)
+                    idx_1 = k - 1
+                    idx_2 = k - (it + 2)
+                    if idx_1 >= 0:
+                        b_idx_1 = w[idx_b_2d[i, idx_1]]
                     else:
-                        dsc.leq(w[idx_k_1] - w[idx_k_dt], 0)
+                        b_idx_1 = 0
 
+                    if idx_2 >= 0:
+                        b_idx_2 = w[idx_b_2d[i, idx_2]]
+                    else:
+                        b_idx_2 = 0
+
+                    dsc.leq(- w[idx_b_2d[i, k]] + b_idx_1 -b_idx_2, 0)
                     it += 1
+                else:
+                    break
     # Add min downtime
-    for k in range(-1, n_steps + 1):
-        for i in range(system.nb):
+    for i in range(system.nb):
+        for k in range(-1, n_steps):
             downtime = 0
             it = 0
             for dt in ambient.time_steps[max(0, k):]:
                 downtime += dt.total_seconds()
                 if downtime < min_down_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(w[idx_k] - w[idx_k_1] + w[idx_k_dt], 1)
+                    idx_1 = k - 1
+                    idx_2 = k - (it + 2)
+                    if idx_1 >= 0:
+                        b_idx_1 = w[idx_b_2d[i, idx_1]]
                     else:
-                        dsc.leq(- w[idx_k_1] + w[idx_k_dt], 1)
+                        b_idx_1 = 0
 
+                    if idx_2 >= 0:
+                        b_idx_2 = w[idx_b_2d[i, idx_2]]
+                    else:
+                        b_idx_2 = 0
+
+                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 0)
                     it += 1
+                else:
+                    break
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
@@ -289,11 +293,14 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     data = dsc.get_data()
     data.x0[prob.idx_x_integer] = to_0d(simulator.b_data).flatten().tolist()
     s = Settings()
-    s.BRMIQP_GAP = 0.15
-    s.LBMILP_GAP = 0.15
-    s.ALPHA_KRONQVIST = 0.2
+    s.BRMIQP_GAP = 0.10
+    s.LBMILP_GAP = 0.05
+    s.ALPHA_KRONQVIST = 0.5
+    s.TIME_LIMIT = 600
+    s.USE_RELAXED_AS_WARMSTART = True
     s.IPOPT_SETTINGS.update({
-        "ipopt.linear_solver": "ma57",
+        "ipopt.linear_solver": "ma27",
+        "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.mumps_mem_percent": 10000,
         "ipopt.mumps_pivtol": 0.001,
         "ipopt.max_cpu_time": 3600.0,
@@ -309,12 +316,16 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "ipopt.print_frequency_iter": 100,
     })
     s.MIP_SETTINGS_ALL["gurobi"].update({
+        "gurobi.MIPGap": 0.1,
+        "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": 600,
+        "gurobi.TimeLimit": s.TIME_LIMIT,
     })
     # 7 days...
-    s.TIME_LIMIT = 7 * 24 * 3600
+    s.TIME_LIMIT = 12 * 3600
 
     # Improve calculation speed by getting indices:
     # set_constraint_types(prob, *cache_data(

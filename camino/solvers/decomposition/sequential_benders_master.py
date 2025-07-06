@@ -381,7 +381,7 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
             self.g_oa_objective + self.g_oa_cvx_constraints
 
-        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        available_time = max(1e-1, min(self.options_master[self.mip_timelimit_options_str], self.settings.TIME_LIMIT - toc()))
         self.options[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_constraint_{self.g_benders.nr}", self.settings.MIP_SOLVER, {
@@ -423,7 +423,7 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
 
-        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        available_time = max(1e-1, min(self.options_master[self.mip_timelimit_options_str], self.settings.TIME_LIMIT - toc()))
         self.options_master[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_with_{self.g_benders.nr}_cut", self.settings.MIP_SOLVER, {
