@@ -227,7 +227,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     else:
                         b_idx_2 = 0
 
-                    dsc.leq(- w[idx_b_2d[i, k]] + b_idx_1 -b_idx_2, 0)
+                    dsc.leq(- w[idx_b_2d[i, k]] + b_idx_1 -b_idx_2, 0, is_dwell_time=1)
                     it += 1
                 else:
                     break
@@ -251,7 +251,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     else:
                         b_idx_2 = 0
 
-                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 0)
+                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 0, is_dwell_time=1)
                     it += 1
                 else:
                     break
@@ -278,6 +278,8 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         + fun_F2(x_bar, prob.p) +
         ca.mtimes(fun_grad_F2(x_bar, prob.p).T, x - x_bar)
     ])
+    idx_g_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 1]
+    idx_g_without_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 0]
     meta = MetaDataOcp(
         n_state=system.nx, n_continuous_control=system.nu, n_discrete_control=system.nb,
         idx_param=dsc.indices_p,
@@ -288,6 +290,8 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         dt=ambient.time_steps,
         min_uptime=min_up_times,
         min_downtime=min_down_times,
+        idx_g_dwelltime=idx_g_dwelltime,
+        idx_g_without_dwelltime=idx_g_without_dwelltime,
     )
     prob.meta = meta
     data = dsc.get_data()
@@ -344,9 +348,7 @@ if __name__ == "__main__":
     import pickle
 
     setup_logger(logging.DEBUG)
-    prob, data = create_stcs_problem()
-    s = Settings()
-    s.IPOPT_SETTINGS
+    prob, data, s = create_stcs_problem()
     stats = Stats(mode='custom', problem_name='stcs',
                   datetime=datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), data={})
     nlp = NlpSolver(prob, stats, s)

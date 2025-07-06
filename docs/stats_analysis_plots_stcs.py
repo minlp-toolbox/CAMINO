@@ -51,9 +51,8 @@ for k in range(n_steps):
 params = pd.DataFrame(params)
 params.columns = ["T_amb","I_fpsc","I_vtsc","Qdot_c","P_pv_kWp","p_g"]
 
-breakpoint()
 
-
+# Create problem, get idx, ...
 prob, data, s = create_stcs_problem()
 
 meta = prob.meta
