@@ -251,7 +251,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     else:
                         b_idx_2 = 0
 
-                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 0, is_dwell_time=1)
+                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 1, is_dwell_time=1)
                     it += 1
                 else:
                     break
@@ -300,11 +300,10 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     s.BRMIQP_GAP = 0.10
     s.LBMILP_GAP = 0.05
     s.ALPHA_KRONQVIST = 0.5
-    s.TIME_LIMIT = 600
     s.USE_RELAXED_AS_WARMSTART = True
     s.IPOPT_SETTINGS.update({
         "ipopt.linear_solver": "ma27",
-        "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
+        "ipopt.max_cpu_time": 300,
         "ipopt.mumps_mem_percent": 10000,
         "ipopt.mumps_pivtol": 0.001,
         "ipopt.max_cpu_time": 3600.0,
@@ -326,7 +325,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": s.TIME_LIMIT,
+        "gurobi.TimeLimit": 900,
     })
     # 7 days...
     s.TIME_LIMIT = 12 * 3600
