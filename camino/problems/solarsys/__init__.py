@@ -207,54 +207,50 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     idx_b_2d = np.asarray(dsc.get_indices('b')).T
     w = ca.vertcat(*dsc.w)
 
-    # Add min uptime
-    for i in range(system.nb):
-        for k in range(n_steps):
+    for k in range(n_steps):
+        for i in range(system.nb):
             uptime = 0
             it = 0
             for dt in ambient.time_steps[max(0, k):]:
                 uptime += dt.total_seconds()
                 if uptime < min_up_times[i]:
-                    idx_1 = k - 1
-                    idx_2 = k - (it + 2)
-                    if idx_1 >= 0:
-                        b_idx_1 = w[idx_b_2d[i, idx_1]]
-                    else:
-                        b_idx_1 = 0
+                    b_k = w[idx_b_2d[i, k]]
+                    try:
+                        idx_k_1 = idx_b_2d[i, k + 1]
+                        b_k_1 = w[idx_k_1]
+                    except:
+                        b_k_1 = 0
+                    try:
+                        idx_k_dt = idx_b_2d[i, k + it + 2]
+                        b_k_dt = w[idx_k_dt]
+                    except:
+                        b_k_dt = 0
 
-                    if idx_2 >= 0:
-                        b_idx_2 = w[idx_b_2d[i, idx_2]]
-                    else:
-                        b_idx_2 = 0
-
-                    dsc.leq(- w[idx_b_2d[i, k]] + b_idx_1 -b_idx_2, 0, is_dwell_time=1)
+                    dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
                     it += 1
-                else:
-                    break
-    # Add min downtime
-    for i in range(system.nb):
-        for k in range(n_steps):
-            downtime = 0
+                    print(dsc.g[-1])
+    for k in range(n_steps):
+        for i in range(system.nb):
+            uptime = 0
             it = 0
             for dt in ambient.time_steps[max(0, k):]:
-                downtime += dt.total_seconds()
-                if downtime < min_down_times[i]:
-                    idx_1 = k - 1
-                    idx_2 = k - (it + 2)
-                    if idx_1 >= 0:
-                        b_idx_1 = w[idx_b_2d[i, idx_1]]
-                    else:
-                        b_idx_1 = 0
+                uptime += dt.total_seconds()
+                if uptime < min_down_times[i]:
+                    b_k = w[idx_b_2d[i, k]]
+                    try:
+                        idx_k_1 = idx_b_2d[i, k + 1]
+                        b_k_1 = w[idx_k_1]
+                    except:
+                        b_k_1 = 0
+                    try:
+                        idx_k_dt = idx_b_2d[i, k + it + 2]
+                        b_k_dt = w[idx_k_dt]
+                    except:
+                        b_k_dt = 0
 
-                    if idx_2 >= 0:
-                        b_idx_2 = w[idx_b_2d[i, idx_2]]
-                    else:
-                        b_idx_2 = 0
-
-                    dsc.leq(w[idx_b_2d[i, k]] - b_idx_1 + b_idx_2, 1, is_dwell_time=1)
+                    dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
                     it += 1
-                else:
-                    break
+                    print(dsc.g[-1])
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
