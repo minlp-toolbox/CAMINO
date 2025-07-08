@@ -301,6 +301,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     s.LBMILP_GAP = 0.05
     s.ALPHA_KRONQVIST = 0.5
     s.USE_RELAXED_AS_WARMSTART = True
+    s.TRUST_RELAXED_SOLUTION = True
     s.IPOPT_SETTINGS.update({
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": 300,

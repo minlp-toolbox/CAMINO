@@ -462,7 +462,10 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = self.y_N_val
 
         if relaxed:
-            self.options[self.mipgap_options_str] = 1.0
+            if self.settings.TRUST_RELAXED_SOLUTION:
+                self.options[self.mipgap_options_str] = self.mipgap_miqp
+            else:
+                self.options[self.mipgap_options_str] = 1.0
         else:
             self.options[self.mipgap_options_str] = self.mipgap_miqp
 
