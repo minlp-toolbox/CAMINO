@@ -233,7 +233,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     break
     # Add min downtime
     for i in range(system.nb):
-        for k in range(-1, n_steps):
+        for k in range(n_steps):
             downtime = 0
             it = 0
             for dt in ambient.time_steps[max(0, k):]:
