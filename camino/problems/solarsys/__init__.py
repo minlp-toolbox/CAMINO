@@ -230,7 +230,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                         b_k_dt = 0
                     dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
                     it += 1
-                    print(dsc.g[-1])
+                    logger.debug(f"{dsc.g[-1]}")
                 uptime += dt.total_seconds()
     for k in range(-1, n_steps):
         for i in range(system.nb):
@@ -255,7 +255,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
 
                     dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
                     it += 1
-                    print(dsc.g[-1])
+                    logger.debug(f"{dsc.g[-1]}")
                 uptime += dt.total_seconds()
 
     # Setup objective

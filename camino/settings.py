@@ -133,6 +133,7 @@ class Settings:
             "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.PoolSearchMode": 1,
             "gurobi.PoolSolutions": 1,
+            "gurobi.TimeLimit": 3600,
         }
     })
 

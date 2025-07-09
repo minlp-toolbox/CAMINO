@@ -4,6 +4,7 @@
 
 """Overview of all problems."""
 
+import logging
 from camino.settings import Settings, GlobalSettings
 from camino.problems import MinlpProblem, MinlpData, \
     MetaDataOcp
@@ -22,6 +23,7 @@ from camino.utils.conversion import to_bool
 from camino.problems.time_opt import time_opt_car
 from camino.problems.sto_based import particle_trajectory
 
+logger = logging.getLogger(__name__)
 
 def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     """
@@ -31,7 +33,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     """
     dt = 0.05
     N = 30
-    min_uptime = 1  # in time steps
+    min_uptime = 2  # in time steps
 
     dsc = Description()
     x = GlobalSettings.CASADI_VAR.sym('x')  # state
@@ -47,26 +49,31 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
     Uprev = None
     for k in range(N):
         Uk = dsc.sym("Uk", 1, lb=0, ub=1, w0=1, discrete=True)
+
         if Uprev is not None and min_uptime > 0:
-            uptime_step = 0
+            uptime_step = 1
+            it = 0
             while uptime_step < min_uptime:
-                idx_1 = k - 1
-                idx_2 = k - (uptime_step + 2)
+                if uptime_step < min_uptime:
+                    idx_1 = k - 1
+                    idx_2 = k - (it + 2)
 
-                if idx_1 >= 0:
-                    b_idx_1 = int(np.array(dsc.get_indices("Uk")[idx_1]))
-                else:
-                    b_idx_1 = 0
-                b_idx_1 = dsc.w[b_idx_1]
+                    if idx_1 >= 0:
+                        b_idx_1 = int(np.array(dsc.get_indices("Uk")[idx_1]))
+                    else:
+                        b_idx_1 = 0
+                    b_idx_1 = dsc.w[b_idx_1]
 
-                if idx_2 >= 0:
-                    b_idx_2 = int(np.array(dsc.get_indices("Uk")[idx_2]))
-                else:
-                    b_idx_2 = 0
-                b_idx_2 = dsc.w[b_idx_2]
+                    if idx_2 >= 0:
+                        b_idx_2 = int(np.array(dsc.get_indices("Uk")[idx_2]))
+                    else:
+                        b_idx_2 = 0
+                    b_idx_2 = dsc.w[b_idx_2]
 
-                dsc.leq(-Uk + b_idx_1 - b_idx_2, 0)
-                uptime_step += 1
+                    dsc.leq(-Uk + b_idx_1 - b_idx_2, 0, is_dwell_time=1)
+                    it += 1
+                    uptime_step += 1
+                    logger.debug(dsc.g[-1])
 
         # Integrate till the end of the interval
         Xk_end = F(Xk, Uk)
@@ -79,22 +86,26 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
 
         Uprev = Uk
     dsc.f += (Xk - Xref) ** 2
-
+    idx_g_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 1]
+    idx_g_without_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 0]
     problem = dsc.get_problem()
     meta = MetaDataOcp(
+        N_horizon=N,
         dt=dt, n_state=1, n_discrete_control=1, n_continuous_control=0,
         initial_state=p_val[0], idx_control=np.hstack(dsc.get_indices("Uk")),
         idx_state=np.hstack(dsc.get_indices("Xk")),
         idx_bin_control=problem.idx_x_integer,
         scaling_coeff_control=[1],
         min_uptime=min_uptime,
-        min_downtime=min_uptime,
         f_dynamics=F,
+        idx_g_dwelltime=idx_g_dwelltime,
+        idx_g_without_dwelltime=idx_g_without_dwelltime
     )
     problem.meta = meta
     data = dsc.get_data()
     s = Settings()
-    s.USE_RELAXED_AS_WARMSTART = False
+    s.USE_RELAXED_AS_WARMSTART = True
+    s.TRUST_RELAXED_SOLUTION = True
     s.CONSTRAINT_INT_TOL = 1e-5
     s.MINLP_TOLERANCE_ABS = 1e-4
     s.MINLP_TOLERANCE = 1e-4
@@ -107,7 +118,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
          "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
         #  "gurobi.Threads": 1,
         # "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 2,
+        "gurobi.PoolSolutions": 3,
          })
     s.BONMIN_SETTINGS.update({
         "bonmin.allowable_fraction_gap": s.MINLP_TOLERANCE,
