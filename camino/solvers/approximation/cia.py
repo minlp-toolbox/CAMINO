@@ -93,13 +93,13 @@ class PycombinaSolver(SolverClass):
     """
 
     def __init__(self, problem: MinlpProblem, stats: Stats, s: Settings):
-        """Create NLP problem."""
+        """Create Pycombina solver."""
         super(PycombinaSolver, self).__init__(problem, stats, s)
         self.idx_x_integer = problem.idx_x_integer
         self.meta = copy.deepcopy(problem.meta)
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
-        """Solve NLP."""
+        """Solve CIA problem."""
         b_rel = to_0d(nlpdata.x_sol)[self.meta.idx_bin_control]
         if len(b_rel.shape) == 1:  # flatten array
             b_rel = b_rel.reshape(-1, self.meta.n_discrete_control)
@@ -142,7 +142,7 @@ class PycombinaSolver(SolverClass):
                 if self.meta.min_uptime.shape[0] == self.meta.n_discrete_control:
                     min_uptimes = np.concatenate(
                         [self.meta.min_uptime, np.zeros(1)])
-                    binapprox.set_min_down_times(min_uptimes)
+                    binapprox.set_min_up_times(min_uptimes)
             else:
                 binapprox.set_min_up_times(
                     to_list(self.meta.dt, self.meta.min_uptime, b_rel.shape[1]))

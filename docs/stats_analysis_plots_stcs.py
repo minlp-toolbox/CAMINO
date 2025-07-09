@@ -14,23 +14,25 @@ from camino.problems.solarsys.system import System
 from camino.settings import GlobalSettings
 import pickle
 
-filename = "2025-07-04_18:32:02_nlp_stcs_generic.pkl"
+filename = "2025-07-09_11:29:59_cia_stcs_generic.pkl"
 
 file_path = os.path.join(GlobalSettings.OUT_DIR, filename)
 with open(file_path, 'rb') as f:
     stats = pickle.load(f)
 
 stats_df = pd.DataFrame(stats)
+if "cia" in filename:
+    stats_df = stats_df.loc[stats_df.index>1]
+else:
+    stats_df = stats_df.loc[stats_df.index>3]
 print(stats_df.columns)
-print(stats_df.head())
+print(stats_df.tail())
 
+best_iter_idx = stats_df.loc[(stats_df['success'] == True)].sort_values("sol_obj").index[0]
+best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
+best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
 
-best_iter_row = stats_df.loc[stats_df["sol_obj"] == stats_df["sol_obj"].min()]
-best_sol_obj = stats_df.loc[stats_df["sol_obj"] == stats_df["sol_obj"].min(), "sol_obj"].values
-best_sol_x = stats_df.loc[stats_df["sol_obj"] == stats_df["sol_obj"].min(), "sol_x"]
-best_sol_x = best_sol_x.iloc[0]
-
-
+# Construct the stcs problem
 timing = Timing()
 n_steps = timing.N
 ambient = Ambient(timing)
@@ -51,17 +53,13 @@ for k in range(n_steps):
 params = pd.DataFrame(params)
 params.columns = ["T_amb","I_fpsc","I_vtsc","Qdot_c","P_pv_kWp","p_g"]
 
-
-# Create problem, get idx, ...
 prob, data, s = create_stcs_problem()
 
 meta = prob.meta
 state = to_0d(best_sol_x)[meta.idx_state].reshape(-1, meta.n_state)
-state = np.vstack([meta.initial_state, state])
+state = np.vstack([meta.initial_state, state[:-1, :]])
 control_u = to_0d(best_sol_x)[meta.idx_control].reshape(-1, meta.n_continuous_control)
-control_u = np.vstack([control_u[0].reshape(1,-1), control_u])
 control_b = to_0d(best_sol_x)[meta.idx_bin_control].reshape(-1, meta.n_discrete_control)
-control_b = np.vstack([control_b[0].reshape(1,-1), control_b])
 
 state = pd.DataFrame(state)
 state.columns = ['T_hts_0', 'T_hts_1', 'T_hts_2', 'T_hts_3',
@@ -72,9 +70,9 @@ control_u = pd.DataFrame(control_u)
 control_u.columns = ["v_ppsc", "p_mpsc", "v_pssc", "P_g", "mdot_o_hts_b", "mdot_i_hts_b"]
 control_b = pd.DataFrame(control_b)
 control_b.columns = ["b_ac", "b_fc", "b_hp"]
+daytime_array = daytime_array[:-1]
 
-
-# optimal trajectory
+# Plot optimal trajectory
 latexify()
 import matplotlib
 matplotlib.rcParams.update({"lines.linewidth":1})
@@ -87,8 +85,8 @@ axs[0].set_ylim(0,105)
 axs[0].set_ylabel("Temp. (°C)")
 axs[0].legend(loc="upper right", framealpha=0.0)
 ax0a = axs[0].twinx()
-ax0a.plot(daytime_array, params.I_fpsc/1e3, color = "darkorange", label = "$I_\mathsf{fpsc}$", linestyle='-.')
-ax0a.plot(daytime_array, params.I_vtsc/1e3, color = "gold", label = "$I_\mathsf{vtsc}$", linestyle='-.')
+ax0a.plot(daytime_array, params.I_fpsc[:-1]/1e3, color = "darkorange", label = "$I_\mathsf{fpsc}$", linestyle='-.')
+ax0a.plot(daytime_array, params.I_vtsc[:-1]/1e3, color = "gold", label = "$I_\mathsf{vtsc}$", linestyle='-.')
 ax0a.set_ylim(0,1)
 ax0a.set_ylabel("Irrad. (kW/m²)")
 ax0a.legend(loc="lower center", framealpha=0.0, bbox_to_anchor=(0.3, 0.05))
@@ -118,11 +116,11 @@ axs[3].set_ylim(0, 1.1)
 axs[3].set_ylabel("Status \{0, 1\}")
 axs[3].legend(loc="upper right", framealpha=0.0)
 
-axs[4].plot(daytime_array, params.T_amb, "-.", label = "$T_\mathsf{amb}$")
+axs[4].plot(daytime_array, params.T_amb[:-1], "-.", label = "$T_\mathsf{amb}$")
 axs[4].set_ylim(10, 30)
 axs[4].set_ylabel("Temp. (°C)")
 ax4a = axs[4].twinx()
-ax4a.plot(daytime_array, params.Qdot_c/1000, "-.", color='tab:orange', label = "$\dot{Q}_\mathsf{lc}$")
+ax4a.plot(daytime_array, params.Qdot_c[:-1]/1000, "-.", color='tab:orange', label = "$\dot{Q}_\mathsf{lc}$")
 # ax4a.set_ylim(0, 8)
 ax4a.set_ylabel("Load (kW)")
 ax4a.spines["top"].set_visible(False)
@@ -139,7 +137,6 @@ for ax in axs:
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-# if SAVE_FIG:
 fig.savefig(os.path.join("results", filename+"_plot_traj.pdf"), bbox_inches='tight')
 
 plt.show()

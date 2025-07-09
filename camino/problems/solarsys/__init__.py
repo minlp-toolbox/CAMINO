@@ -207,14 +207,17 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     idx_b_2d = np.asarray(dsc.get_indices('b')).T
     w = ca.vertcat(*dsc.w)
 
-    for k in range(n_steps):
+    ambient_time_steps = [ambient.time_steps[-1]] + ambient.time_steps
+    for k in range(-1, n_steps):
         for i in range(system.nb):
             uptime = 0
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                uptime += dt.total_seconds()
+            for dt in ambient_time_steps:
                 if uptime < min_up_times[i]:
-                    b_k = w[idx_b_2d[i, k]]
+                    if k == -1:
+                        b_k = 0
+                    else:
+                        b_k = w[idx_b_2d[i, k]]
                     try:
                         idx_k_1 = idx_b_2d[i, k + 1]
                         b_k_1 = w[idx_k_1]
@@ -225,18 +228,20 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                         b_k_dt = w[idx_k_dt]
                     except:
                         b_k_dt = 0
-
                     dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
                     it += 1
                     print(dsc.g[-1])
-    for k in range(n_steps):
+                uptime += dt.total_seconds()
+    for k in range(-1, n_steps):
         for i in range(system.nb):
             uptime = 0
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                uptime += dt.total_seconds()
+            for dt in ambient_time_steps:
                 if uptime < min_down_times[i]:
-                    b_k = w[idx_b_2d[i, k]]
+                    if k == -1:
+                        b_k = 0
+                    else:
+                        b_k = w[idx_b_2d[i, k]]
                     try:
                         idx_k_1 = idx_b_2d[i, k + 1]
                         b_k_1 = w[idx_k_1]
@@ -251,6 +256,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
                     it += 1
                     print(dsc.g[-1])
+                uptime += dt.total_seconds()
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
