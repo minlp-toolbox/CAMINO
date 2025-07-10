@@ -4,6 +4,7 @@
 
 import os
 import pandas as pd
+import seaborn as sns
 from camino.problems.solarsys import create_stcs_problem
 from camino.utils import latexify
 from camino.utils.conversion import convert_to_flat_list, to_0d
@@ -14,7 +15,10 @@ from camino.problems.solarsys.system import System
 from camino.settings import GlobalSettings
 import pickle
 
-filename = "2025-07-09_11:29:59_cia_stcs_generic.pkl"
+latexify()
+
+
+filename = "2025-07-09_11:52:00_s-b-miqp_stcs_generic.pkl"
 
 file_path = os.path.join(GlobalSettings.OUT_DIR, filename)
 with open(file_path, 'rb') as f:
@@ -28,10 +32,58 @@ else:
 print(stats_df.columns)
 print(stats_df.tail())
 
-best_iter_idx = stats_df.loc[(stats_df['success'] == True)].sort_values("sol_obj").index[0]
+best_iter_idx = stats_df.loc[(stats_df['success'] == True) & (stats_df["iter_type"] == "NLP")].sort_values("sol_obj").index[0]
 best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
 best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
 
+
+# Plot objective of iterations
+# Due to solution pool there are multiple NLP solution per iteration, we consider the one with lowest objective.
+
+# print(stats_df.loc[(stats_df['sol_obj']>= 2051) & (stats['sol_obj'] <= 2052)])
+obj_milp = stats_df.loc[stats_df["iter_type"] == "LB-MILP", "sol_obj"]
+obj_miqp = stats_df.loc[stats_df["iter_type"] == "BR-MIQP", "sol_obj"]
+obj_nlp = stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "sol_obj"]].groupby("iter_nr").min()
+lb_sequence = stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "lb"]].groupby("iter_nr").min()
+ub_sequence = stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "ub"]].groupby("iter_nr").min()
+
+plt.figure(figsize=(5,3))
+plt.plot(obj_nlp.values[:-1], marker='.', label='$J(y_k)$')
+plt.plot(obj_miqp.values[:-1], marker='.', label='$V_{\mathrm{MIQP}, k}$')
+plt.plot(obj_milp.values[:-1], marker='.', label='$V_{\mathrm{MILP}, k}$')
+plt.plot(ub_sequence.values[:-1], label='UB')
+plt.plot(lb_sequence.values[:-1], label='LB')
+plt.ylim(-2000, 1e4)
+plt.xlim(0,)
+plt.legend()
+plt.xlabel("Iteration")
+plt.ylabel("Value")
+plt.tight_layout()
+plt.savefig(os.path.join("results", filename+"_iteration_values.pdf"), bbox_inches='tight')
+breakpoint()
+
+# Plot wall-time of each solver
+columns = ['lb', 'ub', 'iter_nr', 'best_iter', 'total_time_loading', 'NLP.time',
+       'NLP.time_wall', 'NLP.iter', 'NLP.runs', 't_solver_total', 'success',
+       'iter_type', 'sol_x', 'sol_obj', 'time', 't_python_solver',
+       'BR-MIQP.time', 'BR-MIQP.time_wall', 'BR-MIQP.iter', 'BR-MIQP.runs',
+       'LB-MILP.time', 'LB-MILP.time_wall', 'LB-MILP.iter', 'LB-MILP.runs',
+       'FC-NLP.time', 'FC-NLP.time_wall', 'FC-NLP.iter', 'FC-NLP.runs']
+grouped_stats_df = stats_df.loc[stats_df["iter_type"] == "NLP", columns].groupby("iter_nr").min("sol_obj")
+
+fig, ax = plt.subplots(1, 1, figsize=(4.5, 1.5))
+ax = sns.lineplot(grouped_stats_df[['NLP.time_wall', 'BR-MIQP.time_wall', 'LB-MILP.time_wall', 'FC-NLP.time_wall']]/3600, ax=ax, linewidth=1.5, alpha=0.8)
+ax = sns.lineplot(grouped_stats_df[['NLP.time_wall', 'BR-MIQP.time_wall', 'LB-MILP.time_wall', 'FC-NLP.time_wall']].sum(axis=1)/3600, ax=ax, color='gray', label="Sum")
+legend_handles, _= ax.get_legend_handles_labels()
+ax.legend(legend_handles, ["NLP", "BR-MIQP", "LB-MILP", "F-NLP", "Sum"],loc='center right', ncol=1, bbox_to_anchor=(1.33, 0.5), fontsize=9)
+ax.set(xlabel=r"Iteration")
+ax.set(ylabel=r"Cumulative runtime (h)")
+ax.set(xlim=[0, grouped_stats_df.shape[0]])
+ax.set(ylim=[0, 13])
+plt.savefig(os.path.join("results", filename+"_runtime.pdf"), bbox_inches='tight')
+
+
+# Plot the optimal trajectory for state and binary variables
 # Construct the stcs problem
 timing = Timing()
 n_steps = timing.N
@@ -73,7 +125,6 @@ control_b.columns = ["b_ac", "b_fc", "b_hp"]
 daytime_array = daytime_array[:-1]
 
 # Plot optimal trajectory
-latexify()
 import matplotlib
 matplotlib.rcParams.update({"lines.linewidth":1})
 fig, axs = plt.subplots(5, 1, figsize=(6, 8), sharex=True)
@@ -136,6 +187,7 @@ axs[-1].xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%d-%H'))
 for ax in axs:
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+fig.align_ylabels(axs)
 
 fig.savefig(os.path.join("results", filename+"_plot_traj.pdf"), bbox_inches='tight')
 
