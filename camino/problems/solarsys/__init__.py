@@ -207,56 +207,58 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     idx_b_2d = np.asarray(dsc.get_indices('b')).T
     w = ca.vertcat(*dsc.w)
 
-    ambient_time_steps = [ambient.time_steps[-1]] + ambient.time_steps
-    for k in range(-1, n_steps):
+    # Set min up time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            uptime = 0
+            uptime = dt.total_seconds()
             it = 0
-            for dt in ambient_time_steps:
-                if uptime < min_up_times[i]:
-                    if k == -1:
-                        b_k = 0
-                    else:
-                        b_k = w[idx_b_2d[i, k]]
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        b_k_1 = w[idx_k_1]
-                    except:
-                        b_k_1 = 0
-                    try:
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                        b_k_dt = w[idx_k_dt]
-                    except:
-                        b_k_dt = 0
-                    dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
-                    it += 1
-                    logger.debug(f"{dsc.g[-1]}")
-                uptime += dt.total_seconds()
-    for k in range(-1, n_steps):
+            logger.debug(f"{k=}, {i=}, {dt=}")
+            while uptime < min_up_times[i]:
+                logger.debug(f"{uptime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
+                it += 1
+                logger.debug(f"{dsc.g[-1]}")
+                uptime += ambient.time_steps[k-it].total_seconds()
+    # Set min down time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            uptime = 0
+            downtime = dt.total_seconds()
             it = 0
-            for dt in ambient_time_steps:
-                if uptime < min_down_times[i]:
-                    if k == -1:
-                        b_k = 0
-                    else:
-                        b_k = w[idx_b_2d[i, k]]
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        b_k_1 = w[idx_k_1]
-                    except:
-                        b_k_1 = 0
-                    try:
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                        b_k_dt = w[idx_k_dt]
-                    except:
-                        b_k_dt = 0
-
-                    dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
-                    it += 1
-                    logger.debug(f"{dsc.g[-1]}")
-                uptime += dt.total_seconds()
+            logger.debug(f"{k=}, {i=}, {dt=}, {downtime=}")
+            while downtime < min_down_times[i]:
+                logger.debug(f"{downtime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
+                it += 1
+                logger.debug(f"{dsc.g[-1]}")
+                downtime += ambient.time_steps[k-it].total_seconds()
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
