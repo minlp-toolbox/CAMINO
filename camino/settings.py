@@ -106,6 +106,7 @@ class Settings:
     RHO_AMPLIFICATION: float = 1.5
     ALPHA_KRONQVIST: float = 0.5
     USE_RELAXED_AS_WARMSTART = False
+    TRUST_RELAXED_SOLUTION = False
     # WITH_DEFAULT_SETTINGS = to_bool(environ.get("DEFAULT", True))
 
     PUMP_MAX_STEP_IMPROVEMENTS = 5
@@ -132,6 +133,7 @@ class Settings:
             "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
             "gurobi.PoolSearchMode": 1,
             "gurobi.PoolSolutions": 1,
+            "gurobi.TimeLimit": 3600,
         }
     })
 

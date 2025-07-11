@@ -207,50 +207,58 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     idx_b_2d = np.asarray(dsc.get_indices('b')).T
     w = ca.vertcat(*dsc.w)
 
-    # Add min uptime
-    for k in range(-1, n_steps + 1):
+    # Set min up time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            uptime = 0
+            uptime = dt.total_seconds()
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                uptime += dt.total_seconds()
-                if uptime < min_up_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(- w[idx_k] + w[idx_k_1] - w[idx_k_dt], 0)
-                    else:
-                        dsc.leq(w[idx_k_1] - w[idx_k_dt], 0)
-
-                    it += 1
-    # Add min downtime
-    for k in range(-1, n_steps + 1):
+            logger.debug(f"{k=}, {i=}, {dt=}")
+            while uptime < min_up_times[i]:
+                # logger.debug(f"{uptime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
+                it += 1
+                # logger.debug(f"{dsc.g[-1]}")
+                uptime += ambient.time_steps[k-it].total_seconds()
+    # Set min down time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            downtime = 0
+            downtime = dt.total_seconds()
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                downtime += dt.total_seconds()
-                if downtime < min_down_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(w[idx_k] - w[idx_k_1] + w[idx_k_dt], 1)
-                    else:
-                        dsc.leq(- w[idx_k_1] + w[idx_k_dt], 1)
-
-                    it += 1
+            logger.debug(f"{k=}, {i=}, {dt=}, {downtime=}")
+            while downtime < min_down_times[i]:
+                # logger.debug(f"{downtime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
+                it += 1
+                # logger.debug(f"{dsc.g[-1]}")
+                downtime += ambient.time_steps[k-it].total_seconds()
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
@@ -274,6 +282,8 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         + fun_F2(x_bar, prob.p) +
         ca.mtimes(fun_grad_F2(x_bar, prob.p).T, x - x_bar)
     ])
+    idx_g_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 1]
+    idx_g_without_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 0]
     meta = MetaDataOcp(
         n_state=system.nx, n_continuous_control=system.nu, n_discrete_control=system.nb,
         idx_param=dsc.indices_p,
@@ -284,16 +294,21 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         dt=ambient.time_steps,
         min_uptime=min_up_times,
         min_downtime=min_down_times,
+        idx_g_dwelltime=idx_g_dwelltime,
+        idx_g_without_dwelltime=idx_g_without_dwelltime,
     )
     prob.meta = meta
     data = dsc.get_data()
     data.x0[prob.idx_x_integer] = to_0d(simulator.b_data).flatten().tolist()
     s = Settings()
-    s.BRMIQP_GAP = 0.15
+    s.BRMIQP_GAP = 0.2
     s.LBMILP_GAP = 0.15
-    s.ALPHA_KRONQVIST = 0.2
+    s.ALPHA_KRONQVIST = 0.5
+    s.USE_RELAXED_AS_WARMSTART = True
+    s.TRUST_RELAXED_SOLUTION = True
     s.IPOPT_SETTINGS.update({
         "ipopt.linear_solver": "ma57",
+        "ipopt.max_cpu_time": 300,
         "ipopt.mumps_mem_percent": 10000,
         "ipopt.mumps_pivtol": 0.001,
         "ipopt.max_cpu_time": 3600.0,
@@ -309,12 +324,18 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "ipopt.print_frequency_iter": 100,
     })
     s.MIP_SETTINGS_ALL["gurobi"].update({
+        "gurobi.MIPGap": 0.1,
+        "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": 600,
+        "gurobi.TimeLimit": 300,
+        "gurobi.NodeMethod": 2,
+        "gurobi.Method": 2,
     })
     # 7 days...
-    s.TIME_LIMIT = 7 * 24 * 3600
+    s.TIME_LIMIT = 12 * 3600
 
     # Improve calculation speed by getting indices:
     # set_constraint_types(prob, *cache_data(
@@ -333,9 +354,7 @@ if __name__ == "__main__":
     import pickle
 
     setup_logger(logging.DEBUG)
-    prob, data = create_stcs_problem()
-    s = Settings()
-    s.IPOPT_SETTINGS
+    prob, data, s = create_stcs_problem()
     stats = Stats(mode='custom', problem_name='stcs',
                   datetime=datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), data={})
     nlp = NlpSolver(prob, stats, s)

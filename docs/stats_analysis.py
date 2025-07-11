@@ -3,11 +3,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
+from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
 from camino.settings import GlobalSettings
+from camino.problems.problem_collection import create_ocp_unstable_system
 import pickle
 
-filename = "2024-05-17_12:44:55_fp_particle_generic.pkl"
+from camino.utils import latexify
+from camino.utils.conversion import to_0d
+
+filename = "2025-07-09_17:21:38_cia_unstable_ocp_generic.pkl"
 
 file_path = os.path.join(GlobalSettings.OUT_DIR, filename)
 with open(file_path, 'rb') as f:
