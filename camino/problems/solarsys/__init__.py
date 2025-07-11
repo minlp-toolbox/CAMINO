@@ -301,13 +301,13 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     data = dsc.get_data()
     data.x0[prob.idx_x_integer] = to_0d(simulator.b_data).flatten().tolist()
     s = Settings()
-    s.BRMIQP_GAP = 0.10
-    s.LBMILP_GAP = 0.05
+    s.BRMIQP_GAP = 0.2
+    s.LBMILP_GAP = 0.15
     s.ALPHA_KRONQVIST = 0.5
     s.USE_RELAXED_AS_WARMSTART = True
     s.TRUST_RELAXED_SOLUTION = True
     s.IPOPT_SETTINGS.update({
-        "ipopt.linear_solver": "ma27",
+        "ipopt.linear_solver": "ma57",
         "ipopt.max_cpu_time": 300,
         "ipopt.mumps_mem_percent": 10000,
         "ipopt.mumps_pivtol": 0.001,
@@ -330,7 +330,9 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": 900,
+        "gurobi.TimeLimit": 300,
+        "gurobi.NodeMethod": 2,
+        "gurobi.Method": 2,
     })
     # 7 days...
     s.TIME_LIMIT = 12 * 3600

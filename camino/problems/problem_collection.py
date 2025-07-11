@@ -117,8 +117,10 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
         {"gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
          "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
         #  "gurobi.Threads": 1,
-        # "gurobi.PoolSearchMode": 0,
+        "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
+        "gurobi.NodeMethod": 2,
+        "gurobi.Method": 2,
          })
     s.BONMIN_SETTINGS.update({
         "bonmin.allowable_fraction_gap": s.MINLP_TOLERANCE,
