@@ -701,4 +701,5 @@ class BendersRegionMasters(BendersMasterMILP):
             self.add_solutions(relaxed, True)
 
         if not nlpdata.relaxed:
+            self.internal_lb = self.stats["lb"]
             self.add_solutions(nlpdata)

@@ -94,5 +94,6 @@ class GenericDecomposition(MiSolverClass):
     def warmstart(self, nlpdata: MinlpData):
         """Warmstart procedure."""
         if not nlpdata.relaxed:
+            self.first_relaxed = False
             self.update_best_solutions(nlpdata)
             self.master.warmstart(nlpdata)

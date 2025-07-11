@@ -36,46 +36,6 @@ def simulate(x0, u, f_dyn):
             x.append(to_0d(f_dyn(x[-1], u[t, :])))
     return np.array(x).flatten().tolist()
 
-
-def cia_decomposition_algorithm(problem: MinlpProblem, data: MinlpData,
-                                stats: Stats, s: Settings) -> Tuple[MinlpProblem, MinlpData, ca.DM]:
-    """Run the base strategy."""
-    logger.info("Setup NLP solver and Pycombina...")
-    nlp = NlpSolver(problem, stats, s)
-    combina_solver = PycombinaSolver(problem, stats, s)
-    logger.info("Solver initialized.")
-
-    toc()
-    # Solve relaxed NLP(y^k)
-    data = nlp.solve(data, set_x_bin=False)
-    # TODO add check if ipopt succeeded
-
-    stats["iter_nr"] = 0
-    stats["best_iter"] = 0
-    stats["nlp_obj"] = data.obj_val
-    stats["lb"] = data.obj_val
-    stats["x_sol"] = to_0d(data.x_sol)
-    stats['nlp_rel_time'] = toc()
-    # stats["success"] = ...
-
-    if s.WITH_LOG_DATA:
-        stats.save()
-
-    # Solve CIA problem
-    data = combina_solver.solve(data)
-
-    # Solve NLP with fixed integers
-    data = nlp.solve(data, set_x_bin=True)
-    stats["iter_nr"] = 1
-    stats["best_iter"] = 1
-    stats["nlp_obj"] = data.obj_val
-    stats["lb"] = data.obj_val
-    stats["x_sol"] = to_0d(data.x_sol)
-    stats['total_time_calc'] = toc(reset=True)
-
-    return problem, data, data.x_sol
-
-
 def to_list(dt, min_time, nr_b):
     """Create a min up or downtime list."""
     if isinstance(min_time, int):
