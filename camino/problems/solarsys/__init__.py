@@ -214,7 +214,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
             it = 0
             logger.debug(f"{k=}, {i=}, {dt=}")
             while uptime < min_up_times[i]:
-                logger.debug(f"{uptime=}")
+                # logger.debug(f"{uptime=}")
                 if k>=0:
                     b_k = w[idx_b_2d[i, k]]
                 else:
@@ -231,7 +231,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     b_k_dt = 0
                 dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
                 it += 1
-                logger.debug(f"{dsc.g[-1]}")
+                # logger.debug(f"{dsc.g[-1]}")
                 uptime += ambient.time_steps[k-it].total_seconds()
     # Set min down time constraints
     for k, dt in enumerate(ambient.time_steps):
@@ -240,7 +240,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
             it = 0
             logger.debug(f"{k=}, {i=}, {dt=}, {downtime=}")
             while downtime < min_down_times[i]:
-                logger.debug(f"{downtime=}")
+                # logger.debug(f"{downtime=}")
                 if k>=0:
                     b_k = w[idx_b_2d[i, k]]
                 else:
@@ -257,7 +257,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
                     b_k_dt = 0
                 dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
                 it += 1
-                logger.debug(f"{dsc.g[-1]}")
+                # logger.debug(f"{dsc.g[-1]}")
                 downtime += ambient.time_steps[k-it].total_seconds()
 
     # Setup objective
