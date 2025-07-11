@@ -52,17 +52,12 @@ def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method
         plt.savefig(os.path.join("results", filename+"_iteration_values.pdf"), bbox_inches='tight')
 
         # Plot wall-time of each solver
-        columns = ['lb', 'ub', 'iter_nr', 'best_iter', 'total_time_loading', 'NLP.time',
-            'NLP.time_wall', 'NLP.iter', 'NLP.runs', 't_solver_total', 'success',
-            'iter_type', 'sol_x', 'sol_obj', 'time', 't_python_solver',
-            'BR-MIQP.time', 'BR-MIQP.time_wall', 'BR-MIQP.iter', 'BR-MIQP.runs',
-            'LB-MILP.time', 'LB-MILP.time_wall', 'LB-MILP.iter', 'LB-MILP.runs',
-            'FC-NLP.time', 'FC-NLP.time_wall', 'FC-NLP.iter', 'FC-NLP.runs']
-        grouped_stats_df = stats_df.loc[stats_df["iter_type"] == "NLP", columns].groupby("iter_nr").min("sol_obj")
+
+        grouped_stats_df = stats_df.loc[stats_df["iter_type"] == "NLP", stats_df.columns.tolist()].groupby("iter_nr").min("sol_obj")
 
         fig, ax = plt.subplots(1, 1, figsize=(4.5, 1.5))
-        ax = sns.lineplot(grouped_stats_df[['NLP.time_wall', 'BR-MIQP.time_wall', 'LB-MILP.time_wall', 'FC-NLP.time_wall']]/3600, ax=ax, linewidth=1.5, alpha=0.8)
-        ax = sns.lineplot(grouped_stats_df[['NLP.time_wall', 'BR-MIQP.time_wall', 'LB-MILP.time_wall', 'FC-NLP.time_wall']].sum(axis=1)/3600, ax=ax, color='gray', label="Sum")
+        ax = sns.lineplot(grouped_stats_df[[elm for elm in stats_df.columns.tolist() if ".time_wall" in elm]]/3600, ax=ax, linewidth=1.5, alpha=0.8)
+        ax = sns.lineplot(grouped_stats_df[[elm for elm in stats_df.columns.tolist() if ".time_wall" in elm]].sum(axis=1)/3600, ax=ax, color='gray', label="Sum")
         legend_handles, _= ax.get_legend_handles_labels()
         ax.legend(legend_handles, ["NLP", "BR-MIQP", "LB-MILP", "F-NLP", "Sum"],loc='center right', ncol=1, bbox_to_anchor=(1.33, 0.5), fontsize=9)
         ax.set(xlabel=r"Iteration")
