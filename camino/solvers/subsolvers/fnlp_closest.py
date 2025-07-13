@@ -55,7 +55,7 @@ class FindClosestNlpSolver(SolverClass):
         sols_out = []
         has_best = len(nlpdata.best_solutions) >= 1
         if has_best:
-            x_best = nlpdata.best_solutions[-1][self.idx_x_integer]
+            x_best = nlpdata.best_solutions[-1]['x'][self.idx_x_integer]
         for success_prev, sol in zip(nlpdata.solved_all, nlpdata.solutions_all):
             if success_prev:
                 success_out.append(success_prev)
