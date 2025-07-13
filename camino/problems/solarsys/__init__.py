@@ -212,7 +212,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         for i in range(system.nb):
             uptime = dt.total_seconds()
             it = 0
-            logger.debug(f"{k=}, {i=}, {dt=}")
+            # logger.debug(f"{k=}, {i=}, {dt=}")
             while uptime < min_up_times[i]:
                 # logger.debug(f"{uptime=}")
                 if k>=0:
@@ -238,7 +238,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         for i in range(system.nb):
             downtime = dt.total_seconds()
             it = 0
-            logger.debug(f"{k=}, {i=}, {dt=}, {downtime=}")
+            # logger.debug(f"{k=}, {i=}, {dt=}")
             while downtime < min_down_times[i]:
                 # logger.debug(f"{downtime=}")
                 if k>=0:
@@ -330,7 +330,7 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": 300,
+        "gurobi.TimeLimit": 600,
         "gurobi.NodeMethod": 2,
         "gurobi.Method": 2,
     })
