@@ -33,8 +33,6 @@ class MetaDataOcp(MetaData):
     idx_bin_control: Optional[List[float]] = None
     idx_other: Optional[Dict[str, List[float]]] = None
     idx_param: Optional[dict] = None
-    idx_g_dwelltime: Optional[List[float]] = None
-    idx_g_without_dwelltime: Optional[List[float]] = None
     f_dynamics: Optional[Callable] = None
     # TODO: initial_state needs to become an index list of p
     initial_state: Optional[List[float]] = None
@@ -92,6 +90,9 @@ class MinlpProblem:
     idx_g_conv: Optional[List[int]] = None
     # Indices of the constraints that do not belong to any other category
     idx_g_other: Optional[List[int]] = None
+    # Indices of dwelltime constraints
+    idx_g_dwelltime: Optional[List[float]] = None
+    idx_g_without_dwelltime: Optional[List[float]] = None
 
     # A precompiled NLP of the problem formulation
     precompiled_nlp: Optional[str] = None

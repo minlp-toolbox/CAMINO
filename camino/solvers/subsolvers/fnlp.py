@@ -46,13 +46,22 @@ class FeasibilityNlpSolver(SolverClass):
         self.lbg = -np.inf * np.ones((self.nr_g))
         self.ubg = np.zeros((self.nr_g))
 
+        if problem.idx_g_dwelltime is not None:
+            new_g_constraint = problem.g[problem.idx_g_without_dwelltime]
+        else:
+            new_g_constraint = problem.g
+        self.idx_g_without_dwelltime = problem.idx_g_without_dwelltime
+
+        self.lbg = self.lbg[self.idx_g_without_dwelltime].flatten()
+        self.ubg = self.ubg[self.idx_g_without_dwelltime].flatten()
+
         f = beta
         x = ca.vertcat(*[problem.x, beta])
         p = ca.vertcat(*[problem.p])
         self.idx_x_integer = problem.idx_x_integer
         options.update({"jit": s.WITH_JIT})
         self.solver = ca.nlpsol("nlpsol", "ipopt", {
-            "f": f, "g": g, "x": x, "p": p
+            "f": f, "g": new_g_constraint, "x": x, "p": p
         }, options)
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:

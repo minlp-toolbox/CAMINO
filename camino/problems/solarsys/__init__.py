@@ -282,8 +282,6 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         + fun_F2(x_bar, prob.p) +
         ca.mtimes(fun_grad_F2(x_bar, prob.p).T, x - x_bar)
     ])
-    idx_g_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 1]
-    idx_g_without_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 0]
     meta = MetaDataOcp(
         n_state=system.nx, n_continuous_control=system.nu, n_discrete_control=system.nb,
         idx_param=dsc.indices_p,
@@ -294,8 +292,6 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         dt=ambient.time_steps,
         min_uptime=min_up_times,
         min_downtime=min_down_times,
-        idx_g_dwelltime=idx_g_dwelltime,
-        idx_g_without_dwelltime=idx_g_without_dwelltime,
     )
     prob.meta = meta
     data = dsc.get_data()

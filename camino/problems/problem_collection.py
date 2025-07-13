@@ -86,8 +86,6 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
 
         Uprev = Uk
     dsc.f += (Xk - Xref) ** 2
-    idx_g_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 1]
-    idx_g_without_dwelltime = [i for i, elm in enumerate(dsc.g_dwelltime) if elm == 0]
     problem = dsc.get_problem()
     meta = MetaDataOcp(
         N_horizon=N,
@@ -98,8 +96,6 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
         scaling_coeff_control=[1],
         min_uptime=min_uptime,
         f_dynamics=F,
-        idx_g_dwelltime=idx_g_dwelltime,
-        idx_g_without_dwelltime=idx_g_without_dwelltime
     )
     problem.meta = meta
     data = dsc.get_data()

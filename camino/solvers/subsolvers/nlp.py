@@ -39,11 +39,11 @@ class NlpSolver(SolverClass):
         #     problem.g.shape[0], problem.p.shape[0]
         # )
         # self.callback.add_to_solver_opts(options, 50)
-        if problem.meta.idx_g_dwelltime is not None:
-            new_g_constraint = problem.g[problem.meta.idx_g_without_dwelltime]
-            self.idx_g_without_dwelltime = problem.meta.idx_g_without_dwelltime
+        if problem.idx_g_dwelltime is not None:
+            new_g_constraint = problem.g[problem.idx_g_without_dwelltime]
         else:
             new_g_constraint = problem.g
+        self.idx_g_without_dwelltime = problem.idx_g_without_dwelltime
         self.g_fn = ca.Function("g", [problem.x, problem.p], [new_g_constraint])
 
         if problem.precompiled_nlp is not None:
@@ -76,8 +76,8 @@ class NlpSolver(SolverClass):
             sol_new = self.solver(
                 p=nlpdata.p, x0=nlpdata.x0,
                 lbx=lbx, ubx=ubx,
-                lbg=nlpdata.lbg[self.idx_g_without_dwelltime],
-                ubg=nlpdata.ubg[self.idx_g_without_dwelltime]
+                lbg=nlpdata.lbg[self.idx_g_without_dwelltime].flatten(),
+                ubg=nlpdata.ubg[self.idx_g_without_dwelltime].flatten()
             )
 
             success, stats = self.collect_stats("NLP", sol=sol_new)

@@ -257,12 +257,22 @@ class Description:
     def get_problem(self, with_gn=True) -> MinlpProblem:
         """Extract problem."""
         idx_x_integer = [i for i, v in enumerate(self.discrete) if v == 1]
+        idx_g_dwelltime = [i for i, elm in enumerate(self.g_dwelltime) if elm == 1]
+        idx_g_without_dwelltime = [i for i, elm in enumerate(self.g_dwelltime) if elm == 0]
+        if idx_g_dwelltime == []:
+            idx_g_dwelltime = None
+        if idx_g_without_dwelltime == []:
+            idx_g_without_dwelltime = None
         if self._r_exist() and with_gn:
             gn_hessian = self.get_gauss_newton_hessian()
         else:
             gn_hessian = None
+
         return MinlpProblem(f=self.f, g=vertcat(*self.g), h=self.h,
-                            x=vertcat(*self.w), idx_x_integer=idx_x_integer, p=vertcat(*self.p), gn_hessian=gn_hessian)
+                            x=vertcat(*self.w), idx_x_integer=idx_x_integer,
+                            p=vertcat(*self.p), gn_hessian=gn_hessian,
+                            idx_g_dwelltime=idx_g_dwelltime,
+                            idx_g_without_dwelltime=idx_g_without_dwelltime)
 
     def get_data(self) -> MinlpData:
         """Get data structure."""

@@ -30,11 +30,11 @@ class FindClosestNlpSolver(SolverClass):
         x_hat = GlobalSettings.CASADI_VAR.sym("x_hat", len(self.idx_x_integer))
         x_best = GlobalSettings.CASADI_VAR.sym(
             "x_best", len(self.idx_x_integer))
-        if problem.meta.idx_g_dwelltime is not None:
-            new_g_constraint = problem.g[problem.meta.idx_g_without_dwelltime]
-            self.idx_g_without_dwelltime = problem.meta.idx_g_without_dwelltime
+        if problem.idx_g_dwelltime is not None:
+            new_g_constraint = problem.g[problem.idx_g_without_dwelltime]
         else:
             new_g_constraint = problem.g
+        self.idx_g_without_dwelltime = problem.idx_g_without_dwelltime
 
         f = ca.norm_2(problem.x[self.idx_x_integer] - x_hat)**2
         self.solver = ca.nlpsol("nlpsol", "ipopt", {
@@ -74,11 +74,11 @@ class FindClosestNlpSolver(SolverClass):
                     x0=nlpdata.x0,
                     lbx=lbx, ubx=ubx,
                     lbg=ca.vertcat(
-                        nlpdata.lbg[self.idx_g_without_dwelltime],
+                        nlpdata.lbg[self.idx_g_without_dwelltime].flatten(),
                         0
                     ),
                     ubg=ca.vertcat(
-                        nlpdata.ubg[self.idx_g_without_dwelltime],
+                        nlpdata.ubg[self.idx_g_without_dwelltime].flatten(),
                         distance
                     ),
                     p=ca.vertcat(
