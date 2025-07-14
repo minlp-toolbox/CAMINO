@@ -220,7 +220,10 @@ if __name__ == "__main__":
         stats = pickle.load(f)
 
     stats_df = pd.DataFrame(stats)
-    if "cia" in filename:
+    if 'cia+s-b-miqp' in filename:
+        stats_df = stats_df.loc[stats_df.index>3]
+        solution_method='s-b-miqp'
+    elif "cia" in filename:
         stats_df = stats_df.loc[stats_df.index>1]
         solution_method='cia'
     else:
@@ -230,6 +233,8 @@ if __name__ == "__main__":
     best_iter_idx = stats_df.loc[(stats_df['success'] == True) & (stats_df["iter_type"] == "NLP")].sort_values("sol_obj").index[0]
     best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
     best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
+
+    print(f"\n Best objective: {best_sol_obj} \n")
 
     if "stcs" in filename:
         plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method)
