@@ -83,7 +83,7 @@ GlobalSettings = _GlobalSettings()
 class Settings:
     from camino.utils.conversion import to_bool
 
-    TIME_LIMIT: float = ca.inf  # 60.0
+    TIME_LIMIT: float = 3600.
     TIME_LIMIT_SOLVER_ONLY: bool = False
     WITH_JIT: bool = False
     WITH_PLOT: bool = False
@@ -120,6 +120,8 @@ class Settings:
     })
     BONMIN_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {
         "bonmin.time_limit": Settings.TIME_LIMIT,
+        "bonmin.linear_solver": "mumps",
+        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
     })
     MIP_SETTINGS_ALL: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {

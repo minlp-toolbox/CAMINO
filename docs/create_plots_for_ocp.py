@@ -24,7 +24,7 @@ latexify()
 
 
 
-def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method):
+def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method, simplified):
 
     if 's-b-miqp' in solution_method:
         # Plot objective of iterations
@@ -69,7 +69,7 @@ def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method
 
     # Plot the optimal trajectory for state and binary variables
     # Construct the stcs problem
-    timing = Timing()
+    timing = Timing(simplified=simplified)
     n_steps = timing.N
     ambient = Ambient(timing)
     system = System()
@@ -89,7 +89,7 @@ def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method
     params = pd.DataFrame(params)
     params.columns = ["T_amb","I_fpsc","I_vtsc","Qdot_c","P_pv_kWp","p_g"]
 
-    prob, data, s = create_stcs_problem()
+    prob, data, s = create_stcs_problem(simplified=simplified)
 
     meta = prob.meta
     state = to_0d(best_sol_x)[meta.idx_state].reshape(-1, meta.n_state)
@@ -245,7 +245,10 @@ if __name__ == "__main__":
     print(f"\n Best objective: {best_sol_obj} \n")
 
     if "stcs" in filename:
-        plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method)
+        if "simplified" in filename:
+            plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method, simplified=True)
+        else:
+            plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method, simplified=False)
     elif "unstable_ocp" in filename:
         plot_unstable_ocp(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method)
     else:

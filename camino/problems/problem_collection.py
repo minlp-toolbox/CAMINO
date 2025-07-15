@@ -513,6 +513,7 @@ PROBLEMS = {
     "doubletank": create_double_tank_problem,
     "doubletank2": create_double_tank_problem2,
     "stcs": create_stcs_problem,
+    "stcs-simplified": lambda *args, **kwargs: create_stcs_problem(*args, **kwargs, simplified=True),
     "gearbox": create_simple_gearbox,
     "gearbox_int": create_gearbox_int,
     "gearbox_complx": create_gearbox,

@@ -21,17 +21,14 @@ from camino.utils.conversion import to_0d, convert_to_flat_list
 logger = logging.getLogger(__name__)
 
 
-def create_stcs_problem(n_steps=None, with_slack=True):
+def create_stcs_problem(simplified=False, with_slack=True):
     """Build problem."""
     logger.debug("Start processing")
     system = System()
-    timing = Timing()
+    timing = Timing(simplified=simplified)
     ambient = Ambient(timing)
     dsc = Description()
-    if n_steps is None:
-        n_steps = timing.N
-    else:
-        n_steps = int(n_steps)
+    n_steps = timing.N
 
     # Run simulator and predictor and use those output to warm start
     simulator = Simulator(ambient=ambient, N=n_steps)
