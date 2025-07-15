@@ -5,7 +5,7 @@ Adrian Buerger, 2022
 Adapted by Wim Van Roy and Andrea Ghezzi, 2023
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import pandas as pd
 import numpy as np
@@ -17,19 +17,35 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class Timing:
-    dt_day = 900
-    earliest_sunrise_time_UTC = (4, 30)
-    latest_sunset_time_UTC = (21, 30)
+    simplified: bool = False
+    earliest_sunrise_time_UTC: tuple = field(init=False)
+    latest_sunset_time_UTC: tuple = field(init=False)
+    dt_day: int = field(init=False)
+    dt_night: int = field(init=False)
+    N_day: int = field(init=False)
+    N_night: int = field(init=False)
+    N_short_term: int = field(init=False)
+    t_f: int = field(init=False)
+    N: int = field(init=False)
 
     def __post_init__(self):
-        self.dt_night = 2 * Timing.dt_day
+        self.earliest_sunrise_time_UTC = (4, 30)
+        self.latest_sunset_time_UTC = (21, 30)
 
-        self.N_day = 17 * 4
-        self.N_night = 7 * 2
-        self.N_short_term = 2
+        if self.simplified:
+            self.dt_day = 3600
+            self.dt_night = 1 * self.dt_day
+            self.N_day = 17 * 1
+            self.N_night = 7 * 1
+            self.N_short_term = 1
+        else:
+            self.dt_day = 900
+            self.dt_night = 2 * self.dt_day
+            self.N_day = 17 * 4
+            self.N_night = 7 * 2
+            self.N_short_term = 2
 
         self.t_f = self.N_day * self.dt_day + self.N_night * self.dt_night
         self.N = self.N_day + self.N_night + (self.N_short_term - 1)

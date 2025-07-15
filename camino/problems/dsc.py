@@ -70,6 +70,7 @@ class Description:
         self.lbg = []
         self.g_lin = []
         self.g_dis = []
+        self.g_dwelltime = []  # list of constraints involving dwell time
         self.w = []
         self.w0 = []
         self.indices = {}  # Names with indices
@@ -179,7 +180,7 @@ class Description:
         return as_shape(p, shape)
 
     def add_g(self, mini: float, equation: GlobalSettings.CASADI_VAR, maxi: float,
-              is_linear=0, is_discrete=0) -> int:
+              is_linear=0, is_discrete=0, is_dwell_time=0) -> int:
         """
         Add to g.
 
@@ -204,23 +205,24 @@ class Description:
         self.ubg += make_list(maxi, nr)
         self.g_lin += make_list(int(is_linear), nr)
         self.g_dis += make_list(int(is_discrete), nr)
+        self.g_dwelltime += make_list(int(is_dwell_time), nr)
         return len(self.ubg) - 1
 
     def add_soc(self, equation: GlobalSettings.CASADI_VAR):
         self.h = make_soc_matrix(self.h, equation)
 
-    def leq(self, op1, op2, is_linear=0, is_discrete=0):
+    def leq(self, op1, op2, is_linear=0, is_discrete=0, is_dwell_time=0):
         """Lower or equal."""
         if isinstance(op1, (float, int, list)):
             self.add_g(op1, op2, inf,
-                       is_linear=is_linear, is_discrete=is_discrete)
+                       is_linear=is_linear, is_discrete=is_discrete, is_dwell_time=is_dwell_time)
         elif isinstance(op2, (float, int, list, np.ndarray)):
             self.add_g(-inf, op1, op2,
-                       is_linear=is_linear, is_discrete=is_discrete)
+                       is_linear=is_linear, is_discrete=is_discrete, is_dwell_time=is_dwell_time)
         else:
             diff = op1 - op2
             self.add_g(-inf, diff, 0,
-                       is_linear=is_linear, is_discrete=is_discrete)
+                       is_linear=is_linear, is_discrete=is_discrete, is_dwell_time=is_dwell_time)
 
     def eq(self, op1, op2, is_linear=0, is_discrete=0):
         """Equal."""
@@ -255,12 +257,22 @@ class Description:
     def get_problem(self, with_gn=True) -> MinlpProblem:
         """Extract problem."""
         idx_x_integer = [i for i, v in enumerate(self.discrete) if v == 1]
+        idx_g_dwelltime = [i for i, elm in enumerate(self.g_dwelltime) if elm == 1]
+        idx_g_without_dwelltime = [i for i, elm in enumerate(self.g_dwelltime) if elm == 0]
+        if idx_g_dwelltime == []:
+            idx_g_dwelltime = None
+        if idx_g_without_dwelltime == []:
+            idx_g_without_dwelltime = None
         if self._r_exist() and with_gn:
             gn_hessian = self.get_gauss_newton_hessian()
         else:
             gn_hessian = None
+
         return MinlpProblem(f=self.f, g=vertcat(*self.g), h=self.h,
-                            x=vertcat(*self.w), idx_x_integer=idx_x_integer, p=vertcat(*self.p), gn_hessian=gn_hessian)
+                            x=vertcat(*self.w), idx_x_integer=idx_x_integer,
+                            p=vertcat(*self.p), gn_hessian=gn_hessian,
+                            idx_g_dwelltime=idx_g_dwelltime,
+                            idx_g_without_dwelltime=idx_g_without_dwelltime)
 
     def get_data(self) -> MinlpData:
         """Get data structure."""

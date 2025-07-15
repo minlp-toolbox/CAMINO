@@ -56,7 +56,7 @@ class CiaSolver(MiSolverClass):
         self.stats["iter_nr"] = 1
         self.stats["best_iter"] = 1
         self.stats["nlp_obj"] = nlpdata.obj_val
-        self.stats["lb"] = nlpdata.obj_val
+        # self.stats["lb"] = nlpdata.obj_val
         self.stats["x_sol"] = to_0d(nlpdata.x_sol)
         self.stats['total_time_calc'] = toc(reset=True)
         if not nlpdata.solved:

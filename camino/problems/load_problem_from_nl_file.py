@@ -71,6 +71,7 @@ def create_from_nl_file(file, compiled=True):
     s.TIME_LIMIT = 300
     s.TIME_LIMIT_SOLVER_ONLY = False
     s.USE_RELAXED_AS_WARMSTART = True
+    s.TRUST_RELAXED_SOLUTION = False
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
@@ -111,5 +112,6 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.honor_original_bounds": "yes",
     }
     s.WITH_DEBUG = False
+    s.WITH_LOG_DATA = False
 
     return problem, data, s
