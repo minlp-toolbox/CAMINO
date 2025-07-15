@@ -73,7 +73,7 @@ class GenericDecomposition(MiSolverClass):
             feasible = data.solved
             self.stats['lb'] = max(data.obj_val, self.stats['lb'])
             x_hat = data.x_sol
-            logger.debug(f"x_hat = {to_0d(x_hat).tolist()}")
+            logger.debug(f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ...")
             logger.debug(f"{self.stats['ub']=}, {self.stats['lb']=}\n")
             self.stats['iter_nr'] += 1
 
