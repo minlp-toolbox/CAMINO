@@ -112,5 +112,6 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.honor_original_bounds": "yes",
     }
     s.WITH_DEBUG = False
+    s.WITH_LOG_DATA = False
 
     return problem, data, s
