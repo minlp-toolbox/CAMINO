@@ -330,8 +330,15 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "gurobi.NodeMethod": 2,
         "gurobi.Method": 2,
     })
-    # 7 days...
-    s.TIME_LIMIT = 12 * 3600
+    s.BONMIN_SETTINGS = {
+        "bonmin.time_limit": s.TIME_LIMIT,
+        "bonmin.tree_search_strategy": "dive",
+        "bonmin.node_comparison": "best-bound",
+        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
+        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.linear_solver": "ma57",
+    }
 
     # Improve calculation speed by getting indices:
     # set_constraint_types(prob, *cache_data(

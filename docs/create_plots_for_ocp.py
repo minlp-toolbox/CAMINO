@@ -226,13 +226,21 @@ if __name__ == "__main__":
     elif "cia" in filename:
         stats_df = stats_df.loc[stats_df.index>1]
         solution_method='cia'
-    else:
+    elif 's-b-miqp' in filename:
         stats_df = stats_df.loc[stats_df.index>3]
         solution_method='s-b-miqp'
+    elif 'bonmin' in filename:
+        stats_df = stats_df
+        solution_method='bonmin'
 
-    best_iter_idx = stats_df.loc[(stats_df['success'] == True) & (stats_df["iter_type"] == "NLP")].sort_values("sol_obj").index[0]
-    best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
-    best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
+    if solution_method == 'bonmin':
+        best_iter_idx = 0
+        best_sol_obj = stats_df["sol_obj"]
+        best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
+    else:
+        best_iter_idx = stats_df.loc[(stats_df['success'] == True) & (stats_df["iter_type"] == "NLP")].sort_values("sol_obj").index[0]
+        best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
+        best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
 
     print(f"\n Best objective: {best_sol_obj} \n")
 
