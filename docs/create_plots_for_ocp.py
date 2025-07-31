@@ -221,13 +221,13 @@ if __name__ == "__main__":
 
     stats_df = pd.DataFrame(stats)
     if 'cia+s-b-miqp' in filename:
-        stats_df = stats_df.loc[stats_df.index>3]
+        stats_df = stats_df.loc[stats_df.index>1]
         solution_method='s-b-miqp'
     elif "cia" in filename:
         stats_df = stats_df.loc[stats_df.index>1]
         solution_method='cia'
     elif 's-b-miqp' in filename:
-        stats_df = stats_df.loc[stats_df.index>3]
+        stats_df = stats_df.loc[stats_df.index>1]
         solution_method='s-b-miqp'
     elif 'bonmin' in filename:
         stats_df = stats_df
@@ -243,6 +243,7 @@ if __name__ == "__main__":
         best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
 
     print(f"\n Best objective: {best_sol_obj} \n")
+    print(f"\n Computation time: {stats[-1]['time']} \n")
 
     if "stcs" in filename:
         if "simplified" in filename:

@@ -70,8 +70,8 @@ def create_from_nl_file(file, compiled=True):
     s.LBMILP_GAP = 0.01
     s.TIME_LIMIT = 300
     s.TIME_LIMIT_SOLVER_ONLY = False
-    s.USE_RELAXED_AS_WARMSTART = True
-    s.TRUST_RELAXED_SOLUTION = False
+    s.USE_RELAXED_SOL_AS_LINEARIZATION = True
+    s.USE_TIGHT_MIPGAP_FIRST_ITERATION = False
     s.IPOPT_SETTINGS = {
         "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,

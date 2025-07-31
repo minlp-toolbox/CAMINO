@@ -294,11 +294,11 @@ def create_stcs_problem(simplified=False, with_slack=True):
     data = dsc.get_data()
     data.x0[prob.idx_x_integer] = to_0d(simulator.b_data).flatten().tolist()
     s = Settings()
-    s.BRMIQP_GAP = 0.2
-    s.LBMILP_GAP = 0.15
+    s.BRMIQP_GAP = 0.1
+    s.LBMILP_GAP = 0.05
     s.ALPHA_KRONQVIST = 0.5
-    s.USE_RELAXED_AS_WARMSTART = True
-    s.TRUST_RELAXED_SOLUTION = True
+    s.USE_RELAXED_SOL_AS_LINEARIZATION = True
+    s.USE_TIGHT_MIPGAP_FIRST_ITERATION = True
     s.TIME_LIMIT = 0.5 * 3600
     s.IPOPT_SETTINGS.update({
         "ipopt.linear_solver": "ma57",

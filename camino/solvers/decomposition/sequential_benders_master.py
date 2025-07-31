@@ -462,7 +462,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = self.y_N_val
 
         if relaxed:
-            if self.settings.TRUST_RELAXED_SOLUTION:
+            if self.settings.USE_TIGHT_MIPGAP_FIRST_ITERATION:
                 self.options[self.mipgap_options_str] = self.mipgap_miqp
             else:
                 self.options[self.mipgap_options_str] = 1.0
@@ -478,7 +478,7 @@ class BendersRegionMasters(BendersMasterMILP):
             if solved:
                 # check if new best solution found
                 if np.isinf(self.internal_lb) or self.internal_lb > float(sol['f']):
-                    if self.settings.USE_RELAXED_AS_WARMSTART:
+                    if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
                         # warm start with relaxed solution
                         self.sol_best['x'] = sol['x'][:self.nr_x_orig]
                     self.internal_lb = float(sol['f'])
