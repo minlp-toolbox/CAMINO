@@ -5,8 +5,7 @@
 import numpy as np
 import casadi as ca
 from camino.settings import GlobalSettings, Settings
-from camino.problems import MinlpProblem, MinlpData, \
-    MetaDataOcp
+from camino.problems import MinlpProblem, MinlpData, MetaDataOcp
 from camino.problems.dsc import Description
 from camino.utils.integrators import integrate_ie
 
@@ -40,7 +39,7 @@ def particle_trajectory():
     )
 
     # Terminal cost
-    stage_cost = ca.Function("stage_cost", [X, U, t], [(x - r(t))**2])
+    stage_cost = ca.Function("stage_cost", [X, U, t], [(x - r(t)) ** 2])
 
     # Discretize
     F = integrate_ie(X, U, x_dot, dt)
@@ -59,8 +58,8 @@ def particle_trajectory():
         dsc.f += dt * stage_cost(xk, uk, (i + 1) * dt)
         xp, Up = xk, uk[0]
 
-    for i in range(N-N_uptime):
-        dsc.leq(sum(u_vector[i:i+N_uptime+1]), 1)
+    for i in range(N - N_uptime):
+        dsc.leq(sum(u_vector[i : i + N_uptime + 1]), 1)
 
     problem = dsc.get_problem()
     problem.meta = MetaDataOcp(
@@ -74,8 +73,10 @@ def particle_trajectory():
     )
     data = dsc.get_data()
     s = Settings()
-    s.MIP_SETTINGS_ALL["gurobi"].update({
-        "gurobi.PoolSearchMode": 1,
-        "gurobi.PoolSolutions": 3,
-    })
+    s.MIP_SETTINGS_ALL["gurobi"].update(
+        {
+            "gurobi.PoolSearchMode": 1,
+            "gurobi.PoolSolutions": 3,
+        }
+    )
     return problem, data, s

@@ -5,8 +5,7 @@
 """Load a MINLP from a nl file."""
 
 from camino.settings import Settings, GlobalSettings
-from camino.problems import MinlpProblem, MinlpData, \
-    MetaDataOcp
+from camino.problems import MinlpProblem, MinlpData, MetaDataOcp
 import casadi as ca
 import numpy as np
 
@@ -15,6 +14,7 @@ def create_from_nl_file(file, compiled=True):
     """Load from NL file."""
     from camino.utils.cache import CachedFunction, return_func
     import hashlib
+
     # Create an NLP instance
     nl = ca.NlpBuilder()
 
@@ -23,8 +23,7 @@ def create_from_nl_file(file, compiled=True):
     print(f"Loading MINLP with: {nl.repr()}")
 
     if not isinstance(nl.x[0], GlobalSettings.CASADI_VAR):
-        raise Exception(
-            f"Set GlobalSettings.CASADI_VAR to {type(nl.x[0])} in defines!")
+        raise Exception(f"Set GlobalSettings.CASADI_VAR to {type(nl.x[0])} in defines!")
 
     idx = np.where(np.array(nl.discrete))
 
@@ -33,31 +32,36 @@ def create_from_nl_file(file, compiled=True):
         x = ca.vcat(nl.x)
         problem = MinlpProblem(
             x=x,
-            f=CachedFunction(f"f_{key}", return_func(
-                ca.Function("f", [x], [nl.f])))(x),
-            g=CachedFunction(f"g_{key}", return_func(
-                ca.Function("g", [x], [ca.vcat(nl.g)])))(x),
+            f=CachedFunction(f"f_{key}", return_func(ca.Function("f", [x], [nl.f])))(x),
+            g=CachedFunction(
+                f"g_{key}", return_func(ca.Function("g", [x], [ca.vcat(nl.g)]))
+            )(x),
             idx_x_integer=idx[0].tolist(),
-            p=[]
+            p=[],
         )
     else:
         problem = MinlpProblem(
             x=ca.vcat(nl.x),
-            f=nl.f, g=ca.vcat(nl.g),
+            f=nl.f,
+            g=ca.vcat(nl.g),
             idx_x_integer=idx[0].tolist(),
-            p=[]
+            p=[],
         )
     if nl.f.is_constant():
         raise Exception("No objective!")
 
     problem.hessian_not_psd = True
-    data = MinlpData(x0=np.array(nl.x_init),
-                     _lbx=np.array(nl.x_lb),
-                     _ubx=np.array(nl.x_ub),
-                     _lbg=np.array(nl.g_lb),
-                     _ubg=np.array(nl.g_ub), p=[])
+    data = MinlpData(
+        x0=np.array(nl.x_init),
+        _lbx=np.array(nl.x_lb),
+        _ubx=np.array(nl.x_ub),
+        _lbg=np.array(nl.g_lb),
+        _ubg=np.array(nl.g_ub),
+        p=[],
+    )
 
     from camino.solvers import inspect_problem, set_constraint_types
+
     set_constraint_types(problem, *inspect_problem(problem, data))
     s = Settings()
 
@@ -106,7 +110,7 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.node_comparison": "best-bound",
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
-        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.constr_viol_tol": s.CONSTRAINT_TOL,
         "bonmin.linear_solver": "ma27",
         "bonmin.bound_relax_factor": 1e-14,
         "bonmin.honor_original_bounds": "yes",

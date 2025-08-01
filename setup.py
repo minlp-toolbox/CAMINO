@@ -28,9 +28,8 @@ setup(
         "tox >= 4.1.2",
         "colored >= 1.4.4",
         "argcomplete >= 3.5.1",
-        "seaborn >= 0.13.1"
+        "seaborn >= 0.13.1",
     ],
-
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
@@ -44,5 +43,5 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: 3.14",
-    ]
+    ],
 )

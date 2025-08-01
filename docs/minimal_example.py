@@ -18,19 +18,22 @@ ubx = np.array([4, 4, np.inf])
 x = ca.SX.sym("x", 3)
 p = ca.SX.sym("p", 2)
 p_val = np.array([1000, 3])
-f = (x[0] - 4.1)**2 + (x[1] - 4.0)**2 + x[2] * p[0]
+f = (x[0] - 4.1) ** 2 + (x[1] - 4.0) ** 2 + x[2] * p[0]
 ubg = np.array([ca.inf, ca.inf])
 lbg = np.array([0, 0])
-g = ca.vertcat(x[2], -(x[0]**2 + x[1]**2 - x[2] - p[1]**2))
+g = ca.vertcat(x[2], -(x[0] ** 2 + x[1] ** 2 - x[2] - p[1] ** 2))
 
 # ------------------- Solving MINLP within CasADi -------------------
 # To solve the above MINLP in CasADi, you can use the solver Bonmin interfaced via `nlpsol` as follows.
 
 # The way to declare integer variables for CasADi nlpsol
 is_integer = [1, 1, 0]
-myminlp = ca.nlpsol("myminlp", "bonmin", {
-                    "f": f, "g": g, "x": x, "p": p},
-                    {"discrete": is_integer, "bonmin.algorithm": "B-OA"})
+myminlp = ca.nlpsol(
+    "myminlp",
+    "bonmin",
+    {"f": f, "g": g, "x": x, "p": p},
+    {"discrete": is_integer, "bonmin.algorithm": "B-OA"},
+)
 solution = myminlp(x0=x0, lbx=lbx, ubx=ubx, lbg=lbg, ubg=ubg, p=p_val)
 
 print(f"Bonmin solution: x={solution['x']}, objective value={solution['f']}")
@@ -44,9 +47,9 @@ print(f"Bonmin solution: x={solution['x']}, objective value={solution['f']}")
 problem = MinlpProblem(f, g, x, p, idx_x_integer=is_integer)
 data = MinlpData(p_val, x0, _lbg=lbg, _ubg=ubg, _lbx=lbx, _ubx=ubx)
 settings = Settings()
-settings.MIP_SOLVER = 'highs'  # gurobi
+settings.MIP_SOLVER = "highs"  # gurobi
 stats = Stats("oa", "example-problem")
 
-solver = MinlpSolver('oa', problem, data, stats, settings)
+solver = MinlpSolver("oa", problem, data, stats, settings)
 result = solver.solve(data)
 solver.stats.print()

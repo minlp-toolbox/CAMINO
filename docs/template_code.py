@@ -11,6 +11,6 @@ data = MinlpData(...)
 settings = Settings(...)
 stats = Stats(...)
 
-solver = MinlpSolver('s-b-miqp', problem, data, stats, settings)
+solver = MinlpSolver("s-b-miqp", problem, data, stats, settings)
 result = solver.solve(data)
 solver.stats.print()

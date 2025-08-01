@@ -16,9 +16,7 @@ class AmplSolver(SolverClass):
         """Create MINLP problem."""
         super(AmplSolver, self).__init__(problem, stats, s)
         options = s.AMPL_EXPORT_SETTINGS.copy()
-        options.update({
-            "solver": "python3 -m minlp_algorithms copy /tmp/out.nl"
-        })
+        options.update({"solver": "python3 -m minlp_algorithms copy /tmp/out.nl"})
 
         self.nr_x = problem.x.shape[0]
         discrete = [0] * self.nr_x
@@ -33,17 +31,17 @@ class AmplSolver(SolverClass):
             "x": ca.vertcat(problem.x, problem.p),
             # "p": problem.p
         }
-        self.solver = ca.nlpsol(
-            "ampl", "ampl", minlp, options
-        )
+        self.solver = ca.nlpsol("ampl", "ampl", minlp, options)
 
     def solve(self, nlpdata: MinlpData, prev_feasible=True) -> MinlpData:
         """Solve MINLP."""
         try:
             nlpdata.prev_solution = self.solver(
                 x0=nlpdata.x0,
-                lbx=nlpdata.lbx, ubx=nlpdata.ubx,
-                lbg=nlpdata.lbg, ubg=nlpdata.ubg,
+                lbx=nlpdata.lbx,
+                ubx=nlpdata.ubx,
+                lbg=nlpdata.lbg,
+                ubg=nlpdata.ubg,
                 # p=nlpdata.p,
             )
         finally:

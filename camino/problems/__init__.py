@@ -4,6 +4,10 @@
 
 """General problem structure."""
 
-from camino.problem import MinlpProblem, MetaData, MetaDataMpc, \
-        MetaDataOcp  # noqa: F401
+from camino.problem import (
+    MinlpProblem,
+    MetaData,
+    MetaDataMpc,
+    MetaDataOcp,
+)  # noqa: F401
 from camino.data import MinlpData  # noqa: F401

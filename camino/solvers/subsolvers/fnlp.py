@@ -6,8 +6,13 @@
 
 import casadi as ca
 import numpy as np
-from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData, \
-    regularize_options
+from camino.solvers import (
+    SolverClass,
+    Stats,
+    MinlpProblem,
+    MinlpData,
+    regularize_options,
+)
 from camino.settings import GlobalSettings, Settings
 from camino.utils.conversion import to_0d
 
@@ -15,7 +20,9 @@ from camino.utils.conversion import to_0d
 class FeasibilityNlpSolver(SolverClass):
     """Create solver for feasible NLP."""
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings):
+    def __init__(
+        self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings
+    ):
         """Create solver for feasible NLP."""
         super(FeasibilityNlpSolver, self).__init__(problem, stats, s)
         options = regularize_options(s.IPOPT_SETTINGS, {}, s)
@@ -60,9 +67,9 @@ class FeasibilityNlpSolver(SolverClass):
         p = ca.vertcat(*[problem.p])
         self.idx_x_integer = problem.idx_x_integer
         options.update({"jit": s.WITH_JIT})
-        self.solver = ca.nlpsol("nlpsol", "ipopt", {
-            "f": f, "g": new_g_constraint, "x": x, "p": p
-        }, options)
+        self.solver = ca.nlpsol(
+            "nlpsol", "ipopt", {"f": f, "g": new_g_constraint, "x": x, "p": p}, options
+        )
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """solve."""
@@ -79,27 +86,29 @@ class FeasibilityNlpSolver(SolverClass):
                 success_out.append(success_prev)
                 sols_out.append(sol)
             else:
-                lbx[self.idx_x_integer] = to_0d(sol['x'][self.idx_x_integer])
-                ubx[self.idx_x_integer] = to_0d(sol['x'][self.idx_x_integer])
+                lbx[self.idx_x_integer] = to_0d(sol["x"][self.idx_x_integer])
+                ubx[self.idx_x_integer] = to_0d(sol["x"][self.idx_x_integer])
 
                 sol_new = self.solver(
                     x0=ca.vcat(
-                        [nlpdata.x_sol[:nlpdata.x0.shape[0]],
-                         np.zeros(1)]  # slacks initialization
+                        [
+                            nlpdata.x_sol[: nlpdata.x0.shape[0]],
+                            np.zeros(1),
+                        ]  # slacks initialization
                     ),
                     lbx=lbx,
                     ubx=ubx,
                     lbg=self.lbg,
                     ubg=self.ubg,
-                    p=nlpdata.p
+                    p=nlpdata.p,
                 )
 
                 # Reconstruct lambda_g:
-                lambda_g = to_0d(sol_new['lam_g'])
+                lambda_g = to_0d(sol_new["lam_g"])
                 lambda_g_req = np.zeros(nlpdata.lbg.shape[0])
                 for lg, (idx, sgn) in zip(lambda_g, self.g_idx):
                     lambda_g_req[idx] = sgn * lg
-                sol_new['lam_g'] = ca.DM(lambda_g_req)
+                sol_new["lam_g"] = ca.DM(lambda_g_req)
 
                 success, _ = self.collect_stats("F-NLP", sol=sol_new)
                 if not success:

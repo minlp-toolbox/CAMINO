@@ -43,7 +43,7 @@ def compile(input_file, output_file, options=None):
 
 def cache_data(name, generator_func, *args, **kwargs):
     """Cache data."""
-    name = name + "_" + getattr(generator_func, '__name__', 'Unknown')
+    name = name + "_" + getattr(generator_func, "__name__", "Unknown")
     filename = path.join(GlobalSettings.CACHE_FOLDER, name + ".pkl")
     if path.exists(filename):
         return load_pickle(filename)
@@ -55,20 +55,24 @@ def cache_data(name, generator_func, *args, **kwargs):
 
 def return_func(func):
     """Create a function."""
+
     def r():
         return func
+
     return r
 
 
 class CachedFunction:
     """A cached function."""
 
-    def __init__(self, name, func: Callable[[], ca.Function], filename=None, do_compile=None):
+    def __init__(
+        self, name, func: Callable[[], ca.Function], filename=None, do_compile=None
+    ):
         """Load or create a cached function."""
         if do_compile is None:
             do_compile = True
 
-        self.name = name + "_" + getattr(func, '__name__', 'Unknown')
+        self.name = name + "_" + getattr(func, "__name__", "Unknown")
         if filename is None:
             self.filename = path.join(GlobalSettings.CACHE_FOLDER, self.name)
         else:
@@ -115,7 +119,7 @@ class CachedFunction:
         data = {
             "lib_file": self.filename + ".so",
             "c_file": self.filename + ".c",
-            "func_name": self.f.name()
+            "func_name": self.f.name(),
         }
 
         tmp_file = data["func_name"] + ".c"

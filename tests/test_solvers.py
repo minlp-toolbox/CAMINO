@@ -12,30 +12,44 @@ from camino.settings import Settings
 from camino.runner import runner
 import timeout_decorator
 
-options = [("cia", "doubletank2")] + [
-    (solver, "dummy")
-    for solver in SOLVER_MODES.keys()
-    if solver not in (
-        "cia", "s-tr-milp", "ampl", "nlp", "mip"  # Almost all solvers
-    )
-] + [
-    (solver, problem)
-    for solver in
-    [
-        "s-b-miqp",
+options = (
+    [("cia", "doubletank2")]
+    + [
+        (solver, "dummy")
+        for solver in SOLVER_MODES.keys()
+        if solver
+        not in ("cia", "s-tr-milp", "ampl", "nlp", "mip")  # Almost all solvers
     ]
-    for problem in PROBLEMS.keys()
-    if problem not in [
-        # Exclude duplicates
-        "dummy2",
-        # Exclude difficult problems with long runtimes
-        "alan", "stcs", "to_car", "doubletank2", "doubletank", "stcs-simplified",
-        # Exclude some errors:
-        "unstable_ocp", "particle", "from_nlpsol_dsc", "sign_check",
-        # Interfaces:
-        "nl_file", "from_sto", "nosnoc", "from_nlpsol_dsc",
+    + [
+        (solver, problem)
+        for solver in [
+            "s-b-miqp",
+        ]
+        for problem in PROBLEMS.keys()
+        if problem
+        not in [
+            # Exclude duplicates
+            "dummy2",
+            # Exclude difficult problems with long runtimes
+            "alan",
+            "stcs",
+            "to_car",
+            "doubletank2",
+            "doubletank",
+            "stcs-simplified",
+            # Exclude some errors:
+            "unstable_ocp",
+            "particle",
+            "from_nlpsol_dsc",
+            "sign_check",
+            # Interfaces:
+            "nl_file",
+            "from_sto",
+            "nosnoc",
+            "from_nlpsol_dsc",
+        ]
     ]
-]
+)
 
 obj_val = {
     "dummy": 8.41,
@@ -88,8 +102,12 @@ class TestSolver(unittest.TestCase):
         desired_tol = obj_tolerance.get(problem_name, obj_tolerance_default)
         desired_tol += obj_tolerance_heuristic.get(mode, 0)
         if desired_tol > -10:
-            self.assertAlmostEqual(data.obj_val / desired_obj, 1, desired_tol,
-                                   msg=f"Failed for {mode} & {problem_name}")
+            self.assertAlmostEqual(
+                data.obj_val / desired_obj,
+                1,
+                desired_tol,
+                msg=f"Failed for {mode} & {problem_name}",
+            )
 
 
 if __name__ == "__main__":

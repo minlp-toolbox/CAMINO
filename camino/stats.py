@@ -37,9 +37,7 @@ class Stats:
     )
     data: Dict[str, float] = field(default_factory=lambda: {})
     out_dir: str = GlobalSettings.OUT_DIR
-    _full_stats_to_pickle: List = field(
-        default_factory=lambda: []
-    )
+    _full_stats_to_pickle: List = field(default_factory=lambda: [])
     _relaxed: Optional[MinlpData] = None
 
     def __getitem__(self, key):
@@ -67,11 +65,15 @@ class Stats:
         print("Statistics")
         for k, v in sorted(self.data.items()):
             if k not in [
-                "iterate_data", "solutions_all", "solved_all", "solutions", "mip_solutions_all",
-                "mip_solved_all"
+                "iterate_data",
+                "solutions_all",
+                "solved_all",
+                "solutions",
+                "mip_solutions_all",
+                "mip_solved_all",
             ]:
-                if k == 'sol_x':
-                    if len(self.data['sol_x']) < 10:
+                if k == "sol_x":
+                    if len(self.data["sol_x"]) < 10:
                         print(f"\t{k}: {v}")
                     else:
                         print(f"\t{k}: {v[:5]}, ...")
@@ -90,18 +92,25 @@ class Stats:
         if dest is None:
             dest = os.path.join(
                 self.out_dir,
-                f'{self.datetime}_{self.mode}_{self.problem_name}_{self.nr_reset}.pkl'
+                f"{self.datetime}_{self.mode}_{self.problem_name}_{self.nr_reset}.pkl",
             )
         print(f"Saving to {dest}")
         data = self.data.copy()
         to_pickle = []
         general_stats = {}
         for key, value in data.items():
-            if key not in ["solutions_all", "solved_all", "mip_solutions_all", "mip_solved_all"]:
+            if key not in [
+                "solutions_all",
+                "solved_all",
+                "mip_solutions_all",
+                "mip_solved_all",
+            ]:
                 general_stats[key] = value
         general_stats["time"] = time
         try:
-            for idx, (elm, mip_elm) in enumerate(zip(data["solutions_all"], data["mip_solutions_all"])):
+            for idx, (elm, mip_elm) in enumerate(
+                zip(data["solutions_all"], data["mip_solutions_all"])
+            ):
                 tmp_dict = {}
                 tmp_dict.update(general_stats)
                 tmp_dict["sol_pool_idx"] = idx

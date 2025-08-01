@@ -15,8 +15,11 @@ from os import path
 from typing import Union
 from camino.settings import GlobalSettings
 from camino.problems import MinlpData, MetaDataMpc, MinlpProblem
-from camino.problems.gearbox.models import insight_50kw_power_jc, \
-    advisor_em_pwr_sc, battery_hu
+from camino.problems.gearbox.models import (
+    insight_50kw_power_jc,
+    advisor_em_pwr_sc,
+    battery_hu,
+)
 from camino.problems.dsc import Description
 from camino.utils.cache import CachedFunction
 
@@ -25,14 +28,12 @@ def get_cycle_data(dt=1, N=30):
     """Get cycle data."""
     current_directory = path.abspath(path.dirname(__file__))
     # import the driving cycle
-    with open(current_directory + '/cycle.csv', 'r') as csvfile:
-        cycle_dat = [
-            float(s) for s in list(csv.reader(csvfile, delimiter=','))[0]
-        ][20:]
+    with open(current_directory + "/cycle.csv", "r") as csvfile:
+        cycle_dat = [float(s) for s in list(csv.reader(csvfile, delimiter=","))[0]][20:]
 
     xgrid = np.linspace(0, len(cycle_dat), len(cycle_dat))
     f = ca.interpolant("data", "bspline", [xgrid], cycle_dat)
-    cycle = f(np.arange(0, dt * (N+1), dt))
+    cycle = f(np.arange(0, dt * (N + 1), dt))
     return cycle, cycle[1:] - cycle[:-1]
 
 
@@ -46,12 +47,12 @@ def create_gear_step(dsc, nr_gears, gears_prev, gears_prev2, allow_stop=False):
         dsc.leq(gears[0], gears_prev2[0] + gears_prev2[1])
 
     for j in range(1, nr_gears - 1):
-        dsc.leq(gears[j], gears_prev[j-1] + gears_prev[j] + gears_prev[j+1])
-        dsc.leq(gears[j], gears_prev2[j-1] + gears_prev2[j] + gears_prev2[j+1])
+        dsc.leq(gears[j], gears_prev[j - 1] + gears_prev[j] + gears_prev[j + 1])
+        dsc.leq(gears[j], gears_prev2[j - 1] + gears_prev2[j] + gears_prev2[j + 1])
 
     j = nr_gears - 1
-    dsc.leq(gears[j], gears_prev[j-1] + gears_prev[j])
-    dsc.leq(gears[j], gears_prev2[j-1] + gears_prev2[j])
+    dsc.leq(gears[j], gears_prev[j - 1] + gears_prev[j])
+    dsc.leq(gears[j], gears_prev2[j - 1] + gears_prev2[j])
     return gears
 
 
@@ -62,7 +63,7 @@ def create_gearbox_int(N=10, traject=None):
 
     def cost_gear(j, setpoint):
         """Cost to run at setpoint for gear j."""
-        return (10 * (setpoint - j*2 + 1))**2 + 5 * setpoint + j
+        return (10 * (setpoint - j * 2 + 1)) ** 2 + 5 * setpoint + j
 
     dsc = Description()
 
@@ -85,8 +86,9 @@ def create_gearbox_int(N=10, traject=None):
         dsc.leq(gears - 1, throttle)
 
         for j in range(nr_gears):
-            dsc.f += (traject[i] - throttle)**4 + \
-                (traject[i] - throttle)**2 + gears * 10
+            dsc.f += (
+                (traject[i] - throttle) ** 4 + (traject[i] - throttle) ** 2 + gears * 10
+            )
 
         # swcost = dsc.sym("swcost", 1, 0, 1)
         # dsc.f += swcost
@@ -99,10 +101,7 @@ def create_gearbox_int(N=10, traject=None):
     def plot_gearbox(data: MinlpData, x_star):
         """Plot gearbox."""
         gear_idcs = dsc.get_indices("gear")
-        gears = [
-            float(x_star[gear_idx])
-            for gear_idx in gear_idcs
-        ]
+        gears = [float(x_star[gear_idx]) for gear_idx in gear_idcs]
         plt.scatter(list(range(len(gears))), gears)
         plt.show()
 
@@ -121,7 +120,7 @@ def create_simple_gearbox(N=10, traject=None):
 
     def cost_gear(j, setpoint):
         """Cost to run at setpoint for gear j."""
-        return (10 * (setpoint - j*2 + 1))**2 + 5 * setpoint + j
+        return (10 * (setpoint - j * 2 + 1)) ** 2 + 5 * setpoint + j
 
     dsc = Description()
 
@@ -137,7 +136,7 @@ def create_simple_gearbox(N=10, traject=None):
         swcost = dsc.sym("swcost", 1, 0, 1)
         dsc.f += swcost
         for j in range(1, nr_gears):
-            dsc.leq(gears[j] - gears_prev[j-1], swcost)
+            dsc.leq(gears[j] - gears_prev[j - 1], swcost)
 
         gears_prev2 = gears_prev
         gears_prev = gears
@@ -160,7 +159,9 @@ def create_simple_gearbox(N=10, traject=None):
     return problem, dsc.get_data()
 
 
-def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> Union[MinlpProblem, MinlpData]:
+def create_gearbox(
+    N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False
+) -> Union[MinlpProblem, MinlpData]:
     """Create a gearbox model."""
     N = int(N)
     cycle, dcycle = get_cycle_data(dt, N)
@@ -172,50 +173,57 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
     wheelR = 0.285
     drag_area = 2
     air_density = 1.225
-    drag_coeff = .35
+    drag_coeff = 0.35
 
     # temporary variables
-    w = GlobalSettings.CASADI_VAR.sym('w')
-    P = GlobalSettings.CASADI_VAR.sym('P')
-    Prat = GlobalSettings.CASADI_VAR.sym('Prat')
-    Erat = GlobalSettings.CASADI_VAR.sym('Erat')
-    SoC = GlobalSettings.CASADI_VAR.sym('SoC')
+    w = GlobalSettings.CASADI_VAR.sym("w")
+    P = GlobalSettings.CASADI_VAR.sym("P")
+    Prat = GlobalSettings.CASADI_VAR.sym("Prat")
+    Erat = GlobalSettings.CASADI_VAR.sym("Erat")
+    SoC = GlobalSettings.CASADI_VAR.sym("SoC")
 
     # ICE
     ICE_wrat = 6000 * np.pi / 30
     ICE_data = insight_50kw_power_jc()
-    ICE_dFin = ca.Function('ICE_dFin', [Prat, w, P], [
-                           ICE_data['dFin'](ICE_wrat, 1000 * Prat, w, 1000 * P)])
-    ICE_Fstart = ca.Function('ICE_Fstart', [Prat], [
-        ICE_data['Fstart'](1000 * Prat)])
-    ICE_Pmax = ca.Function('ICE_Pmax', [Prat, w], [
-                           ICE_data['Pmax'](ICE_wrat, 1000 * Prat, w) * 1e-3])
-    ICE_mass = ca.Function('ICE_mass', [Prat], [
-                           ICE_data['mass'](1000 * Prat)])
-    ICE_minw = max(ICE_data['minw'](ICE_wrat), 1000 * np.pi / 30)
+    ICE_dFin = ca.Function(
+        "ICE_dFin", [Prat, w, P], [ICE_data["dFin"](ICE_wrat, 1000 * Prat, w, 1000 * P)]
+    )
+    ICE_Fstart = ca.Function("ICE_Fstart", [Prat], [ICE_data["Fstart"](1000 * Prat)])
+    ICE_Pmax = ca.Function(
+        "ICE_Pmax", [Prat, w], [ICE_data["Pmax"](ICE_wrat, 1000 * Prat, w) * 1e-3]
+    )
+    ICE_mass = ca.Function("ICE_mass", [Prat], [ICE_data["mass"](1000 * Prat)])
+    ICE_minw = max(ICE_data["minw"](ICE_wrat), 1000 * np.pi / 30)
 
     # EM
     EM_wrat = 10000 * np.pi / 30
     EM_data = advisor_em_pwr_sc()
-    EM_Pin = ca.Function('EM_Pin', [Prat, w, P], [
-                         EM_data['Pin'](EM_wrat, 1000 * Prat, w, 1000 * P) * 1e-3])
+    EM_Pin = ca.Function(
+        "EM_Pin",
+        [Prat, w, P],
+        [EM_data["Pin"](EM_wrat, 1000 * Prat, w, 1000 * P) * 1e-3],
+    )
     # EM_Pmax = ca.Function('EM_Pmax', [Prat, w], [
     #                       EM_data['Pmax'](EM_wrat, 1000 * Prat, w) * 1e-3])
-    EM_mass = ca.Function('EM_mass', [Prat], [EM_data['mass'](1000 * Prat)])
+    EM_mass = ca.Function("EM_mass", [Prat], [EM_data["mass"](1000 * Prat)])
 
     # battery
     BT_data = battery_hu()
-    SoC_max = BT_data['SoC_max']
-    SoC_min = BT_data['SoC_min']
-    BT_dSoC = ca.Function('BT_dSoC', [Erat, SoC, P], [
-                          BT_data['dSoC'](Erat * 3.6e6, SoC, 1000 * P)])
-    BT_Pout = ca.Function('BT_Pout', [Erat, SoC, P], [
-                          BT_data['Pout'](Erat * 3.6e6, SoC, 1000 * P) * 1e-3])
-    BT_Pmax = ca.Function('BT_Pmax', [Erat, SoC], [
-                          BT_data['Pmax'](Erat * 3.6e6, SoC) * 1e-3])
-    BT_Pmin = ca.Function('BT_Pmin', [Erat, SoC], [
-                          BT_data['Pmin'](Erat * 3.6e6, SoC) * 1e-3])
-    BT_mass = ca.Function('BT_mass', [Erat], [BT_data['mass'](Erat * 3.6e6)])
+    SoC_max = BT_data["SoC_max"]
+    SoC_min = BT_data["SoC_min"]
+    BT_dSoC = ca.Function(
+        "BT_dSoC", [Erat, SoC, P], [BT_data["dSoC"](Erat * 3.6e6, SoC, 1000 * P)]
+    )
+    BT_Pout = ca.Function(
+        "BT_Pout", [Erat, SoC, P], [BT_data["Pout"](Erat * 3.6e6, SoC, 1000 * P) * 1e-3]
+    )
+    BT_Pmax = ca.Function(
+        "BT_Pmax", [Erat, SoC], [BT_data["Pmax"](Erat * 3.6e6, SoC) * 1e-3]
+    )
+    BT_Pmin = ca.Function(
+        "BT_Pmin", [Erat, SoC], [BT_data["Pmin"](Erat * 3.6e6, SoC) * 1e-3]
+    )
+    BT_mass = ca.Function("BT_mass", [Erat], [BT_data["mass"](Erat * 3.6e6)])
 
     # ------------------------------------------------
     # Parameters initial values
@@ -227,13 +235,18 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
 
     # for diesel:
     referece_ICEspeed_diesel = 2000
-    R_diesel = [(referece_ICEspeed_diesel * np.pi / 30)
-                / ((reference_speeds[k] / 3.6) / wheelR) for k in range(len(reference_speeds))]
+    R_diesel = [
+        (referece_ICEspeed_diesel * np.pi / 30) / ((reference_speeds[k] / 3.6) / wheelR)
+        for k in range(len(reference_speeds))
+    ]
 
     # for gasoline
     referece_ICEspeed_gasoline = 2500
-    R_gasoline = [(referece_ICEspeed_gasoline * np.pi / 30)
-                  / ((reference_speeds[k] / 3.6) / wheelR) for k in range(len(reference_speeds))]
+    R_gasoline = [
+        (referece_ICEspeed_gasoline * np.pi / 30)
+        / ((reference_speeds[k] / 3.6) / wheelR)
+        for k in range(len(reference_speeds))
+    ]
 
     # # from advisor default parallel
     # Rem_advisor = 0.99 * (EM_wrat / ICE_wrat)
@@ -259,10 +272,9 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
     SoC_start = SoC_min + 0.1 * (SoC_max - SoC_min)
 
     dsc = Description()
-    SoC = dsc.sym('SoC', N + 1, float(SoC_min),
-                  float(SoC_max), float(SoC_start))
+    SoC = dsc.sym("SoC", N + 1, float(SoC_min), float(SoC_max), float(SoC_start))
     dsc.eq(float(SoC_start), SoC[0])
-    Fuel = dsc.sym('Fuel', N + 1, 0, float(TNK_Frat), float(TNK_Finit))
+    Fuel = dsc.sym("Fuel", N + 1, 0, float(TNK_Frat), float(TNK_Finit))
     dsc.add_g(float(TNK_Finit), Fuel[0], float(TNK_Finit))
 
     # # Switch on/off
@@ -274,11 +286,10 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
 
     # Continous variables
     dFuel_max = 20.0
-    dFuel = dsc.sym('dFuel', N, 0, dFuel_max, 0)
-    Pb = dsc.sym('Pb', N,
-                 float(BT_Pmin(BT_Erat, 1.0)), float(BT_Pmax(BT_Erat, 1.0)), 0)
-    Pice = dsc.sym('Pice', N, 0, ICE_Prat, 0)
-    Pem = dsc.sym('Pem', N, -EM_Prat, EM_Prat, 0)
+    dFuel = dsc.sym("dFuel", N, 0, dFuel_max, 0)
+    Pb = dsc.sym("Pb", N, float(BT_Pmin(BT_Erat, 1.0)), float(BT_Pmax(BT_Erat, 1.0)), 0)
+    Pice = dsc.sym("Pice", N, 0, ICE_Prat, 0)
+    Pem = dsc.sym("Pem", N, -EM_Prat, EM_Prat, 0)
 
     nr_gears = len(R) + 1
     gears_init = [0] * nr_gears
@@ -292,7 +303,7 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
     for i in range(N):
         gearbox = create_gear_step(dsc, nr_gears, gearbox_prev, gearbox_prev2)
         if switch_cost:
-            dsc.f += ca.sum1((gearbox_prev - gearbox)**2 * cost_switch / 2)
+            dsc.f += ca.sum1((gearbox_prev - gearbox) ** 2 * cost_switch / 2)
         gearbox_prev2 = gearbox_prev
         gearbox_prev = gearbox
 
@@ -300,14 +311,15 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
         off = gearbox[0]
         gears = gearbox[1:]
 
-        Freq = mass * dcycle[i] + .5 * air_density * \
-            drag_coeff * drag_area * cycle[i]**2
+        Freq = (
+            mass * dcycle[i]
+            + 0.5 * air_density * drag_coeff * drag_area * cycle[i] ** 2
+        )
         # Treq = Freq * wheelR
         Paux = 0.3  # accessory power load kW
         Preq = Freq * cycle[i] / 1000
         wem = Rem * cycle[i] / wheelR
-        wice = sum([gears[k] * R[k] * cycle[i]
-                    / wheelR for k in range(len(R))])
+        wice = sum([gears[k] * R[k] * cycle[i] / wheelR for k in range(len(R))])
 
         # # ODE
         dsc.eq(BT_dSoC(BT_Erat, SoC[i], Pb[i]) + (SoC[i] - SoC[i + 1]) / dt, 0)
@@ -330,9 +342,10 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
             dsc.leq(
                 (
                     ICE_dFin(ICE_Prat, wice, Pice[i])[k]
-                    - off * ICE_dFin(ICE_Prat, 0, 0)[k] - dFuel[i]
+                    - off * ICE_dFin(ICE_Prat, 0, 0)[k]
+                    - dFuel[i]
                 ),
-                0
+                0,
             )
 
         # Following equations are OK!
@@ -341,20 +354,21 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
         for k in range(EM_Pin(0, 0, 0).numel()):
             dsc.leq(
                 (
-                    EM_Pin(EM_Prat, wem, Pem[i])[k] + Paux
+                    EM_Pin(EM_Prat, wem, Pem[i])[k]
+                    + Paux
                     - BT_Pout(BT_Erat, SoC[i], Pb[i])
                 ),
-                0
+                0,
             )
         dsc.add_g(-EM_Prat, Pem[i], EM_Prat)
 
         # Pb = battery consumption (Power battery)
-        dsc.f += (0.4 * 45.6 * dFuel[i] + Pb[i])
+        dsc.f += 0.4 * 45.6 * dFuel[i] + Pb[i]
 
     dsc.f += 200 * (
-        - ca.log((SoC[-1] - SoC_min) / (SoC_max - SoC_min))
+        -ca.log((SoC[-1] - SoC_min) / (SoC_max - SoC_min))
         - ca.log((SoC_max - SoC[-1]) / (SoC_max - SoC_min))
-        + 2 * ca.log(.5)
+        + 2 * ca.log(0.5)
     )
 
     def plot_gearbox(data: MinlpData, x_star):
@@ -367,11 +381,11 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
         fig, axs = plt.subplots(nr_plots, 1, figsize=(6, 8))
 
         axs[0].plot(t, cycle, label="Traject")
-        plot_names = [['SoC'], ['Fuel'], ['dFuel'], ['Pb', 'Pice', 'Pem']]
+        plot_names = [["SoC"], ["Fuel"], ["dFuel"], ["Pb", "Pice", "Pem"]]
         for i, ax in enumerate(axs[1:-1]):
             for name in plot_names[i]:
                 y_data = x_star[dsc.get_indices(name)[0]]
-                ax.plot(t[:y_data.numel()], y_data, label=name)
+                ax.plot(t[: y_data.numel()], y_data, label=name)
 
         gear_idcs = dsc.get_indices("gears")
         gears = [
@@ -379,14 +393,14 @@ def create_gearbox(N=10, gearbox_type="gasoline", dt=1.0, switch_cost=False) -> 
             for gear_idx in gear_idcs
         ]
 
-        axs[-1].scatter(t[:-1], gears, label='gear shift')
+        axs[-1].scatter(t[:-1], gears, label="gear shift")
         for i in range(nr_gears):
-            axs[-1].plot([0, N*dt], [i, i], ':', color='tab:grey')
+            axs[-1].plot([0, N * dt], [i, i], ":", color="tab:grey")
         axs[-1].set_ylim([0, nr_gears])
 
         for ax in axs:
             ax.set_xlim(0, (N + 1) * dt)
-            ax.legend(loc='upper right', fontsize='small').set_draggable(True)
+            ax.legend(loc="upper right", fontsize="small").set_draggable(True)
 
         fig.subplots_adjust(hspace=0.5)
         plt.show()

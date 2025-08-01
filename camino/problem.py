@@ -64,6 +64,7 @@ class MinlpProblem:
     your hessian is not positive semi-definite, you might want to set the flag
     to avoid computational problems.
     """
+
     # Casadi objective expression (1x1)
     f: Any
     # Casadi constraints expression (1xM)
@@ -107,10 +108,12 @@ class MinlpProblem:
         if len(self.idx_x_integer) == self.x.shape[0]:
             unique_elm_of_idx_x_integer = [i for i in set(self.idx_x_integer)]
             if unique_elm_of_idx_x_integer == [1]:
-                self.idx_x_integer = [
-                    i for i in range(len(self.idx_x_integer))]
+                self.idx_x_integer = [i for i in range(len(self.idx_x_integer))]
             elif unique_elm_of_idx_x_integer == [0]:
                 self.idx_x_integer = []
             else:
-                self.idx_x_integer = [i for i in range(
-                    len(self.idx_x_integer)) if self.idx_x_integer[i] == 1]
+                self.idx_x_integer = [
+                    i
+                    for i in range(len(self.idx_x_integer))
+                    if self.idx_x_integer[i] == 1
+                ]

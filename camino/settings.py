@@ -83,7 +83,7 @@ GlobalSettings = _GlobalSettings()
 class Settings:
     from camino.utils.conversion import to_bool
 
-    TIME_LIMIT: float = 3600.
+    TIME_LIMIT: float = 3600.0
     TIME_LIMIT_SOLVER_ONLY: bool = False
     WITH_JIT: bool = False
     WITH_PLOT: bool = False
@@ -115,44 +115,50 @@ class Settings:
     PARALLEL_SOLUTIONS = 5
 
     AMPL_EXPORT_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {})
-    IPOPT_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {
-        "ipopt.linear_solver": "mumps",
-    })
-    BONMIN_SETTINGS: Dict[str, Any] = field(default_factory=lambda: {
-        "bonmin.time_limit": Settings.TIME_LIMIT,
-        "bonmin.linear_solver": "mumps",
-        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
-        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
-    })
-    MIP_SETTINGS_ALL: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
-        "highs": {},
-        "cbc": {},
-        "gurobi": {
-            "gurobi.NumericFocus": 1,
-            # Note since this is only the dual, and since rounding occurs,
-            # this low tolerance does not affect the solution!
-            "gurobi.FeasibilityTol": Settings.CONSTRAINT_INT_TOL,
-            "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
-            "gurobi.PoolSearchMode": 1,
-            "gurobi.PoolSolutions": 1,
-            "gurobi.TimeLimit": 3600,
+    IPOPT_SETTINGS: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "ipopt.linear_solver": "mumps",
         }
-    })
+    )
+    BONMIN_SETTINGS: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "bonmin.time_limit": Settings.TIME_LIMIT,
+            "bonmin.linear_solver": "mumps",
+            "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
+            "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
+        }
+    )
+    MIP_SETTINGS_ALL: Dict[str, Dict[str, Any]] = field(
+        default_factory=lambda: {
+            "highs": {},
+            "cbc": {},
+            "gurobi": {
+                "gurobi.NumericFocus": 1,
+                # Note since this is only the dual, and since rounding occurs,
+                # this low tolerance does not affect the solution!
+                "gurobi.FeasibilityTol": Settings.CONSTRAINT_INT_TOL,
+                "gurobi.IntFeasTol": Settings.CONSTRAINT_INT_TOL,
+                "gurobi.PoolSearchMode": 1,
+                "gurobi.PoolSolutions": 1,
+                "gurobi.TimeLimit": 3600,
+            },
+        }
+    )
 
     def __post_init__(self, *args, **kwargs):
         """Settings."""
         super(Settings, self).__init__(*args, **kwargs)
         if self.WITH_DEBUG:
             self.IPOPT_SETTINGS.update({"ipopt.print_level": 5})
-            self.MIP_SETTINGS_ALL['gurobi'].update({"gurobi.output_flag": 1})
+            self.MIP_SETTINGS_ALL["gurobi"].update({"gurobi.output_flag": 1})
         else:
             self.IPOPT_SETTINGS.update({"ipopt.print_level": 0})
-            self.MIP_SETTINGS_ALL['gurobi'].update({"gurobi.output_flag": 0})
+            self.MIP_SETTINGS_ALL["gurobi"].update({"gurobi.output_flag": 0})
         self.MIP_SOLVER = environ.get("MIP_SOLVER", "gurobi")
 
     @property
     def USE_SOLUTION_POOL(self):
-        return (self.MIP_SETTINGS_ALL["gurobi"]["gurobi.PoolSolutions"] > 1)
+        return self.MIP_SETTINGS_ALL["gurobi"]["gurobi.PoolSolutions"] > 1
 
     @USE_SOLUTION_POOL.setter
     def USE_SOLUTION_POOL(self, value):
@@ -170,9 +176,10 @@ class Settings:
     @MIP_SOLVER.setter
     def MIP_SOLVER(self, value):
         if value not in self.MIP_SETTINGS_ALL:
-            raise Exception("Configure a MIP_SOLVER from the list: %s" % str(", ".join(
-                self.MIP_SETTINGS_ALL.keys()
-            )))
+            raise Exception(
+                "Configure a MIP_SOLVER from the list: %s"
+                % str(", ".join(self.MIP_SETTINGS_ALL.keys()))
+            )
         else:
             self._MIP_SOLVER = value
 

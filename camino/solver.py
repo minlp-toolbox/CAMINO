@@ -7,12 +7,23 @@ from camino.stats import Stats
 from camino.settings import Settings
 from camino.problem import MinlpProblem
 from camino.data import MinlpData
-from camino.solvers.decomposition import GeneralizedBenders, GeneralizedBendersQP, \
-    OuterApproximation, OuterApproximationQP, OuterApproximationImproved, OuterApproximationQPImproved, \
-    SequentialVoronoiMIQP, SequentialBendersMIQP
+from camino.solvers.decomposition import (
+    GeneralizedBenders,
+    GeneralizedBendersQP,
+    OuterApproximation,
+    OuterApproximationQP,
+    OuterApproximationImproved,
+    OuterApproximationQPImproved,
+    SequentialVoronoiMIQP,
+    SequentialBendersMIQP,
+)
 from camino.solvers.sequential import SequentialTrustRegionMILP
 from camino.solvers.external.bonmin import BonminSolver
-from camino.solvers.pumps import FeasibilityPump, ObjectiveFeasibilityPump, RandomObjectiveFeasibilityPump
+from camino.solvers.pumps import (
+    FeasibilityPump,
+    ObjectiveFeasibilityPump,
+    RandomObjectiveFeasibilityPump,
+)
 from camino.solvers.approximation import CiaSolver
 from camino.solvers.relaxation import NlpSolver
 from camino.solvers.mip import MipSolver
@@ -26,18 +37,32 @@ SOLVER_MODES = {
     "oa-qp-i": OuterApproximationQPImproved,
     "s-v-miqp": SequentialVoronoiMIQP,
     "s-b-miqp": SequentialBendersMIQP,
-    "s-b-miqp-early-exit": lambda *args, **kwargs: SequentialBendersMIQP(*args, **kwargs, with_lb_milp=False),
-    "s-b-milp": lambda *args, **kwargs: SequentialBendersMIQP(*args, **kwargs, with_lb_milp=True, with_milp_only=True),
+    "s-b-miqp-early-exit": lambda *args, **kwargs: SequentialBendersMIQP(
+        *args, **kwargs, with_lb_milp=False
+    ),
+    "s-b-milp": lambda *args, **kwargs: SequentialBendersMIQP(
+        *args, **kwargs, with_lb_milp=True, with_milp_only=True
+    ),
     "s-tr-milp": SequentialTrustRegionMILP,
     "fp": FeasibilityPump,
     "ofp": ObjectiveFeasibilityPump,
     "rofp": RandomObjectiveFeasibilityPump,
     "bonmin": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-BB"),
-    "bonmin-bb": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-BB"),
-    "bonmin-oa": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-OA"),
-    "bonmin-qg": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-QG"),
-    "bonmin-hyb": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-Hyb"),
-    "bonmin-ifp": lambda *args, **kwargs: BonminSolver(*args, **kwargs, algo_type="B-iFP"),
+    "bonmin-bb": lambda *args, **kwargs: BonminSolver(
+        *args, **kwargs, algo_type="B-BB"
+    ),
+    "bonmin-oa": lambda *args, **kwargs: BonminSolver(
+        *args, **kwargs, algo_type="B-OA"
+    ),
+    "bonmin-qg": lambda *args, **kwargs: BonminSolver(
+        *args, **kwargs, algo_type="B-QG"
+    ),
+    "bonmin-hyb": lambda *args, **kwargs: BonminSolver(
+        *args, **kwargs, algo_type="B-Hyb"
+    ),
+    "bonmin-ifp": lambda *args, **kwargs: BonminSolver(
+        *args, **kwargs, algo_type="B-iFP"
+    ),
     "cia": CiaSolver,
     "nlp": lambda *args, **kwargs: NlpSolver(*args, **kwargs, set_bin=False),
     "nlp-fxd": lambda *args, **kwargs: NlpSolver(*args, **kwargs, set_bin=True),
@@ -57,10 +82,14 @@ class MinlpSolver(MiSolverClass):
     """Polysolver loading the required subsolver and solving the problem."""
 
     def __init__(
-        self, name,
-        problem: MinlpProblem, data: MinlpData, stats: Stats = None,
-        settings: Settings = None, problem_name: str = "generic",
-        *args
+        self,
+        name,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats = None,
+        settings: Settings = None,
+        problem_name: str = "generic",
+        *args,
     ):
         if stats is None:
             stats = Stats(name, problem_name, "generic")
@@ -73,9 +102,9 @@ class MinlpSolver(MiSolverClass):
 
         # Create actual solver
         if name in SOLVER_MODES:
-            self._subsolvers = [SOLVER_MODES[name](
-                problem, data, stats, settings, *args
-            )]
+            self._subsolvers = [
+                SOLVER_MODES[name](problem, data, stats, settings, *args)
+            ]
             return
         elif "+" in name:
             names = name.split("+")
@@ -83,9 +112,8 @@ class MinlpSolver(MiSolverClass):
                 if name not in SOLVER_MODES:
                     raise Exception(f"Subsolver {name} does not exists")
             self._subsolvers = [
-                SOLVER_MODES[subname](
-                    problem, data, stats, setting, *args
-                ) for subname, setting in zip(names, as_list(settings, len(names)))
+                SOLVER_MODES[subname](problem, data, stats, setting, *args)
+                for subname, setting in zip(names, as_list(settings, len(names)))
             ]
         else:
             raise Exception(
@@ -113,7 +141,7 @@ class MinlpSolver(MiSolverClass):
 
     def collect_stats(self):
         """Return the statistics."""
-        return self.stats['success'], self.stats
+        return self.stats["success"], self.stats
 
     def get_settings(self):
         """Return settings."""

@@ -34,11 +34,19 @@ class FeasibilityPump(PumpBase):
         Discrete Optimization, 4(1), 63-76.
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, settings: Settings, nlp=None):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        nlp=None,
+    ):
         """Create a solver class."""
         pump = LinearProjection(problem, stats, settings)
         super(FeasibilityPump, self).__init__(
-            problem, data, stats, settings, pump, nlp=nlp)
+            problem, data, stats, settings, pump, nlp=nlp
+        )
 
 
 class ObjectiveFeasibilityPump(PumpBase):
@@ -49,11 +57,19 @@ class ObjectiveFeasibilityPump(PumpBase):
         Computational Optimization and Applications, 63, 737-753.
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, settings: Settings, nlp=None):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        nlp=None,
+    ):
         """Create a solver class."""
         pump = ObjectiveLinearProjection(problem, stats, settings)
         super(ObjectiveFeasibilityPump, self).__init__(
-            problem, data, stats, settings, pump, nlp=nlp)
+            problem, data, stats, settings, pump, nlp=nlp
+        )
 
 
 class RandomObjectiveFeasibilityPump(PumpBaseRandom):
@@ -64,10 +80,20 @@ class RandomObjectiveFeasibilityPump(PumpBaseRandom):
     random recovery mechanisms.
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, settings: Settings, nlp=None,
-                 norm=2, penalty_scaling=0.5):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        nlp=None,
+        norm=2,
+        penalty_scaling=0.5,
+    ):
         """Create a solver class."""
         pump = RandomDirectionProjection(
-            problem, stats, settings, norm=norm, penalty_scaling=penalty_scaling)
+            problem, stats, settings, norm=norm, penalty_scaling=penalty_scaling
+        )
         super(RandomObjectiveFeasibilityPump, self).__init__(
-            problem, data, stats, settings, pump, nlp=nlp)
+            problem, data, stats, settings, pump, nlp=nlp
+        )
