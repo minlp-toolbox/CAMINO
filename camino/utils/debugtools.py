@@ -28,7 +28,7 @@ class CheckNoDuplicate:
         if nlpdata.prev_solutions is None:
             return
         for sol in nlpdata.prev_solutions:
-            new = sol['x'][self.idx_x_integer]
+            new = sol["x"][self.idx_x_integer]
             for el in self.old:
                 if np.allclose(el, new, equal_nan=False, atol=self.s.EPS):
                     print("Duplicate!")
@@ -81,7 +81,7 @@ class DebugCallBack(ca.Callback):
         :param iter_per_callback: nr of iters per callback
         """
         options["iteration_callback"] = self
-        options['iteration_callback_step'] = iter_per_callback
+        options["iteration_callback_step"] = iter_per_callback
         return options
 
     def get_n_in(self):
@@ -95,13 +95,13 @@ class DebugCallBack(ca.Callback):
     def get_sparsity_in(self, i):
         """Get sparsity of matrices."""
         n = ca.nlpsol_out(i)
-        if n == 'f':
+        if n == "f":
             return ca.Sparsity.scalar()
-        elif n in ('x', 'lam_x'):
+        elif n in ("x", "lam_x"):
             return ca.Sparsity.dense(self.nx)
-        elif n in ('g', 'lam_g'):
+        elif n in ("g", "lam_g"):
             return ca.Sparsity.dense(self.ng)
-        elif n in ('p', 'lam_p'):
+        elif n in ("p", "lam_p"):
             return ca.Sparsity.dense(self.np)
         else:
             return ca.Sparsity(0, 0)
@@ -109,8 +109,7 @@ class DebugCallBack(ca.Callback):
     def save(self, x):
         """Save the x variable."""
         self.iter_nr += 1
-        np.save(GlobalSettings.DATA_FOLDER +
-                f"/x_{self.name}_{self.iter}", x.full())
+        np.save(GlobalSettings.DATA_FOLDER + f"/x_{self.name}_{self.iter}", x.full())
 
     def eval(self, arg):
         """Evaluate the callback."""

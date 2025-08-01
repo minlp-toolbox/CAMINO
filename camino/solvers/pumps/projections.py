@@ -6,7 +6,13 @@
 
 import numpy as np
 import casadi as ca
-from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData, regularize_options
+from camino.solvers import (
+    SolverClass,
+    Stats,
+    MinlpProblem,
+    MinlpData,
+    regularize_options,
+)
 from camino.settings import GlobalSettings, Settings
 from camino.utils import logging
 from camino.utils.conversion import to_0d
@@ -26,13 +32,13 @@ class LinearProjection(SolverClass):
     def __init__(self, problem: MinlpProblem, stats: Stats, s: Settings):
         super(LinearProjection, self).__init__(problem, stats, s)
         options = regularize_options(
-            s.IPOPT_SETTINGS, {"jit": s.WITH_JIT, "ipopt.max_iter": 5000}, s)
+            s.IPOPT_SETTINGS, {"jit": s.WITH_JIT, "ipopt.max_iter": 5000}, s
+        )
 
         self.idx_x_integer = problem.idx_x_integer
         x_bin_var = problem.x[self.idx_x_integer]
         self.nr_x_bin = x_bin_var.shape[0]
-        rounded_value = GlobalSettings.CASADI_VAR.sym(
-            "rounded_value", self.nr_x_bin)
+        rounded_value = GlobalSettings.CASADI_VAR.sym("rounded_value", self.nr_x_bin)
         slack_variables = GlobalSettings.CASADI_VAR.sym("slack", self.nr_x_bin)
 
         penalty_term = ca.sum1(slack_variables)
@@ -43,12 +49,17 @@ class LinearProjection(SolverClass):
             slack_variables - (x_bin_var - rounded_value),
             slack_variables + (x_bin_var - rounded_value),
         )
-        self.solver = ca.nlpsol("nlpsol", "ipopt", {
-            "f": penalty_term,
-            "g": g,
-            "x": ca.vertcat(problem.x, slack_variables),
-            "p": ca.vertcat(problem.p, rounded_value),
-        }, options)
+        self.solver = ca.nlpsol(
+            "nlpsol",
+            "ipopt",
+            {
+                "f": penalty_term,
+                "g": g,
+                "x": ca.vertcat(problem.x, slack_variables),
+                "p": ca.vertcat(problem.p, rounded_value),
+            },
+            options,
+        )
 
     def solve(self, nlpdata: MinlpData, **kwargs) -> MinlpData:
         success_out = []
@@ -63,9 +74,8 @@ class LinearProjection(SolverClass):
                 lbx=ca.vertcat(lbx, np.zeros(self.nr_x_bin)),
                 ubx=ca.vertcat(ubx, ca.inf * np.ones(self.nr_x_bin)),
                 lbg=ca.vertcat(nlpdata.lbg, np.zeros(2 * self.nr_x_bin)),
-                ubg=ca.vertcat(nlpdata.ubg, ca.inf *
-                               np.ones(2 * self.nr_x_bin)),
-                p=ca.vertcat(nlpdata.p, x_bin_var)
+                ubg=ca.vertcat(nlpdata.ubg, ca.inf * np.ones(2 * self.nr_x_bin)),
+                p=ca.vertcat(nlpdata.p, x_bin_var),
             )
 
             success, _ = self.collect_stats("FP", sol=new_sol)
@@ -96,8 +106,7 @@ class ObjectiveLinearProjection(SolverClass):
         self.idx_x_integer = problem.idx_x_integer
         x_bin_var = problem.x[self.idx_x_integer]
         self.nr_x_bin = x_bin_var.shape[0]
-        rounded_value = GlobalSettings.CASADI_VAR.sym(
-            "rounded_value", self.nr_x_bin)
+        rounded_value = GlobalSettings.CASADI_VAR.sym("rounded_value", self.nr_x_bin)
         slack_variables = GlobalSettings.CASADI_VAR.sym("slack", self.nr_x_bin)
         alpha = GlobalSettings.CASADI_VAR.sym("alpha", 1)
         int_error = GlobalSettings.CASADI_VAR.sym("int_error", 1)
@@ -114,12 +123,18 @@ class ObjectiveLinearProjection(SolverClass):
             slack_variables + (x_bin_var - rounded_value),
         )
         options.update({"jit": s.WITH_JIT, "ipopt.max_iter": 5000})
-        self.solver = ca.nlpsol("nlpsol", "ipopt", {
-            "f": alpha / obj_val * problem.f + (1 - alpha) / int_error * penalty_term,
-            "g": g,
-            "x": ca.vertcat(problem.x, slack_variables),
-            "p": ca.vertcat(problem.p, rounded_value, alpha, int_error, obj_val),
-        }, options)
+        self.solver = ca.nlpsol(
+            "nlpsol",
+            "ipopt",
+            {
+                "f": alpha / obj_val * problem.f
+                + (1 - alpha) / int_error * penalty_term,
+                "g": g,
+                "x": ca.vertcat(problem.x, slack_variables),
+                "p": ca.vertcat(problem.p, rounded_value, alpha, int_error, obj_val),
+            },
+            options,
+        )
 
     def solve(self, nlpdata: MinlpData, int_error, obj_val) -> MinlpData:
         success_out = []
@@ -135,10 +150,10 @@ class ObjectiveLinearProjection(SolverClass):
                 lbx=ca.vertcat(lbx, np.zeros(self.nr_x_bin)),
                 ubx=ca.vertcat(ubx, ca.inf * np.ones(self.nr_x_bin)),
                 lbg=ca.vertcat(nlpdata.lbg, np.zeros(2 * self.nr_x_bin)),
-                ubg=ca.vertcat(nlpdata.ubg, ca.inf *
-                               np.ones(2 * self.nr_x_bin)),
-                p=ca.vertcat(nlpdata.p, x_bin_var, np.array(
-                    [self.alpha, int_error, obj_val])),
+                ubg=ca.vertcat(nlpdata.ubg, ca.inf * np.ones(2 * self.nr_x_bin)),
+                p=ca.vertcat(
+                    nlpdata.p, x_bin_var, np.array([self.alpha, int_error, obj_val])
+                ),
             )
 
             success, _ = self.collect_stats("OFP", sol=new_sol)

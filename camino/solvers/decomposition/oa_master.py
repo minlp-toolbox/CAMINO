@@ -7,8 +7,16 @@
 import logging
 import casadi as ca
 import numpy as np
-from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData, \
-    get_idx_linear_bounds, regularize_options, get_idx_inverse, extract_bounds
+from camino.solvers import (
+    SolverClass,
+    Stats,
+    MinlpProblem,
+    MinlpData,
+    get_idx_linear_bounds,
+    regularize_options,
+    get_idx_inverse,
+    extract_bounds,
+)
 from camino.settings import GlobalSettings, Settings
 
 logger = logging.getLogger(__name__)
@@ -29,7 +37,14 @@ class OuterApproxMILP(SolverClass):
             lb \leq g(x) + \nabla  g(x) (x-x^i)
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings, with_lin_bounds=True):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        s: Settings,
+        with_lin_bounds=True,
+    ):
         """Create the outer approximation master problem."""
         super(OuterApproxMILP, self).__init__(problem, stats, s)
         self.setup_common(problem, s)
@@ -44,24 +59,22 @@ class OuterApproxMILP(SolverClass):
         self.settings = s
         self.options = regularize_options(s.MIP_SETTINGS, {}, s)
         self.f = ca.Function(
-            "f", [problem.x, problem.p], [problem.f],
-            {"jit": s.WITH_JIT}
+            "f", [problem.x, problem.p], [problem.f], {"jit": s.WITH_JIT}
         )
         self.grad_f = ca.Function(
             "gradient_f_x",
-            [problem.x, problem.p], [ca.gradient(
-                problem.f, problem.x
-            )], {"jit": s.WITH_JIT}
+            [problem.x, problem.p],
+            [ca.gradient(problem.f, problem.x)],
+            {"jit": s.WITH_JIT},
         )
         self.g = ca.Function(
-            "g", [problem.x, problem.p], [problem.g],
-            {"jit": s.WITH_JIT}
+            "g", [problem.x, problem.p], [problem.g], {"jit": s.WITH_JIT}
         )
         self.jac_g = ca.Function(
             "gradient_g_x",
-            [problem.x, problem.p], [ca.jacobian(
-                problem.g, problem.x
-            )], {"jit": s.WITH_JIT}
+            [problem.x, problem.p],
+            [ca.jacobian(problem.g, problem.x)],
+            {"jit": s.WITH_JIT},
         )
 
         self.nr_x = problem.x.shape[0]
@@ -69,26 +82,25 @@ class OuterApproxMILP(SolverClass):
         self.idx_x_integer = problem.idx_x_integer
         self.nr_x_bin = len(problem.idx_x_integer)
         self.options["discrete"] = [
-            1 if i in self.idx_x_integer else 0 for i in range(self.nr_x)] + [0]
+            1 if i in self.idx_x_integer else 0 for i in range(self.nr_x)
+        ] + [0]
 
     def add_solution(self, nlpdata, solved, solution, integers_relaxed=False):
         """Add a cut."""
-        x_sol = solution['x'][:self.nr_x]
+        x_sol = solution["x"][: self.nr_x]
         if solved and (not integers_relaxed):
             self._g = ca.vertcat(
                 self._g,
-                self.f(x_sol, nlpdata.p) + self.grad_f(x_sol, nlpdata.p).T @
-                (self._x - x_sol) - self._alpha
+                self.f(x_sol, nlpdata.p)
+                + self.grad_f(x_sol, nlpdata.p).T @ (self._x - x_sol)
+                - self._alpha,
             )
             self._lbg.append(-ca.inf)
             self._ubg.append(0)
 
         g_lin = self.g(x_sol, nlpdata.p)
         jac_g = self.jac_g(x_sol, nlpdata.p)
-        self._g = ca.vertcat(
-            self._g,
-            g_lin + jac_g @ (self._x - x_sol)
-        )
+        self._g = ca.vertcat(self._g, g_lin + jac_g @ (self._x - x_sol))
         self._lbg.append(nlpdata.lbg)
         self._ubg.append(nlpdata.ubg)
 
@@ -97,12 +109,18 @@ class OuterApproxMILP(SolverClass):
         for solved, solution in zip(nlpdata.solved_all, nlpdata.solutions_all):
             self.add_solution(nlpdata, solved, solution, integers_relaxed)
 
-        x_sol = nlpdata.x_sol[:self.nr_x]
+        x_sol = nlpdata.x_sol[: self.nr_x]
 
-        solver = ca.qpsol(f"oa_with_{self._g.shape[0]}_cut", self.settings.MIP_SOLVER, {
-            "f": self._alpha, "g": self._g,
-            "x": ca.vertcat(self._x, self._alpha),
-        }, self.options)
+        solver = ca.qpsol(
+            f"oa_with_{self._g.shape[0]}_cut",
+            self.settings.MIP_SOLVER,
+            {
+                "f": self._alpha,
+                "g": self._g,
+                "x": ca.vertcat(self._x, self._alpha),
+            },
+            self.options,
+        )
 
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
@@ -111,8 +129,8 @@ class OuterApproxMILP(SolverClass):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
-        x_full = solution['x'].full()[:self.nr_x]
-        solution['x'] = x_full
+        x_full = solution["x"].full()[: self.nr_x]
+        solution["x"] = x_full
         nlpdata.prev_solution = solution
         nlpdata.solved, stats = self.collect_stats("OA-MILP", solver, solution)
         return nlpdata
@@ -137,41 +155,63 @@ class OuterApproxMILP(SolverClass):
 class OuterApproxMIQP(OuterApproxMILP):
     "Implementation of quadratic outer approximation"
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings, hess: str = 'f'):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        s: Settings,
+        hess: str = "f",
+    ):
         """Create the quadratic outer approximation master problem."""
         super(OuterApproxMIQP, self).__init__(problem, data, stats, s)
         self.hessian_type = hess
-        if self.hessian_type == 'f':
-            self.hess = ca.Function("hess_f", [problem.x, problem.p], [ca.hessian(
-                problem.f, problem.x)[0]], {"jit": self.settings.WITH_JIT})
-        elif self.hessian_type == 'lag':
+        if self.hessian_type == "f":
+            self.hess = ca.Function(
+                "hess_f",
+                [problem.x, problem.p],
+                [ca.hessian(problem.f, problem.x)[0]],
+                {"jit": self.settings.WITH_JIT},
+            )
+        elif self.hessian_type == "lag":
             lam = GlobalSettings.CASADI_VAR.sym("lam", self.nr_g_orig)
             lagrangian = problem.f + lam.T @ problem.g
-            lagrangian_hess = ca.hessian(lagrangian, ca.vertcat(problem.x, lam))[
-                0][:self.nr_x, :self.nr_x]
-            self.hess = ca.Function("hess_lag", [problem.x, lam, problem.p], [lagrangian_hess], {
-                "jit": self.settings.WITH_JIT})
+            lagrangian_hess = ca.hessian(lagrangian, ca.vertcat(problem.x, lam))[0][
+                : self.nr_x, : self.nr_x
+            ]
+            self.hess = ca.Function(
+                "hess_lag",
+                [problem.x, lam, problem.p],
+                [lagrangian_hess],
+                {"jit": self.settings.WITH_JIT},
+            )
         else:
             raise AttributeError(
-                "Available Hessian types: 'f' for standard objective Hessian, 'lag' for Hessian of the Lagrangian")
+                "Available Hessian types: 'f' for standard objective Hessian, 'lag' for Hessian of the Lagrangian"
+            )
 
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve the quadratic outer approximation master problem (MIQP)."""
         for solved, solution in zip(nlpdata.solved_all, nlpdata.solutions_all):
             self.add_solution(nlpdata, solved, solution, integers_relaxed)
 
-        x_sol = nlpdata.x_sol[:self.nr_x]
-        if self.hessian_type == 'f':
+        x_sol = nlpdata.x_sol[: self.nr_x]
+        if self.hessian_type == "f":
             hess = self.hess(x_sol, nlpdata.p)
-        elif self.hessian_type == 'lag':
+        elif self.hessian_type == "lag":
             hess = self.hess(x_sol, nlpdata.lam_g_sol, nlpdata.p)
-        f_quad = self._alpha + 0.5 * \
-            (self._x - x_sol).T @ hess @ (self._x - x_sol)
+        f_quad = self._alpha + 0.5 * (self._x - x_sol).T @ hess @ (self._x - x_sol)
 
-        solver = ca.qpsol(f"oa_with_{self._g.shape[0]}_cut", self.settings.MIP_SOLVER, {
-            "f": f_quad, "g": self._g,
-            "x": ca.vertcat(self._x, self._alpha),
-        }, self.options)
+        solver = ca.qpsol(
+            f"oa_with_{self._g.shape[0]}_cut",
+            self.settings.MIP_SOLVER,
+            {
+                "f": f_quad,
+                "g": self._g,
+                "x": ca.vertcat(self._x, self._alpha),
+            },
+            self.options,
+        )
 
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
@@ -180,8 +220,8 @@ class OuterApproxMIQP(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
-        x_full = solution['x'].full()[:self.nr_x]
-        solution['x'] = x_full
+        x_full = solution["x"].full()[: self.nr_x]
+        solution["x"] = x_full
         nlpdata.prev_solution = solution
         nlpdata.solved, stats = self.collect_stats("OA-MIQP", solver, solution)
         return nlpdata
@@ -194,25 +234,31 @@ class OuterApproxMILPImproved(OuterApproxMILP):
     Cutting planes are added only for linear constraints to avoid the creation of infeasible master problems.
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings):
+    def __init__(
+        self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings
+    ):
         """Create the improved outer approximation master problem."""
         super(OuterApproxMILPImproved, self).__init__(problem, data, stats, s)
 
         self.idx_g_lin = get_idx_linear_bounds(problem)
         self.idx_g_nonlin = get_idx_inverse(self.idx_g_lin, problem.g.shape[0])
         self.g_lin = ca.Function(
-            "g", [problem.x, problem.p], [problem.g[self.idx_g_lin]],
-            {"jit": s.WITH_JIT}
+            "g",
+            [problem.x, problem.p],
+            [problem.g[self.idx_g_lin]],
+            {"jit": s.WITH_JIT},
         )
         self.g_nonlin = ca.Function(
-            "g", [problem.x, problem.p], [problem.g[self.idx_g_nonlin]],
-            {"jit": s.WITH_JIT}
+            "g",
+            [problem.x, problem.p],
+            [problem.g[self.idx_g_nonlin]],
+            {"jit": s.WITH_JIT},
         )
         self.jac_g_nonlin = ca.Function(
             "gradient_g_x",
-            [problem.x, problem.p], [ca.jacobian(
-                problem.g[self.idx_g_nonlin], problem.x
-            )], {"jit": s.WITH_JIT}
+            [problem.x, problem.p],
+            [ca.jacobian(problem.g[self.idx_g_nonlin], problem.x)],
+            {"jit": s.WITH_JIT},
         )
         self.reset(data)
 
@@ -230,12 +276,18 @@ class OuterApproxMILPImproved(OuterApproxMILP):
         for solved, solution in zip(nlpdata.solved_all, nlpdata.solutions_all):
             self.add_solution(nlpdata, solved, solution, integers_relaxed)
 
-        x_sol = nlpdata.x_sol[:self.nr_x]
+        x_sol = nlpdata.x_sol[: self.nr_x]
 
-        solver = ca.qpsol(f"oa_with_{self._g.shape[0]}_cut", self.settings.MIP_SOLVER, {
-            "f": self._alpha, "g": self._g,
-            "x": ca.vertcat(self._x, self._alpha),
-        }, self.options)
+        solver = ca.qpsol(
+            f"oa_with_{self._g.shape[0]}_cut",
+            self.settings.MIP_SOLVER,
+            {
+                "f": self._alpha,
+                "g": self._g,
+                "x": ca.vertcat(self._x, self._alpha),
+            },
+            self.options,
+        )
 
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
@@ -244,11 +296,10 @@ class OuterApproxMILPImproved(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
-        x_full = solution['x'].full()[:self.nr_x]
-        solution['x'] = x_full
+        x_full = solution["x"].full()[: self.nr_x]
+        solution["x"] = x_full
         nlpdata.prev_solution = solution
-        nlpdata.solved, stats = self.collect_stats(
-            "OAI-MILP", solver, solution)
+        nlpdata.solved, stats = self.collect_stats("OAI-MILP", solver, solution)
         return nlpdata
 
 
@@ -259,40 +310,61 @@ class OuterApproxMIQPImproved(OuterApproxMILP):
     Cutting planes are added only for linear constraints to avoid the creation of infeasible master problems.
     """
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, s: Settings, hess: str = 'f'):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        s: Settings,
+        hess: str = "f",
+    ):
         """Create improved version of the quadratic outer approximation master problem."""
         super(OuterApproxMIQPImproved, self).__init__(problem, data, stats, s)
 
         self.hessian_type = hess
-        if self.hessian_type == 'f':
-            self.hess = ca.Function("hess_f", [problem.x, problem.p], [ca.hessian(
-                problem.f, problem.x)[0]], {"jit": self.settings.WITH_JIT})
-        elif self.hessian_type == 'lag':
+        if self.hessian_type == "f":
+            self.hess = ca.Function(
+                "hess_f",
+                [problem.x, problem.p],
+                [ca.hessian(problem.f, problem.x)[0]],
+                {"jit": self.settings.WITH_JIT},
+            )
+        elif self.hessian_type == "lag":
             lam = GlobalSettings.CASADI_VAR.sym("lam", self.nr_g_orig)
             lagrangian = problem.f + lam.T @ problem.g
-            lagrangian_hess = ca.hessian(lagrangian, ca.vertcat(problem.x, lam))[
-                0][:self.nr_x, :self.nr_x]
-            self.hess = ca.Function("hess_lag", [problem.x, lam, problem.p], [lagrangian_hess], {
-                "jit": self.settings.WITH_JIT})
+            lagrangian_hess = ca.hessian(lagrangian, ca.vertcat(problem.x, lam))[0][
+                : self.nr_x, : self.nr_x
+            ]
+            self.hess = ca.Function(
+                "hess_lag",
+                [problem.x, lam, problem.p],
+                [lagrangian_hess],
+                {"jit": self.settings.WITH_JIT},
+            )
         else:
             raise AttributeError(
-                "Available Hessian types: 'f' for standard objective Hessian, 'lag' for Hessian of the Lagrangian")
+                "Available Hessian types: 'f' for standard objective Hessian, 'lag' for Hessian of the Lagrangian"
+            )
 
         self.idx_g_lin = get_idx_linear_bounds(problem)
         self.idx_g_nonlin = get_idx_inverse(self.idx_g_lin, problem.g.shape[0])
         self.g_lin = ca.Function(
-            "g", [problem.x, problem.p], [problem.g[self.idx_g_lin]],
-            {"jit": s.WITH_JIT}
+            "g",
+            [problem.x, problem.p],
+            [problem.g[self.idx_g_lin]],
+            {"jit": s.WITH_JIT},
         )
         self.g_nonlin = ca.Function(
-            "g", [problem.x, problem.p], [problem.g[self.idx_g_nonlin]],
-            {"jit": s.WITH_JIT}
+            "g",
+            [problem.x, problem.p],
+            [problem.g[self.idx_g_nonlin]],
+            {"jit": s.WITH_JIT},
         )
         self.jac_g_nonlin = ca.Function(
             "gradient_g_x",
-            [problem.x, problem.p], [ca.jacobian(
-                problem.g[self.idx_g_nonlin], problem.x
-            )], {"jit": s.WITH_JIT}
+            [problem.x, problem.p],
+            [ca.jacobian(problem.g[self.idx_g_nonlin], problem.x)],
+            {"jit": s.WITH_JIT},
         )
         self.reset(data)
 
@@ -310,19 +382,24 @@ class OuterApproxMIQPImproved(OuterApproxMILP):
         for solved, solution in zip(nlpdata.solved_all, nlpdata.solutions_all):
             self.add_solution(nlpdata, solved, solution, integers_relaxed)
 
-        x_sol = nlpdata.x_sol[:self.nr_x]
+        x_sol = nlpdata.x_sol[: self.nr_x]
 
-        if self.hessian_type == 'f':
+        if self.hessian_type == "f":
             hess = self.hess(x_sol, nlpdata.p)
-        elif self.hessian_type == 'lag':
+        elif self.hessian_type == "lag":
             hess = self.hess(x_sol, nlpdata.lam_g_sol, nlpdata.p)
-        f_quad = self._alpha + 0.5 * \
-            (self._x - x_sol).T @ hess @ (self._x - x_sol)
+        f_quad = self._alpha + 0.5 * (self._x - x_sol).T @ hess @ (self._x - x_sol)
 
-        solver = ca.qpsol(f"oa_with_{self._g.shape[0]}_cut", self.settings.MIP_SOLVER, {
-            "f": f_quad, "g": self._g,
-            "x": ca.vertcat(self._x, self._alpha),
-        }, self.options)
+        solver = ca.qpsol(
+            f"oa_with_{self._g.shape[0]}_cut",
+            self.settings.MIP_SOLVER,
+            {
+                "f": f_quad,
+                "g": self._g,
+                "x": ca.vertcat(self._x, self._alpha),
+            },
+            self.options,
+        )
 
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
@@ -331,9 +408,8 @@ class OuterApproxMIQPImproved(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
-        x_full = solution['x'].full()[:self.nr_x]
-        solution['x'] = x_full
+        x_full = solution["x"].full()[: self.nr_x]
+        solution["x"] = x_full
         nlpdata.prev_solution = solution
-        nlpdata.solved, stats = self.collect_stats(
-            "OAI-MIQP", solver, solution)
+        nlpdata.solved, stats = self.collect_stats("OAI-MIQP", solver, solution)
         return nlpdata

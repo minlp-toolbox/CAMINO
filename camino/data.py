@@ -71,22 +71,22 @@ class MinlpData:
     @property
     def obj_val(self):
         """Get float value."""
-        return float(self._sol['f'])
+        return float(self._sol["f"])
 
     @property
     def x_sol(self):
         """Get x solution."""
-        return self._sol['x']
+        return self._sol["x"]
 
     @property
     def lam_g_sol(self):
         """Get lambda g solution."""
-        return self._sol['lam_g']
+        return self._sol["lam_g"]
 
     @property
     def lam_x_sol(self):
         """Get lambda g solution."""
-        return self._sol['lam_x']
+        return self._sol["lam_x"]
 
     @prev_solution.setter
     def prev_solution(self, value):

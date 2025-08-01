@@ -39,9 +39,8 @@ def create_stcs_problem(simplified=False, with_slack=True):
 
     logger.debug("Constructing bounds")
     x_min = system.p_op["T"]["min"] * np.ones((n_steps + 1, system.nx))
-    x_max = system.p_op["T"]["max"] * np.ones((n_steps+1, system.nx))
-    x_max[:, system.x_index["T_shx_psc"][-1]
-          ] = system.p_op["T_sc"]["T_feed_max"]
+    x_max = system.p_op["T"]["max"] * np.ones((n_steps + 1, system.nx))
+    x_max[:, system.x_index["T_shx_psc"][-1]] = system.p_op["T_sc"]["T_feed_max"]
     x_max[:, system.x_index["T_lts"]] = system.p_op["T_lts"]["max"]
 
     u_min = np.hstack(
@@ -65,14 +64,16 @@ def create_stcs_problem(simplified=False, with_slack=True):
             np.inf * np.ones((n_steps, 1)),
         ]
     )
-    min_up_times = np.asarray(
-        system.p_op["acm"]["min_up_time"] +
-        system.p_op["hp"]["min_up_time"]
-    ) - 1e-3
-    min_down_times = np.asarray(
-        system.p_op["acm"]["min_down_time"] +
-        system.p_op["hp"]["min_down_time"]
-    ) - 1e-3
+    min_up_times = (
+        np.asarray(system.p_op["acm"]["min_up_time"] + system.p_op["hp"]["min_up_time"])
+        - 1e-3
+    )
+    min_down_times = (
+        np.asarray(
+            system.p_op["acm"]["min_down_time"] + system.p_op["hp"]["min_down_time"]
+        )
+        - 1e-3
+    )
 
     logger.debug("Creating basic equations")
     F = system.get_system_dynamics_collocation(collocation_nodes)
@@ -84,13 +85,13 @@ def create_stcs_problem(simplified=False, with_slack=True):
     v_ppsc_so_fcn = CachedFunction("stcs", system.get_v_ppsc_so_fcn)
     mdot_hts_b_max_fcn = CachedFunction("stcs", system.get_mdot_hts_b_max_fcn)
     electric_power_balance_fcn = CachedFunction(
-        "stcs", system.get_electric_power_balance_fcn)
+        "stcs", system.get_electric_power_balance_fcn
+    )
     F1_fcn = CachedFunction("stcs", system.get_F1_fcn)
     F2_fcn = system.get_F2_fcn()  # CachedFunction("stcs", system.get_F2_fcn)
 
     logger.debug("Create NLP problem")
-    x_k_0 = dsc.add_parameters(
-        "x0", system.nx, to_0d(simulator.x_data[0, :]).tolist())
+    x_k_0 = dsc.add_parameters("x0", system.nx, to_0d(simulator.x_data[0, :]).tolist())
     u_k_prev = None
     tk = ambient.get_t0()
     F1 = []
@@ -102,26 +103,42 @@ def create_stcs_problem(simplified=False, with_slack=True):
         tk += dt
 
         x_k_full = [x_k_0] + [
-            dsc.sym(f"x_{k}_c", system.nx,
-                    lb=-np.inf, ub=np.inf, w0=to_0d(simulator.x_data[k, :]).tolist())
+            dsc.sym(
+                f"x_{k}_c",
+                system.nx,
+                lb=-np.inf,
+                ub=np.inf,
+                w0=to_0d(simulator.x_data[k, :]).tolist(),
+            )
             for j in range(1, collocation_nodes + 1)
         ]
-        x_k_next_0 = dsc.sym("x", system.nx, lb=-ca.inf, ub=ca.inf,
-                             w0=to_0d(simulator.x_data[k+1, :]).tolist())
+        x_k_next_0 = dsc.sym(
+            "x",
+            system.nx,
+            lb=-ca.inf,
+            ub=ca.inf,
+            w0=to_0d(simulator.x_data[k + 1, :]).tolist(),
+        )
 
         # Add new binary controls
         b_k = dsc.sym_bool("b", system.nb)
 
         # Add new continuous controls
-        u_k = dsc.sym("u", system.nu, lb=u_min[k, :], ub=u_max[k, :],  w0=to_0d(
-            simulator.u_data[k, :]).tolist())
+        u_k = dsc.sym(
+            "u",
+            system.nu,
+            lb=u_min[k, :],
+            ub=u_max[k, :],
+            w0=to_0d(simulator.u_data[k, :]).tolist(),
+        )
 
         if u_k_prev is None:
             u_k_prev = u_k
 
         # Add new parametric controls
-        params = convert_to_flat_list(system.nc, system.c_index,
-                                      ambient.interpolate(tk-dt))
+        params = convert_to_flat_list(
+            system.nc, system.c_index, ambient.interpolate(tk - dt)
+        )
         c_k = dsc.add_parameters("c", system.nc, params)
         dt_k = dsc.add_parameters("dt", 1, dt.total_seconds())
 
@@ -165,8 +182,9 @@ def create_stcs_problem(simplified=False, with_slack=True):
             s_x_k = np.zeros((system.nx,))
 
         # Setup state limits as soft constraints to prevent infeasibility
-        dsc.add_g(x_min[k + 1, :],
-                  slacked_state_fcn(x_k_next_0, s_x_k), x_max[k + 1, :])
+        dsc.add_g(
+            x_min[k + 1, :], slacked_state_fcn(x_k_next_0, s_x_k), x_max[k + 1, :]
+        )
 
         # Assure ppsc is running at high speed when collector temperature is high
         s_ppsc_k = dsc.sym("s_ppsc_fpsc", 1, lb=0, ub=1)
@@ -186,8 +204,7 @@ def create_stcs_problem(simplified=False, with_slack=True):
         dsc.add_g(0, ca.sum1(b_k), 1)
 
         F1.append(
-            np.sqrt(dt_k / 3600)
-            * F1_fcn(s_ac_lb_k, s_ac_ub_k, s_x_k, u_k, u_k_prev)
+            np.sqrt(dt_k / 3600) * F1_fcn(s_ac_lb_k, s_ac_ub_k, s_x_k, u_k, u_k_prev)
         )
         F2.append((dt_k / 3600) * F2_fcn(u_k, c_k))
 
@@ -201,7 +218,7 @@ def create_stcs_problem(simplified=False, with_slack=True):
     # Specify residual for GN Hessian computation
     dsc.r = F1
 
-    idx_b_2d = np.asarray(dsc.get_indices('b')).T
+    idx_b_2d = np.asarray(dsc.get_indices("b")).T
     w = ca.vertcat(*dsc.w)
 
     # Set min up time constraints
@@ -212,24 +229,24 @@ def create_stcs_problem(simplified=False, with_slack=True):
             # logger.debug(f"{k=}, {i=}, {dt=}")
             while uptime < min_up_times[i]:
                 # logger.debug(f"{uptime=}")
-                if k>=0:
+                if k >= 0:
                     b_k = w[idx_b_2d[i, k]]
                 else:
                     b_k = 0
-                if (k-1>=0) and (k-1<n_steps):
+                if (k - 1 >= 0) and (k - 1 < n_steps):
                     idx_k_1 = idx_b_2d[i, k - 1]
                     b_k_1 = w[idx_k_1]
                 else:
                     b_k_1 = 0
-                if (k-it-2>=0) and (k-it-2<n_steps) :
+                if (k - it - 2 >= 0) and (k - it - 2 < n_steps):
                     idx_k_dt = idx_b_2d[i, k - it - 2]
                     b_k_dt = w[idx_k_dt]
                 else:
                     b_k_dt = 0
-                dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
+                dsc.leq(-b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
                 it += 1
                 # logger.debug(f"{dsc.g[-1]}")
-                uptime += ambient.time_steps[k-it].total_seconds()
+                uptime += ambient.time_steps[k - it].total_seconds()
     # Set min down time constraints
     for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
@@ -238,16 +255,16 @@ def create_stcs_problem(simplified=False, with_slack=True):
             # logger.debug(f"{k=}, {i=}, {dt=}")
             while downtime < min_down_times[i]:
                 # logger.debug(f"{downtime=}")
-                if k>=0:
+                if k >= 0:
                     b_k = w[idx_b_2d[i, k]]
                 else:
                     b_k = 0
-                if (k-1>=0) and (k-1<n_steps):
+                if (k - 1 >= 0) and (k - 1 < n_steps):
                     idx_k_1 = idx_b_2d[i, k - 1]
                     b_k_1 = w[idx_k_1]
                 else:
                     b_k_1 = 0
-                if (k-it-2>=0) and (k-it-2<n_steps) :
+                if (k - it - 2 >= 0) and (k - it - 2 < n_steps):
                     idx_k_dt = idx_b_2d[i, k - it - 2]
                     b_k_dt = w[idx_k_dt]
                 else:
@@ -255,7 +272,7 @@ def create_stcs_problem(simplified=False, with_slack=True):
                 dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
                 it += 1
                 # logger.debug(f"{dsc.g[-1]}")
-                downtime += ambient.time_steps[k-it].total_seconds()
+                downtime += ambient.time_steps[k - it].total_seconds()
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
@@ -264,27 +281,39 @@ def create_stcs_problem(simplified=False, with_slack=True):
     x_bar = GlobalSettings.CASADI_VAR.sym("x_bar", prob.x.shape)
     fun_F1 = ca.Function("F1", [prob.x, prob.p], [F1])
     fun_F2 = ca.Function("F2", [prob.x, prob.p], [F2])
-    fun_grad_F1 = ca.Function("F1_grad", [prob.x, prob.p], [
-                              ca.jacobian(F1, prob.x).T])
-    fun_grad_F2 = ca.Function("F2_grad", [prob.x, prob.p], [
-                              ca.jacobian(F2, prob.x).T])
+    fun_grad_F1 = ca.Function("F1_grad", [prob.x, prob.p], [ca.jacobian(F1, prob.x).T])
+    fun_grad_F2 = ca.Function("F2_grad", [prob.x, prob.p], [ca.jacobian(F2, prob.x).T])
 
     x = prob.x
-    prob.f_qp = ca.Function("F_qp", [x, x_bar, prob.p], [
-        0.5 * ca.mtimes(fun_F1(x_bar, prob.p).T, fun_F1(x_bar, prob.p))
-        + ca.mtimes([(x - x_bar).T,  fun_grad_F1(x_bar, prob.p),
-                    fun_F1(x_bar, prob.p)])
-        + 0.5 * ca.mtimes([(x - x_bar).T, fun_grad_F1(x_bar, prob.p),
-                          fun_grad_F1(x_bar, prob.p).T, (x - x_bar)])
-        + fun_F2(x_bar, prob.p) +
-        ca.mtimes(fun_grad_F2(x_bar, prob.p).T, x - x_bar)
-    ])
+    prob.f_qp = ca.Function(
+        "F_qp",
+        [x, x_bar, prob.p],
+        [
+            0.5 * ca.mtimes(fun_F1(x_bar, prob.p).T, fun_F1(x_bar, prob.p))
+            + ca.mtimes(
+                [(x - x_bar).T, fun_grad_F1(x_bar, prob.p), fun_F1(x_bar, prob.p)]
+            )
+            + 0.5
+            * ca.mtimes(
+                [
+                    (x - x_bar).T,
+                    fun_grad_F1(x_bar, prob.p),
+                    fun_grad_F1(x_bar, prob.p).T,
+                    (x - x_bar),
+                ]
+            )
+            + fun_F2(x_bar, prob.p)
+            + ca.mtimes(fun_grad_F2(x_bar, prob.p).T, x - x_bar)
+        ],
+    )
     meta = MetaDataOcp(
-        n_state=system.nx, n_continuous_control=system.nu, n_discrete_control=system.nb,
+        n_state=system.nx,
+        n_continuous_control=system.nu,
+        n_discrete_control=system.nb,
         idx_param=dsc.indices_p,
-        idx_state=np.hstack(dsc.indices['x']).tolist(),
-        idx_control=np.hstack(dsc.indices['u']).tolist(),
-        idx_bin_control=np.hstack(dsc.indices['b']).tolist(),
+        idx_state=np.hstack(dsc.indices["x"]).tolist(),
+        idx_control=np.hstack(dsc.indices["u"]).tolist(),
+        idx_bin_control=np.hstack(dsc.indices["b"]).tolist(),
         initial_state=to_0d(simulator.x_data[0, :]).tolist(),
         dt=ambient.time_steps,
         min_uptime=min_up_times,
@@ -300,41 +329,45 @@ def create_stcs_problem(simplified=False, with_slack=True):
     s.USE_RELAXED_SOL_AS_LINEARIZATION = True
     s.USE_TIGHT_MIPGAP_FIRST_ITERATION = True
     s.TIME_LIMIT = 0.5 * 3600
-    s.IPOPT_SETTINGS.update({
-        "ipopt.linear_solver": "ma57",
-        "ipopt.max_cpu_time": 300,
-        "ipopt.mumps_mem_percent": 10000,
-        "ipopt.mumps_pivtol": 0.001,
-        "ipopt.max_cpu_time": 3600.0,
-        "ipopt.max_iter": 5000,
-        "ipopt.acceptable_tol": 1e-1,
-        "ipopt.acceptable_iter": 8,
-        "ipopt.acceptable_constr_viol_tol": 10.0,
-        "ipopt.acceptable_dual_inf_tol": 10.0,
-        "ipopt.acceptable_compl_inf_tol": 10.0,
-        "ipopt.acceptable_obj_change_tol": 1e-1,
-        "ipopt.mu_strategy": "adaptive",
-        "ipopt.mu_target": 1e-5,
-        "ipopt.print_frequency_iter": 100,
-    })
-    s.MIP_SETTINGS_ALL["gurobi"].update({
-        "gurobi.MIPGap": 0.1,
-        "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
-        "gurobi.Heuristics": 0.05,
-        "gurobi.PoolSearchMode": 0,
-        "gurobi.PoolSolutions": 3,
-        "gurobi.TimeLimit": 600,
-        "gurobi.NodeMethod": 2,
-        "gurobi.Method": 2,
-    })
+    s.IPOPT_SETTINGS.update(
+        {
+            "ipopt.linear_solver": "ma57",
+            "ipopt.max_cpu_time": 300,
+            "ipopt.mumps_mem_percent": 10000,
+            "ipopt.mumps_pivtol": 0.001,
+            "ipopt.max_cpu_time": 3600.0,
+            "ipopt.max_iter": 5000,
+            "ipopt.acceptable_tol": 1e-1,
+            "ipopt.acceptable_iter": 8,
+            "ipopt.acceptable_constr_viol_tol": 10.0,
+            "ipopt.acceptable_dual_inf_tol": 10.0,
+            "ipopt.acceptable_compl_inf_tol": 10.0,
+            "ipopt.acceptable_obj_change_tol": 1e-1,
+            "ipopt.mu_strategy": "adaptive",
+            "ipopt.mu_target": 1e-5,
+            "ipopt.print_frequency_iter": 100,
+        }
+    )
+    s.MIP_SETTINGS_ALL["gurobi"].update(
+        {
+            "gurobi.MIPGap": 0.1,
+            "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
+            "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+            "gurobi.Heuristics": 0.05,
+            "gurobi.PoolSearchMode": 0,
+            "gurobi.PoolSolutions": 3,
+            "gurobi.TimeLimit": 600,
+            "gurobi.NodeMethod": 2,
+            "gurobi.Method": 2,
+        }
+    )
     s.BONMIN_SETTINGS = {
         "bonmin.time_limit": s.TIME_LIMIT,
         "bonmin.tree_search_strategy": "dive",
         "bonmin.node_comparison": "best-bound",
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
-        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.constr_viol_tol": s.CONSTRAINT_TOL,
         "bonmin.linear_solver": "ma57",
     }
 
@@ -356,8 +389,12 @@ if __name__ == "__main__":
 
     setup_logger(logging.DEBUG)
     prob, data, s = create_stcs_problem()
-    stats = Stats(mode='custom', problem_name='stcs',
-                  datetime=datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), data={})
+    stats = Stats(
+        mode="custom",
+        problem_name="stcs",
+        datetime=datetime.now().strftime("%Y-%m-%d_%H:%M:%S"),
+        data={},
+    )
     nlp = NlpSolver(prob, stats, s)
 
     # with open("data/nlpargs_adrian.pickle", 'rb') as f:
@@ -373,4 +410,4 @@ if __name__ == "__main__":
     with open("results/x_star_rel_test.pickle", "wb") as f:
         pickle.dump(data.x_sol, f)
     breakpoint()
-    check_solution(prob, data, data.prev_solution['x'], s)
+    check_solution(prob, data, data.prev_solution["x"], s)

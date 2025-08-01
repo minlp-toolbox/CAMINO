@@ -37,8 +37,7 @@ class TestSolver(unittest.TestCase):
 
     def test_cached_function(self):
         """Test a cached function."""
-        f1 = CachedFunction("test", dummy_casadi_function,
-                            FILE_PATH, do_compile=False)
+        f1 = CachedFunction("test", dummy_casadi_function, FILE_PATH, do_compile=False)
         out = f1([2.0, 3.0])
         self.assertEqual(out[0], 7.0)
 
@@ -46,16 +45,14 @@ class TestSolver(unittest.TestCase):
         for f in files:
             self.assertFalse(f.endswith(".so"))
 
-        f2 = CachedFunction("test", dummy_casadi_function,
-                            FILE_PATH, do_compile=False)
+        f2 = CachedFunction("test", dummy_casadi_function, FILE_PATH, do_compile=False)
         out = f2([2.0, 3.0])
         self.assertEqual(out[0], 7.0)
         f2.f.jacobian().jacobian()
 
     def test_cached_function_compiled(self):
         """Test a cached function."""
-        f1 = CachedFunction("test", dummy_casadi_function,
-                            FILE_PATH, do_compile=True)
+        f1 = CachedFunction("test", dummy_casadi_function, FILE_PATH, do_compile=True)
         out = f1([2.0, 3.0])
         self.assertEqual(out[0], 7.0)
 
@@ -67,8 +64,7 @@ class TestSolver(unittest.TestCase):
 
         self.assertTrue(has_so)
 
-        f2 = CachedFunction("test", dummy_casadi_function,
-                            FILE_PATH, do_compile=True)
+        f2 = CachedFunction("test", dummy_casadi_function, FILE_PATH, do_compile=True)
         out = f2([2.0, 3.0])
         self.assertEqual(out[0], 7.0)
         f2.f.jacobian().jacobian()

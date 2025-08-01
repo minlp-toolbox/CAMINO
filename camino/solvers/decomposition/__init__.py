@@ -9,9 +9,16 @@ from camino.solvers import Stats, MinlpProblem, MinlpData, Settings
 from camino.solvers.subsolvers.fnlp import FeasibilityNlpSolver
 from camino.solvers.subsolvers.fnlp_closest import FindClosestNlpSolver
 from camino.solvers.decomposition.base import GenericDecomposition
-from camino.solvers.decomposition.benders_master import BendersMasterMILP, BendersMasterMIQP
-from camino.solvers.decomposition.oa_master import OuterApproxMILP, OuterApproxMIQP, \
-    OuterApproxMILPImproved, OuterApproxMIQPImproved
+from camino.solvers.decomposition.benders_master import (
+    BendersMasterMILP,
+    BendersMasterMIQP,
+)
+from camino.solvers.decomposition.oa_master import (
+    OuterApproxMILP,
+    OuterApproxMIQP,
+    OuterApproxMILPImproved,
+    OuterApproxMIQPImproved,
+)
 from camino.solvers.decomposition.voronoi_master import VoronoiTrustRegionMIQP
 from camino.solvers.decomposition.sequential_benders_master import BendersRegionMasters
 
@@ -20,18 +27,28 @@ class GeneralizedBenders(GenericDecomposition):
     """Generalized Benders."""
 
     def __init__(
-        self, problem: MinlpProblem, data: MinlpData, stats: Stats,
-        settings: Settings, termination_type="std",
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        termination_type="std",
     ):
         """Generic decomposition algorithm."""
         master = BendersMasterMILP(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class GeneralizedBendersQP(GenericDecomposition):
@@ -39,7 +56,9 @@ class GeneralizedBendersQP(GenericDecomposition):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData, stats: Stats,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
         settings: Settings = None,
         termination_type="std",
     ):
@@ -47,11 +66,17 @@ class GeneralizedBendersQP(GenericDecomposition):
         master = BendersMasterMIQP(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=True
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=True,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class OuterApproximation(GenericDecomposition):
@@ -59,7 +84,9 @@ class OuterApproximation(GenericDecomposition):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData, stats: Stats,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
         settings: Settings = None,
         termination_type="std",
     ):
@@ -67,11 +94,17 @@ class OuterApproximation(GenericDecomposition):
         master = OuterApproxMILP(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class OuterApproximationQP(GenericDecomposition):
@@ -79,7 +112,9 @@ class OuterApproximationQP(GenericDecomposition):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData, stats: Stats,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
         settings: Settings = None,
         termination_type="std",
     ):
@@ -87,11 +122,17 @@ class OuterApproximationQP(GenericDecomposition):
         master = OuterApproxMIQP(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class OuterApproximationImproved(GenericDecomposition):
@@ -99,7 +140,9 @@ class OuterApproximationImproved(GenericDecomposition):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData, stats: Stats,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
         settings: Settings = None,
         termination_type="std",
     ):
@@ -107,11 +150,17 @@ class OuterApproximationImproved(GenericDecomposition):
         master = OuterApproxMILPImproved(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class OuterApproximationQPImproved(GenericDecomposition):
@@ -119,7 +168,9 @@ class OuterApproximationQPImproved(GenericDecomposition):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData, stats: Stats,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
         settings: Settings = None,
         termination_type="std",
     ):
@@ -127,46 +178,79 @@ class OuterApproximationQPImproved(GenericDecomposition):
         master = OuterApproxMIQPImproved(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class SequentialVoronoiMIQP(GenericDecomposition):
     """Generalized Benders."""
 
     def __init__(
-        self, problem: MinlpProblem, data: MinlpData, stats: Stats,
-        settings: Settings, termination_type="equality",
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        termination_type="equality",
     ):
         """Generic decomposition algorithm."""
         master = VoronoiTrustRegionMIQP(problem, data, stats, settings)
         fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=False
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)
 
 
 class SequentialBendersMIQP(GenericDecomposition):
     """Generalized Benders."""
 
     def __init__(
-        self, problem: MinlpProblem, data: MinlpData, stats: Stats,
-        settings: Settings, termination_type="std", with_lb_milp=True,
-        with_milp_only=False
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        termination_type="std",
+        with_lb_milp=True,
+        with_milp_only=False,
     ):
         """Generic decomposition algorithm."""
-        master = BendersRegionMasters(problem, data, stats, settings, with_lb_milp=with_lb_milp,
-                                      with_milp_only=with_milp_only)
+        master = BendersRegionMasters(
+            problem,
+            data,
+            stats,
+            settings,
+            with_lb_milp=with_lb_milp,
+            with_milp_only=with_milp_only,
+        )
         fnlp = FindClosestNlpSolver(problem, stats, settings)
         GenericDecomposition.__init__(
-            self, problem, data, stats, settings,
-            master, fnlp, termination_type,
-            first_relaxed=True
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=True,
         )
-        stats['total_time_loading'] = toc(reset=True)
+        stats["total_time_loading"] = toc(reset=True)

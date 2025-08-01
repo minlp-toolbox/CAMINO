@@ -16,8 +16,7 @@ logger = logging.getLogger(__name__)
 class SequentialTrustRegionMILP(MiSolverClass):
 
     def __init__(self, problem, data, stats, settings):
-        super(SequentialTrustRegionMILP, self).__init__(
-            problem, data, stats, settings)
+        super(SequentialTrustRegionMILP, self).__init__(problem, data, stats, settings)
         # Required subsolvers
         self.tr_milp = TrustRegionMILP(problem, data, stats, settings)
         self.nlp = NlpSolver(problem, stats, settings)
@@ -53,10 +52,11 @@ class SequentialTrustRegionMILP(MiSolverClass):
                 a_k = phi - f
                 logger.info(f"{a_k=} | {psi_k=} <? {self.eps=}")
                 if psi_k < self.eps:
-                    self.stats['total_time_calc'] = toc(reset=True)
+                    self.stats["total_time_calc"] = toc(reset=True)
                     colored("Problem solved", "green")
-                    data_p.prev_solutions[0]['f'] = self.tr_milp.f(
-                        data_p.x_sol, data_p.p)
+                    data_p.prev_solutions[0]["f"] = self.tr_milp.f(
+                        data_p.x_sol, data_p.p
+                    )
                     return data_p
                 if a_k < self.rho[0] * psi_k:
                     self.delta = self.kappa * self.delta
@@ -75,8 +75,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
                     else:
                         self.delta = self.delta / self.kappa
                     self.delta = min(self.delta, self.delta_max)
-                    colored(
-                        f"Step accepted, trust radius {self.delta}", "green")
+                    colored(f"Step accepted, trust radius {self.delta}", "green")
             else:
                 raise NotImplementedError(
                     "The original paper doesn't handle nonlinear constraints, "
@@ -89,5 +88,9 @@ class SequentialTrustRegionMILP(MiSolverClass):
 
     def warmstart(self, nlpdata: MinlpData):
         """Warmstart."""
-        logger.info(colored(
-            "s-tr-milp warmstarting is automatic, new linearization point inherited from previous solver.", "yellow"))
+        logger.info(
+            colored(
+                "s-tr-milp warmstarting is automatic, new linearization point inherited from previous solver.",
+                "yellow",
+            )
+        )

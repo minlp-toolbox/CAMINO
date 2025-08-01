@@ -17,6 +17,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Timing:
     simplified: bool = False
@@ -74,8 +75,7 @@ class Ambient:
     def _compute_load_forecast(self):
         """Compute load forecast."""
         self._df_ambient["Qdot_c"] = 9e2 * (self._df_ambient["T_amb"] - 18.0)
-        self._df_ambient.loc[self._df_ambient["Qdot_c"]
-                             <= 0.0, ["Qdot_c"]] = 0.0
+        self._df_ambient.loc[self._df_ambient["Qdot_c"] <= 0.0, ["Qdot_c"]] = 0.0
         self._df_ambient["Qdot_c"] += 1e3
 
     def _fill_remaining_nan_values(self):
@@ -92,8 +92,14 @@ class Ambient:
 
     def _set_time_steps(self):
         # TODO make it general, based on csv file!
-        self.time_steps = [timedelta(seconds=self.timing.dt_day) if idx < self.timing.N_day +
-                           2 else timedelta(seconds=self.timing.dt_night) for idx in range(self.timing.N)]
+        self.time_steps = [
+            (
+                timedelta(seconds=self.timing.dt_day)
+                if idx < self.timing.N_day + 2
+                else timedelta(seconds=self.timing.dt_night)
+            )
+            for idx in range(self.timing.N)
+        ]
 
     def interpolate(self, value: datetime):
         """Interpolate a value."""
@@ -120,16 +126,16 @@ if __name__ == "__main__":
     time_grid = [0]
     for i in range(timing.N):
         time_grid.append(time_grid[i] + ambient.time_steps[i].total_seconds())
-    interp_df['time_grid'] = time_grid
+    interp_df["time_grid"] = time_grid
     print(interp_df)
 
     plt.figure()
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 0])
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 1])
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 2])
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 3])
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 4])
-    plt.plot(range(ambient.timing.N+1), interp_df.iloc[:, 5])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 0])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 1])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 2])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 3])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 4])
+    plt.plot(range(ambient.timing.N + 1), interp_df.iloc[:, 5])
     plt.yscale("log")
     plt.show()
     # plt.figure()

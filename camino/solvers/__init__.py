@@ -40,13 +40,9 @@ class SolverClass(ABC):
         else:
             stats = solver.stats()
 
-        t_proc = sum(
-            [v for k, v in stats.items() if "t_proc" in k]
-        )
+        t_proc = sum([v for k, v in stats.items() if "t_proc" in k])
 
-        t_wall = sum(
-            [v for k, v in stats.items() if "t_wall" in k]
-        )
+        t_wall = sum([v for k, v in stats.items() if "t_wall" in k])
         self.stats[f"{algo_name}.time"] += t_proc
         self.stats[f"{algo_name}.time_wall"] += t_wall
         self.stats[f"{algo_name}.iter"] += max(
@@ -73,25 +69,26 @@ class MiSolverClass(SolverClass):
     def __init__(self, problem, data, stats, settings):
         """Create a generic MiSolverClass."""
         SolverClass.__init__(self, problem, stats, settings)
-        self.stats['lb'] = -ca.inf
-        self.stats['ub'] = ca.inf
-        self.stats['iter_nr'] = 0
-        self.stats['best_iter'] = -1
+        self.stats["lb"] = -ca.inf
+        self.stats["ub"] = ca.inf
+        self.stats["iter_nr"] = 0
+        self.stats["best_iter"] = -1
         self.best_solutions = []
 
     def update_best_solutions(self, data: MinlpData):
         """Update best solutions,"""
         if np.any(data.solved_all):
             for i, success in enumerate(data.solved_all):
-                obj_val = float(data.prev_solutions[i]['f'])
+                obj_val = float(data.prev_solutions[i]["f"])
                 if success:
-                    if obj_val + self.settings.EPS < self.stats['ub']:
+                    if obj_val + self.settings.EPS < self.stats["ub"]:
                         logger.info(
-                            f"Decreased UB from {self.stats['ub']} to {obj_val}")
-                        self.stats['ub'] = obj_val
+                            f"Decreased UB from {self.stats['ub']} to {obj_val}"
+                        )
+                        self.stats["ub"] = obj_val
                         self.best_solutions.append(data.prev_solutions[i])
-                        self.stats['best_iter'] = self.stats['iter_nr']
-                    elif obj_val - self.settings.EPS < self.stats['ub']:
+                        self.stats["best_iter"] = self.stats["iter_nr"]
+                    elif obj_val - self.settings.EPS < self.stats["ub"]:
                         self.best_solutions.append(data.prev_solutions[i])
 
         if len(self.best_solutions) > 0:
@@ -182,11 +179,17 @@ def get_idx_linear_bounds_binary_x(problem: MinlpProblem):
         sp = np.array(g_expr.sparsity_jac(0, 0))
 
         iterator = get_idx_linear_bounds(problem)
-        problem.idx_g_lin_bin = np.array(list(
-            filter(lambda i: (sum(sp[i, problem.idx_x_integer]) > 0
-                              and sum(sp[i, x_cont_idx]) == 0),
-                   iterator)
-        ))
+        problem.idx_g_lin_bin = np.array(
+            list(
+                filter(
+                    lambda i: (
+                        sum(sp[i, problem.idx_x_integer]) > 0
+                        and sum(sp[i, x_cont_idx]) == 0
+                    ),
+                    iterator,
+                )
+            )
+        )
 
     return problem.idx_g_lin_bin
 
@@ -200,9 +203,13 @@ def get_idx_linear_bounds(problem: MinlpProblem):
     """Get the indices of the linear bounds."""
     if problem.idx_g_lin is None:
         nr_g = problem.g.shape[0]
-        problem.idx_g_lin = np.array(list(
-            filter(lambda i: ca.hessian(problem.g[i], problem.x)[0].nnz() == 0,
-                   range(nr_g)))
+        problem.idx_g_lin = np.array(
+            list(
+                filter(
+                    lambda i: ca.hessian(problem.g[i], problem.x)[0].nnz() == 0,
+                    range(nr_g),
+                )
+            )
         )
 
     return problem.idx_g_lin
@@ -214,9 +221,14 @@ def get_idx_inverse(indices, nr):
     return list(set(full_indices) - set(indices))
 
 
-def extract_bounds(problem: MinlpProblem, data: MinlpData,
-                   idx_g: List[int], new_x,
-                   idx_x: Optional[List[int]] = None, allow_fail=True):
+def extract_bounds(
+    problem: MinlpProblem,
+    data: MinlpData,
+    idx_g: List[int],
+    new_x,
+    idx_x: Optional[List[int]] = None,
+    allow_fail=True,
+):
     """Extract bounds."""
     empty = False
     nr_g = len(idx_g)
@@ -226,8 +238,9 @@ def extract_bounds(problem: MinlpProblem, data: MinlpData,
         try:
             if idx_x is None:
                 _x = problem.x
-                g = ca.Function("g_lin", [_x, problem.p], [
-                                problem.g[idx_g]])(new_x, data.p)
+                g = ca.Function("g_lin", [_x, problem.p], [problem.g[idx_g]])(
+                    new_x, data.p
+                )
             else:
                 vec = []
                 j = 0
@@ -239,8 +252,9 @@ def extract_bounds(problem: MinlpProblem, data: MinlpData,
                         vec.append(0)
                 vec = ca.vertcat(*vec)
                 vec_fn = ca.Function("v", [new_x], [vec])
-                g = ca.Function("g_lin", [problem.x, problem.p], [
-                                problem.g[idx_g]])(vec_fn(new_x), data.p)
+                g = ca.Function("g_lin", [problem.x, problem.p], [problem.g[idx_g]])(
+                    vec_fn(new_x), data.p
+                )
 
             lbg = data.lbg[idx_g].flatten().tolist()
             ubg = data.ubg[idx_g].flatten().tolist()

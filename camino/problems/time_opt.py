@@ -39,23 +39,20 @@ def time_opt_car():
     u_path_weights = [0.5, 0, 0]
 
     # Dynamics
-    x_dot = ca.vertcat(
-        v,
-        a * (1 + turbo) * reverse,
-        1
-    )
+    x_dot = ca.vertcat(v, a * (1 + turbo) * reverse, 1)
 
     # Path constraints 0 < constraint
-    p_g = ca.Function("g", [x, u], [
-        v / v_turbo - turbo,  # Turbo only on at v > v_turbo,
-    ])
+    p_g = ca.Function(
+        "g",
+        [x, u],
+        [
+            v / v_turbo - turbo,  # Turbo only on at v > v_turbo,
+        ],
+    )
     p_g_lb = 0
     p_g_ub = ca.inf
 
-    terminal_g = ca.Function("g_term", [x], [ca.vertcat(
-        p - p_des,
-        v - v_des
-    )])
+    terminal_g = ca.Function("g_term", [x], [ca.vertcat(p - p_des, v - v_des)])
     terminal_g_lb = 0
     terminal_g_ub = 0
 
@@ -92,13 +89,13 @@ def time_opt_car():
     problem.meta = MetaDataOcp(
         dt=None,
         initial_state=x_0[:-1],
-        n_state=x.numel()-1,
+        n_state=x.numel() - 1,
         n_continuous_control=u.numel(),
         n_discrete_control=0,
         idx_state=np.vstack(dsc.get_indices("x"))[:, :-1],
         idx_control=np.vstack(dsc.get_indices("u")),
         idx_bin_control=[],
-        idx_t=np.vstack(dsc.get_indices("x"))[:, -1]
+        idx_t=np.vstack(dsc.get_indices("x"))[:, -1],
     )
     problem.hessian_not_psd = True
     data = dsc.get_data()

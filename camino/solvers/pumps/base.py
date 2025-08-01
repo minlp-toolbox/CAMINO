@@ -11,8 +11,12 @@ from camino.stats import Stats
 from camino.data import MinlpData
 from camino.problem import MinlpProblem
 from camino.solvers.utils import any_equal
-from camino.solvers.pumps.utils import integer_error, create_rounded_data, perturbe_x, \
-    random_perturbe_x
+from camino.solvers.pumps.utils import (
+    integer_error,
+    create_rounded_data,
+    perturbe_x,
+    random_perturbe_x,
+)
 from camino.utils import toc, logging
 from camino.utils.conversion import to_0d
 from camino.solvers import MiSolverClass
@@ -51,15 +55,22 @@ class PumpBase(MiSolverClass):
         relaxed_value = nlpdata.obj_val
         prev_x = []
         distances = [integer_error(nlpdata.x_sol[self.idx_x_integer])]
-        while distances[-1] > self.settings.CONSTRAINT_TOL and self.stats["iter_nr"] < self.settings.PUMP_MAX_ITER:
+        while (
+            distances[-1] > self.settings.CONSTRAINT_TOL
+            and self.stats["iter_nr"] < self.settings.PUMP_MAX_ITER
+        ):
             datarounded = create_rounded_data(nlpdata, self.idx_x_integer)
             require_restart = False
             for i, sol in enumerate(datarounded.solutions_all):
                 new_x = to_0d(sol["x"])
                 perturbe_remaining = self.settings.PARALLEL_SOLUTIONS
-                while any_equal(new_x, prev_x, self.idx_x_integer) and perturbe_remaining > 0:
+                while (
+                    any_equal(new_x, prev_x, self.idx_x_integer)
+                    and perturbe_remaining > 0
+                ):
                     new_x = perturbe_x(
-                        to_0d(nlpdata.solutions_all[i]["x"]), self.idx_x_integer)
+                        to_0d(nlpdata.solutions_all[i]["x"]), self.idx_x_integer
+                    )
                     perturbe_remaining -= 1
 
                 datarounded.prev_solutions[i]["x"] = new_x
@@ -70,23 +81,28 @@ class PumpBase(MiSolverClass):
 
             if not require_restart:
                 data = self.pump.solve(
-                    datarounded, int_error=distances[-1], obj_val=relaxed_value)
+                    datarounded, int_error=distances[-1], obj_val=relaxed_value
+                )
                 distances.append(integer_error(data.x_sol[self.idx_x_integer]))
 
             if (
                 len(distances) > self.settings.PUMP_MAX_STEP_IMPROVEMENTS
-                and distances[-self.settings.PUMP_MAX_STEP_IMPROVEMENTS - 1] < distances[-1]
+                and distances[-self.settings.PUMP_MAX_STEP_IMPROVEMENTS - 1]
+                < distances[-1]
             ) or require_restart:
                 data.prev_solutions[0]["x"] = random_perturbe_x(
-                    data.x_sol, self.idx_x_integer)
+                    data.x_sol, self.idx_x_integer
+                )
                 data = self.pump.solve(
-                    data, int_error=distances[-1], obj_val=relaxed_value)
+                    data, int_error=distances[-1], obj_val=relaxed_value
+                )
                 distances.append(integer_error(data.x_sol[self.idx_x_integer]))
 
             # Added heuristic, not present in the original implementation
             if distances[-1] < self.settings.CONSTRAINT_INT_TOL:
                 datarounded = self.nlp.solve(
-                    create_rounded_data(data, self.idx_x_integer), True)
+                    create_rounded_data(data, self.idx_x_integer), True
+                )
                 if self.update_best_solutions(datarounded):
                     return self.get_best_solutions(datarounded)
 

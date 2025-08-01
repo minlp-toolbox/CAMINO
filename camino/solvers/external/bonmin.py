@@ -5,8 +5,13 @@
 """Bonmin solver."""
 
 import casadi as ca
-from camino.solvers import MiSolverClass, Stats, MinlpProblem, MinlpData, \
-    regularize_options
+from camino.solvers import (
+    MiSolverClass,
+    Stats,
+    MinlpProblem,
+    MinlpData,
+    regularize_options,
+)
 from camino.settings import Settings
 from camino.utils import tic, toc
 
@@ -14,8 +19,14 @@ from camino.utils import tic, toc
 class BonminSolver(MiSolverClass):
     """Create MINLP solver (using bonmin)."""
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats,
-                 s: Settings, algo_type="B-BB"):
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        s: Settings,
+        algo_type="B-BB",
+    ):
         """Create MINLP problem.
 
         :param algo_type: Algorithm type, options: B-BB, B-OA, B-QG, or B-Hyb
@@ -27,32 +38,30 @@ class BonminSolver(MiSolverClass):
         discrete = [0] * self.nr_x
         for i in problem.idx_x_integer:
             discrete[i] = 1
-        options.update({
-            "discrete": discrete,
-            "bonmin.algorithm": algo_type,
-        })
-        minlp = {
-            "f": problem.f,
-            "g": problem.g,
-            "x": problem.x,
-            "p": problem.p
-        }
-        self.solver = ca.nlpsol(
-            "minlp", "bonmin", minlp, options
+        options.update(
+            {
+                "discrete": discrete,
+                "bonmin.algorithm": algo_type,
+            }
         )
+        minlp = {"f": problem.f, "g": problem.g, "x": problem.x, "p": problem.p}
+        self.solver = ca.nlpsol("minlp", "bonmin", minlp, options)
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """Solve MINLP."""
         tic()
         nlpdata.prev_solution = self.solver(
             x0=nlpdata.x0,
-            lbx=nlpdata.lbx, ubx=nlpdata.ubx,
-            lbg=nlpdata.lbg, ubg=nlpdata.ubg,
+            lbx=nlpdata.lbx,
+            ubx=nlpdata.ubx,
+            lbg=nlpdata.lbg,
+            ubg=nlpdata.ubg,
             p=nlpdata.p,
         )
         nlpdata.solved, stats = self.collect_stats(
-            "MINLP", sol=nlpdata.prev_solutions[-1])
-        self.stats['total_time_calc'] = toc(reset=True)
+            "MINLP", sol=nlpdata.prev_solutions[-1]
+        )
+        self.stats["total_time_calc"] = toc(reset=True)
         return nlpdata
 
     def reset(self, nlpdata: MinlpData):

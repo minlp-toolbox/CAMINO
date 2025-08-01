@@ -9,8 +9,13 @@ from camino.settings import GlobalSettings as GS
 import casadi as ca
 
 
-def integrate_rk4(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
-                  dt: Union[float, GS.CASADI_VAR], m_steps: int = 1):
+def integrate_rk4(
+    x: GS.CASADI_VAR,
+    u: GS.CASADI_VAR,
+    x_dot: GS.CASADI_VAR,
+    dt: Union[float, GS.CASADI_VAR],
+    m_steps: int = 1,
+):
     """
     Implement RK4 integrator for ODE.
 
@@ -43,8 +48,13 @@ def integrate_rk4(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
         return ca.Function("I_rk4", [X0, U], [X], ["x0", "u"], ["xf"])
 
 
-def integrate_ee(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
-                 dt: Union[float, GS.CASADI_VAR], m_steps: int = 1):
+def integrate_ee(
+    x: GS.CASADI_VAR,
+    u: GS.CASADI_VAR,
+    x_dot: GS.CASADI_VAR,
+    dt: Union[float, GS.CASADI_VAR],
+    m_steps: int = 1,
+):
     """
     Implement explicit euler integrator for ODE.
 
@@ -72,8 +82,13 @@ def integrate_ee(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
         return ca.Function("I_ee", [X0, U], [X], ["x0", "u"], ["xf"])
 
 
-def integrate_ie(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
-                 dt: Union[float, GS.CASADI_VAR], m_steps: int = 1):
+def integrate_ie(
+    x: GS.CASADI_VAR,
+    u: GS.CASADI_VAR,
+    x_dot: GS.CASADI_VAR,
+    dt: Union[float, GS.CASADI_VAR],
+    m_steps: int = 1,
+):
     """Integrate Implicit Euler."""
     f = ca.Function("f", [x, u], [x_dot])
     X0 = GS.CASADI_VAR.sym("X0", x.shape[0])
@@ -88,6 +103,8 @@ def integrate_ie(x: GS.CASADI_VAR, u: GS.CASADI_VAR, x_dot: GS.CASADI_VAR,
         X += DT * f(X, U) / m_steps
     f = X - Xk
     if isinstance(dt, GS.CASADI_VAR):
-        return ca.Function("I_ie", [X0, U, Xk, DT], [f], ["x0",  "u", "x1", "dt"], ["xf"])
+        return ca.Function(
+            "I_ie", [X0, U, Xk, DT], [f], ["x0", "u", "x1", "dt"], ["xf"]
+        )
     else:
         return ca.Function("I_ie", [X0, U, Xk], [f], ["x0", "u", "x1"], ["xf"])

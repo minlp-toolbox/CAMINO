@@ -14,14 +14,17 @@ from camino.solvers import SolverClass, Stats, MinlpProblem, MinlpData
 from camino.settings import Settings
 from camino.utils import toc, logging
 from camino.utils.conversion import to_0d
+
 try:
     from pycombina import BinApprox, CombinaBnB
 except Exception:
+
     class BinApprox:
         pass
 
     class CombinaBnB:
         pass
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ def simulate(x0, u, f_dyn):
         else:
             x.append(to_0d(f_dyn(x[-1], u[t, :])))
     return np.array(x).flatten().tolist()
+
 
 def to_list(dt, min_time, nr_b):
     """Create a min up or downtime list."""
@@ -63,8 +67,9 @@ class PycombinaSolver(SolverClass):
         b_rel = to_0d(nlpdata.x_sol)[self.meta.idx_bin_control]
         if len(b_rel.shape) == 1:  # flatten array
             b_rel = b_rel.reshape(-1, self.meta.n_discrete_control)
-        b_rel = np.hstack([np.asarray(b_rel), np.array(
-            1-b_rel.sum(axis=1).reshape(-1, 1))])  # Make sos1 structure
+        b_rel = np.hstack(
+            [np.asarray(b_rel), np.array(1 - b_rel.sum(axis=1).reshape(-1, 1))]
+        )  # Make sos1 structure
 
         # Ensure values are not out of range due to numerical effects
         b_rel[b_rel < 0] = 0
@@ -81,7 +86,7 @@ class PycombinaSolver(SolverClass):
                 raise NotImplementedError()
         else:
             # Assumes uniform grid
-            time_array = np.arange(0, N*self.meta.dt, self.meta.dt)
+            time_array = np.arange(0, N * self.meta.dt, self.meta.dt)
         binapprox = BinApprox(time_array, b_rel)
 
         value_set = False
@@ -90,22 +95,24 @@ class PycombinaSolver(SolverClass):
             if isinstance(self.meta.min_downtime, np.ndarray):
                 if self.meta.min_downtime.shape[0] == self.meta.n_discrete_control:
                     min_downtimes = np.concatenate(
-                        [self.meta.min_downtime, np.zeros(1)])
+                        [self.meta.min_downtime, np.zeros(1)]
+                    )
                     binapprox.set_min_down_times(min_downtimes)
             else:
                 binapprox.set_min_down_times(
-                    to_list(self.meta.dt, self.meta.min_downtime, b_rel.shape[1]))
+                    to_list(self.meta.dt, self.meta.min_downtime, b_rel.shape[1])
+                )
 
         if self.meta.min_uptime is not None:
             value_set = True
             if isinstance(self.meta.min_uptime, np.ndarray):
                 if self.meta.min_uptime.shape[0] == self.meta.n_discrete_control:
-                    min_uptimes = np.concatenate(
-                        [self.meta.min_uptime, np.zeros(1)])
+                    min_uptimes = np.concatenate([self.meta.min_uptime, np.zeros(1)])
                     binapprox.set_min_up_times(min_uptimes)
             else:
                 binapprox.set_min_up_times(
-                    to_list(self.meta.dt, self.meta.min_uptime, b_rel.shape[1]))
+                    to_list(self.meta.dt, self.meta.min_uptime, b_rel.shape[1])
+                )
 
         # binapprox.set_n_max_switches(...)
         # binapprox.set_max_up_times(...)
@@ -116,8 +123,7 @@ class PycombinaSolver(SolverClass):
         combina = CombinaBnB(binapprox)
         combina.solve()
         b_bin = binapprox.b_bin[:-1, :].T.flatten()
-        idx_bin_control = np.array(
-            self.meta.idx_bin_control).flatten().tolist()
+        idx_bin_control = np.array(self.meta.idx_bin_control).flatten().tolist()
         nlpdata.x_sol[idx_bin_control] = b_bin
 
         return nlpdata

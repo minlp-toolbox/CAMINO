@@ -22,12 +22,13 @@ logger = logging.getLogger(__name__)
 
 class CiaSolver(MiSolverClass):
 
-    def __init__(self, problem: MinlpProblem, data: MinlpData, stats: Stats, settings: Settings):
+    def __init__(
+        self, problem: MinlpProblem, data: MinlpData, stats: Stats, settings: Settings
+    ):
         super(CiaSolver, self).__init__(problem, data, stats, settings)
         logger.info("Setup NLP solver and Pycombina...")
         self.nlp = NlpSolver(problem, self.stats, self.settings)
-        self.combina_solver = PycombinaSolver(
-            problem, self.stats, self.settings)
+        self.combina_solver = PycombinaSolver(problem, self.stats, self.settings)
         logger.info("Solver initialized.")
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
@@ -40,7 +41,7 @@ class CiaSolver(MiSolverClass):
         self.stats["nlp_obj"] = nlpdata.obj_val
         self.stats["lb"] = nlpdata.obj_val
         self.stats["x_sol"] = to_0d(nlpdata.x_sol)
-        self.stats['nlp_rel_time'] = toc()
+        self.stats["nlp_rel_time"] = toc()
         if not nlpdata.solved:
             logger.error(colored("Relaxed NLP not solved."))
             raise RuntimeError()
@@ -58,7 +59,7 @@ class CiaSolver(MiSolverClass):
         self.stats["nlp_obj"] = nlpdata.obj_val
         # self.stats["lb"] = nlpdata.obj_val
         self.stats["x_sol"] = to_0d(nlpdata.x_sol)
-        self.stats['total_time_calc'] = toc(reset=True)
+        self.stats["total_time_calc"] = toc(reset=True)
         if not nlpdata.solved:
             logger.error(colored("NLP with fixed binary not solved."))
             raise RuntimeError()

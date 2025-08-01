@@ -53,8 +53,11 @@ class SurSolver(SolverClass):
         for i in range(b_bin.shape[1]):  # for each control
             marker = 0
             for t in range(b_bin.shape[0]):  # scam the horizon
-                if np.sum(b_rel[i][-(t-marker):] * self.dt) - \
-                        np.sum(b_bin[i][-(t-marker):-1] * self.dt) >= 0.5*self.dt:
+                if (
+                    np.sum(b_rel[i][-(t - marker) :] * self.dt)
+                    - np.sum(b_bin[i][-(t - marker) : -1] * self.dt)
+                    >= 0.5 * self.dt
+                ):
                     b_bin[i][t] = 1
                 else:
                     b_bin[i][t] = 0
@@ -65,9 +68,13 @@ class SurSolver(SolverClass):
 
 
 if __name__ == "__main__":
-    test_array = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-                           [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-                          [0.1, 0.1, 0.1, 0.5, 0.1, 0.1]])
+    test_array = np.array(
+        [
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+            [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            [0.1, 0.1, 0.1, 0.5, 0.1, 0.1],
+        ]
+    )
     test_array = test_array.T
 
     # Add check for tall matrix shape
@@ -87,10 +94,11 @@ if __name__ == "__main__":
             if t == 0:
                 res = b_rel_i[0]
             else:
-                res = np.sum(b_rel_i[marker:t+1] * dt) - \
-                    np.sum(b_bin_i[marker:t] * dt)
+                res = np.sum(b_rel_i[marker : t + 1] * dt) - np.sum(
+                    b_bin_i[marker:t] * dt
+                )
             print(f"Res. {res}")
-            if res >= 0.5*dt:
+            if res >= 0.5 * dt:
                 b_bin_i[t] = 1
                 marker = 0
             else:

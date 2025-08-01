@@ -19,15 +19,17 @@ class GenericDecomposition(MiSolverClass):
 
     def __init__(
         self,
-        problem: MinlpProblem, data: MinlpData,
-        stats: Stats, settings: Settings,
-        master: MiSolverClass, fnlp: NlpSolver, termination_type: str = "std",
-        first_relaxed: bool = True
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        master: MiSolverClass,
+        fnlp: NlpSolver,
+        termination_type: str = "std",
+        first_relaxed: bool = True,
     ):
         """Generic decomposition algorithm."""
-        super(GenericDecomposition, self).__init__(
-            problem, data, stats, settings
-        )
+        super(GenericDecomposition, self).__init__(problem, data, stats, settings)
         self.termination_condition = get_termination_condition(
             termination_type, problem, data, settings
         )
@@ -49,15 +51,21 @@ class GenericDecomposition(MiSolverClass):
 
         if self.first_relaxed:
             data = self.nlp.solve(data)
-            self.stats['lb'] = data.obj_val
+            self.stats["lb"] = data.obj_val
             data = self.master.solve(data, integers_relaxed=True)
 
-        while (not self.termination_condition(
-                self.stats, self.settings, self.stats['lb'], self.stats['ub'],
-                self._get_x_star(), x_hat)) and feasible:
+        while (
+            not self.termination_condition(
+                self.stats,
+                self.settings,
+                self.stats["lb"],
+                self.stats["ub"],
+                self._get_x_star(),
+                x_hat,
+            )
+        ) and feasible:
             # Solve NLP(y^k)
             data = self.nlp.solve(data, set_x_bin=True)
-
 
             # Is there any infeasible?
             if not np.all(data.solved_all):
@@ -71,20 +79,22 @@ class GenericDecomposition(MiSolverClass):
             # Solve master^k and set lower bound:
             data = self.master.solve(data)
             feasible = data.solved
-            self.stats['lb'] = max(data.obj_val, self.stats['lb'])
+            self.stats["lb"] = max(data.obj_val, self.stats["lb"])
             x_hat = data.x_sol
-            logger.debug(f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ...")
+            logger.debug(
+                f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
+            )
             logger.debug(f"{self.stats['ub']=}, {self.stats['lb']=}\n")
-            self.stats['iter_nr'] += 1
+            self.stats["iter_nr"] += 1
 
-        self.stats['total_time_calc'] = toc(reset=True)
+        self.stats["total_time_calc"] = toc(reset=True)
         return self.get_best_solutions(data)
 
     def _get_x_star(self):
         if len(self.best_solutions) == 0:
             return self._x_nan
         else:
-            return self.best_solutions[-1]['x']
+            return self.best_solutions[-1]["x"]
 
     def reset(self, nlpdata: MinlpData):
         """Reset Solvers."""

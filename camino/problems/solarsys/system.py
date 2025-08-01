@@ -23,16 +23,16 @@ class System:
     def get_default_initial_state():
         """Get default initial states."""
         return {
-            'T_hts': [70.0, 65.0, 63.0, 60.0],
-            'T_lts': 14.0,
-            'T_fpsc': 20.0,
-            'T_fpsc_s': 20.0,
-            'T_vtsc': 22.0,
-            'T_vtsc_s': 22.0,
-            'T_pscf': 18.0,
-            'T_pscr': 20.0,
-            'T_shx_psc': [11.0, 11.0, 11.0, 11.0],
-            'T_shx_ssc': [32.0, 32.0, 32.0, 32.0],
+            "T_hts": [70.0, 65.0, 63.0, 60.0],
+            "T_lts": 14.0,
+            "T_fpsc": 20.0,
+            "T_fpsc_s": 20.0,
+            "T_vtsc": 22.0,
+            "T_vtsc_s": 22.0,
+            "T_pscf": 18.0,
+            "T_pscr": 20.0,
+            "T_shx_psc": [11.0, 11.0, 11.0, 11.0],
+            "T_shx_ssc": [32.0, 32.0, 32.0, 32.0],
         }
 
     def _setup_system_dimensions(self):
@@ -192,7 +192,7 @@ class System:
             "acm": {
                 "min_up_time": [3600.0, 900.0],
                 "min_down_time": [1800.0, 900.0],
-                "Pmax": [1.5e3, 1.2e3]
+                "Pmax": [1.5e3, 1.2e3],
                 # "Pmax": [1.5e3 + 1.6e3, 1.2e3 + 1.6e3]
             },
             "hp": {"min_up_time": [3600.0], "min_down_time": [1800.0]},
@@ -383,16 +383,13 @@ class System:
                     for T_mts_m in T_mts:
 
                         T_lts_s = max(
-                            self.p["T_ac_lt_min"], min(
-                                self.p["T_ac_lt_max"], T_lts_k)
+                            self.p["T_ac_lt_min"], min(self.p["T_ac_lt_max"], T_lts_k)
                         )
                         T_hts_s = max(
-                            self.p["T_ac_ht_min"], min(
-                                self.p["T_ac_ht_max"], T_hts_l)
+                            self.p["T_ac_ht_min"], min(self.p["T_ac_ht_max"], T_hts_l)
                         )
                         T_mts_s = max(
-                            self.p["T_ac_mt_min"], min(
-                                self.p["T_ac_mt_max"], T_mts_m)
+                            self.p["T_ac_mt_min"], min(self.p["T_ac_mt_max"], T_mts_m)
                         )
 
                         if (
@@ -403,8 +400,7 @@ class System:
                             data.append(lb)
                         else:
                             data.append(
-                                data_fcn(T_lts=T_lts_s,
-                                         T_hts=T_hts_s, T_mts=T_mts_s)
+                                data_fcn(T_lts=T_lts_s, T_hts=T_hts_s, T_mts=T_mts_s)
                             )
 
             data = np.asarray(data)
@@ -421,16 +417,16 @@ class System:
         )
 
         Qdot_ac_lt = (
-            iota_qdot(
-                ca.veccat(T_amb + self.p["dT_rc"], T_hts[0], T_lts)) * 1e3
+            iota_qdot(ca.veccat(T_amb + self.p["dT_rc"], T_hts[0], T_lts)) * 1e3
         )
         # Better would be to limit COP_ac!
         COP_ac = iota_cop(ca.veccat(T_amb + self.p["dT_rc"], T_hts[0], T_lts))
 
         # TODO: Possible error
         T_ac_ht = T_hts[0] - (
-            (Qdot_ac_lt) / ca.fmax(COP_ac, 1e-6) /
-            (self.p["mdot_ac_ht"] * self.p["c_w"])
+            (Qdot_ac_lt)
+            / ca.fmax(COP_ac, 1e-6)
+            / (self.p["mdot_ac_ht"] * self.p["c_w"])
         )
         T_ac_lt = T_lts - (Qdot_ac_lt / (self.p["mdot_ac_lt"] * self.p["c_w"]))
 
@@ -469,8 +465,7 @@ class System:
                     mdot_hts_t_s * ((T_hts[0] + T_hts[1]) / 2.0)
                     + mdot_hts_t_sbar * ((T_hts[0] - T_hts[1]) / 2.0)
                 )
-                - (self.p["lambda_hts"][0] /
-                   self.p["c_w"] * (T_hts[0] - T_amb))
+                - (self.p["lambda_hts"][0] / self.p["c_w"] * (T_hts[0] - T_amb))
             )
         )
 
@@ -487,8 +482,7 @@ class System:
                     mdot_hts_b_s * ((T_hts[2] + T_hts[1]) / 2.0)
                     + mdot_hts_b_sbar * ((T_hts[2] - T_hts[1]) / 2.0)
                 )
-                - (self.p["lambda_hts"][3] /
-                   self.p["c_w"] * (T_hts[1] - T_amb))
+                - (self.p["lambda_hts"][3] / self.p["c_w"] * (T_hts[1] - T_amb))
             )
         )
 
@@ -499,8 +493,7 @@ class System:
                 * (((T_hts[-1] + T_hts[-2]) / 2.0) - ((T_hts[-2] + T_hts[-3]) / 2.0))
                 + mdot_hts_b_sbar
                 * (((T_hts[-1] - T_hts[-2]) / 2.0) - ((T_hts[-2] - T_hts[-3]) / 2.0))
-                - (self.p["lambda_hts"][-2] /
-                   self.p["c_w"] * (T_hts[-2] - T_amb))
+                - (self.p["lambda_hts"][-2] / self.p["c_w"] * (T_hts[-2] - T_amb))
             )
         )
 
@@ -513,8 +506,7 @@ class System:
                     mdot_hts_b_s * ((T_hts[-1] + T_hts[-2]) / 2.0)
                     + mdot_hts_b_sbar * ((T_hts[-1] - T_hts[-2]) / 2.0)
                 )
-                - (self.p["lambda_hts"][-1] /
-                   self.p["c_w"] * (T_hts[-1] - T_amb))
+                - (self.p["lambda_hts"][-1] / self.p["c_w"] * (T_hts[-1] - T_amb))
             )
         )
 
@@ -622,15 +614,13 @@ class System:
         )
 
         iota_mdot_fpsc = ca.interpolant(
-            "iota_mdot_fpsc", "bspline", [
-                data_v_ppsc, data_p_mpsc], data_mdot_fpsc
+            "iota_mdot_fpsc", "bspline", [data_v_ppsc, data_p_mpsc], data_mdot_fpsc
         )
 
         mdot_fpsc = iota_mdot_fpsc(ca.veccat(v_ppsc, p_mpsc))
 
         Qdot_fpsc = self.p["eta_fpsc"] * self.p["A_fpsc"] * I_fpsc
-        Qdot_fpsc_amb = self.p["alpha_fpsc"] * \
-            self.p["A_fpsc"] * (T_fpsc - T_amb)
+        Qdot_fpsc_amb = self.p["alpha_fpsc"] * self.p["A_fpsc"] * (T_fpsc - T_amb)
 
         f.append(
             (1.0 / self.p["C_fpsc"])
@@ -734,15 +724,13 @@ class System:
         )
 
         iota_mdot_vtsc = ca.interpolant(
-            "iota_mdot_vtsc", "bspline", [
-                data_v_ppsc, data_p_mpsc], data_mdot_vtsc
+            "iota_mdot_vtsc", "bspline", [data_v_ppsc, data_p_mpsc], data_mdot_vtsc
         )
 
         mdot_vtsc = iota_mdot_vtsc(ca.veccat(v_ppsc, p_mpsc))
 
         Qdot_vtsc = self.p["eta_vtsc"] * self.p["A_vtsc"] * I_vtsc
-        Qdot_vtsc_amb = self.p["alpha_vtsc"] * \
-            self.p["A_vtsc"] * (T_vtsc - T_amb)
+        Qdot_vtsc_amb = self.p["alpha_vtsc"] * self.p["A_vtsc"] * (T_vtsc - T_amb)
 
         f.append(
             (1.0 / self.p["C_vtsc"])
@@ -767,8 +755,7 @@ class System:
             1.0
             / self.p["C_psc"]
             * (
-                (mdot_fpsc + mdot_vtsc) *
-                self.p["c_sl"] * (T_shx_psc[-1] - T_pscf)
+                (mdot_fpsc + mdot_vtsc) * self.p["c_sl"] * (T_shx_psc[-1] - T_pscf)
                 - self.p["lambda_psc"] * (T_pscf - T_amb)
             )
         )
@@ -794,10 +781,8 @@ class System:
         f.append(
             (1.0 / (m_shx_psc * self.p["c_sl"]))
             * (
-                (mdot_fpsc + mdot_vtsc) *
-                self.p["c_sl"] * (T_pscr - T_shx_psc[0])
-                - (A_shx_k * self.p["alpha_shx"] *
-                   (T_shx_psc[0] - T_shx_ssc[-1]))
+                (mdot_fpsc + mdot_vtsc) * self.p["c_sl"] * (T_pscr - T_shx_psc[0])
+                - (A_shx_k * self.p["alpha_shx"] * (T_shx_psc[0] - T_shx_ssc[-1]))
             )
         )
 
@@ -820,11 +805,9 @@ class System:
         f.append(
             (1.0 / (m_shx_ssc * self.p["c_w"]))
             * (
-                (mdot_ssc - mdot_o_hts_b) *
-                self.p["c_w"] * (T_hts[1] - T_shx_ssc[0])
+                (mdot_ssc - mdot_o_hts_b) * self.p["c_w"] * (T_hts[1] - T_shx_ssc[0])
                 + mdot_o_hts_b * self.p["c_w"] * (T_hts[-1] - T_shx_ssc[0])
-                + (A_shx_k * self.p["alpha_shx"] *
-                   (T_shx_psc[-1] - T_shx_ssc[0]))
+                + (A_shx_k * self.p["alpha_shx"] * (T_shx_psc[-1] - T_shx_ssc[0]))
             )
         )
 
@@ -833,8 +816,7 @@ class System:
             f.append(
                 (1.0 / (m_shx_ssc * self.p["c_w"]))
                 * (
-                    mdot_ssc * self.p["c_w"] *
-                    (T_shx_ssc[k - 1] - T_shx_ssc[k])
+                    mdot_ssc * self.p["c_w"] * (T_shx_ssc[k - 1] - T_shx_ssc[k])
                     + (
                         A_shx_k
                         * self.p["alpha_shx"]
@@ -843,9 +825,7 @@ class System:
                 )
             )
 
-        return ca.Function(
-            "f", [self.x, self.c, self.u, self.b], [ca.veccat(*f)]
-        )
+        return ca.Function("f", [self.x, self.c, self.u, self.b], [ca.veccat(*f)])
 
     def get_integrator(self):
         """Set up simulator."""
@@ -857,9 +837,7 @@ class System:
             "p": ca.veccat(dt, self.c, self.u, self.b),
             "ode": dt * f(self.x, self.c, self.u, self.b),
         }
-        return ca.integrator(
-            "integrator", "cvodes", ode, 0.0, 1.0
-        )
+        return ca.integrator("integrator", "cvodes", ode, 0.0, 1.0)
 
     def get_t_ac_min_function(self, use_big_m_constraints=True):
         """
@@ -885,10 +863,8 @@ class System:
             )
         else:
             T_ac_min = self.b[self.b_index["b_ac"]] * ca.veccat(
-                self.x[self.x_index["T_lts"]] -
-                self.p["T_ac_lt_min"] + s_ac_lb[0],
-                self.x[self.x_index["T_hts"][0]] -
-                self.p["T_ac_ht_min"] + s_ac_lb[1],
+                self.x[self.x_index["T_lts"]] - self.p["T_ac_lt_min"] + s_ac_lb[0],
+                self.x[self.x_index["T_hts"][0]] - self.p["T_ac_ht_min"] + s_ac_lb[1],
             )
 
         return ca.Function(
@@ -918,10 +894,8 @@ class System:
             )
         else:
             T_ac_max = self.b[self.b_index["b_ac"]] * ca.veccat(
-                self.x[self.x_index["T_lts"]] -
-                self.p["T_ac_lt_max"] - s_ac_ub[0],
-                self.x[self.x_index["T_hts"][0]] -
-                self.p["T_ac_ht_max"] - s_ac_ub[1],
+                self.x[self.x_index["T_lts"]] - self.p["T_ac_lt_max"] - s_ac_ub[0],
+                self.x[self.x_index["T_hts"][0]] - self.p["T_ac_ht_max"] - s_ac_ub[1],
             )
 
         return ca.Function(
@@ -961,8 +935,7 @@ class System:
         """Get v ppsc so function."""
         s_ppsc = ca.MX.sym("s_ppsc")
         return ca.Function(
-            "v_ppsc_so_fcn", [self.u, s_ppsc], [
-                s_ppsc - self.u[self.u_index["v_ppsc"]]]
+            "v_ppsc_so_fcn", [self.u, s_ppsc], [s_ppsc - self.u[self.u_index["v_ppsc"]]]
         )
 
     def get_mdot_hts_b_max_fcn(self):
@@ -977,16 +950,13 @@ class System:
             - self.b[self.b_index["b_ac"]] * self.p["mdot_ac_ht"],
         )
 
-        return ca.Function(
-            "mdot_hts_b_max_fcn", [self.u, self.b], [mdot_hts_b_max]
-        )
+        return ca.Function("mdot_hts_b_max_fcn", [self.u, self.b], [mdot_hts_b_max])
 
     def get_electric_power_balance_fcn(self):
         """Get electric power balance fcn."""
         P_hp = (
             0.006381135707410529 * self.x[self.x_index["T_lts"]]
-            + 0.06791020408163258 *
-            (self.c[self.c_index["T_amb"]] + self.p["dT_rc"])
+            + 0.06791020408163258 * (self.c[self.c_index["T_amb"]] + self.p["dT_rc"])
             + 1.7165550470428876
         ) * 1e3  # + 8e2
 
@@ -1023,8 +993,7 @@ class System:
             1e1 * s_x,
             1e2 * s_x[self.x_index["T_lts"]],
             self.p_op["dp_mpsc"]["Pmax"]
-            * (u_prev[self.u_index["p_mpsc"]] -
-               self.u[self.u_index["p_mpsc"]]),
+            * (u_prev[self.u_index["p_mpsc"]] - self.u[self.u_index["p_mpsc"]]),
             self.p_op["dp_mssc"]["Pmax"]
             * (
                 u_prev[self.u_index["mdot_o_hts_b"]]
@@ -1037,9 +1006,7 @@ class System:
             ),
         )
 
-        return ca.Function(
-            "F1_fcn", [s_ac_lb, s_ac_ub, s_x, self.u, u_prev], [F1]
-        )
+        return ca.Function("F1_fcn", [s_ac_lb, s_ac_ub, s_x, self.u, u_prev], [F1])
 
     def get_F2_fcn(self):
         """Get F2."""
@@ -1063,9 +1030,7 @@ class System:
             p = np.poly1d([1])
             for r in range(d + 1):
                 if r != j:
-                    p *= np.poly1d([1, -tau_root[r]]) / (
-                        tau_root[j] - tau_root[r]
-                    )
+                    p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
 
             D[j] = p(1.0)
             pder = np.polyder(p)

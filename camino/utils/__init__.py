@@ -22,10 +22,13 @@ try:
     def colored(text, color="red"):
         """Color a text."""
         logger.info(stylize(text, fg(color)))
+
 except Exception:
+
     def colored(text, color=None):
         """Color a text."""
         logger.info(text)
+
 
 perf_ti = None
 
@@ -55,11 +58,10 @@ def make_bounded(problem: MinlpProblem, data: MinlpData, new_inf=1e3):
 def setup_logger(level=logging.WARNING):
     """Set up the logging."""
     logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=level
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=level
     )
-    logging.getLogger('matplotlib').setLevel(logging.ERROR)
-    logging.getLogger('PIL').setLevel(logging.ERROR)
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
+    logging.getLogger("PIL").setLevel(logging.ERROR)
 
 
 def tic():
@@ -136,8 +138,7 @@ def plot_trajectory(
     if isinstance(s_collection, np.ndarray):
         s_collection = [s_collection]
     if isinstance(meta.scaling_coeff_control, type(None)):
-        meta.scaling_coeff_control = [
-            1 for _ in range(a_collection[0].shape[0])]
+        meta.scaling_coeff_control = [1 for _ in range(a_collection[0].shape[0])]
 
     N = a_collection[0].shape[0]
     dt = meta.dt
@@ -148,18 +149,18 @@ def plot_trajectory(
     n_controls = meta.n_continuous_control + meta.n_discrete_control
 
     latexify()
-    fig, axs = plt.subplots(meta.n_state + n_controls,
-                            1, figsize=(4.5, 8), sharex=True)
+    fig, axs = plt.subplots(meta.n_state + n_controls, 1, figsize=(4.5, 8), sharex=True)
     for s in range(meta.n_state):
         axs[s].grid()
         for s_traj in s_collection:
             if len(s_traj.shape) == 1:
                 s_traj = s_traj[..., np.newaxis]
-            axs[s].plot(time_array, s_traj[:, s], "-",
-                        alpha=alpha, color="tab:blue")
+            axs[s].plot(time_array, s_traj[:, s], "-", alpha=alpha, color="tab:blue")
         # axs[s].axhline(s_max[s], linestyle=":", color="k", alpha=0.7)
         # axs[s].axhline(s_min[s], linestyle=":", color="k", alpha=0.7)
-        axs[s].set_ylim(0, )
+        axs[s].set_ylim(
+            0,
+        )
         axs[s].set_ylabel(f"$x_{s}$")
 
     for a in range(n_controls):
@@ -174,12 +175,11 @@ def plot_trajectory(
                 a_traj = a_traj[..., np.newaxis]
             axs[meta.n_state + a].step(
                 time_array,
-                meta.scaling_coeff_control[a] *
-                np.append([a_traj[0, a]], a_traj[:, a]),
+                meta.scaling_coeff_control[a] * np.append([a_traj[0, a]], a_traj[:, a]),
                 alpha=alpha,
                 color="tab:orange",
-                marker='.',
-                where='post'
+                marker=".",
+                where="post",
             )
         axs[meta.n_state + a].set_ylabel(f"$u_{a}$")
         axs[meta.n_state + a].grid()

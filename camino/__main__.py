@@ -21,9 +21,7 @@ def main(args):
     else:
         setup_logger(logging.INFO)
 
-    parser = ArgumentParser(
-        description="Benders solver"
-    )
+    parser = ArgumentParser(description="Benders solver")
     subparser = parser.add_subparsers(
         title="Commands",
         dest="command",
@@ -40,8 +38,7 @@ def main(args):
     parser_copy.add_argument("target")
     parser_copy.add_argument("solution")
     parser_copy.add_argument("nlfile")
-    parser_batch = subparser.add_parser(
-        "batch", help="Run a batch of NL files")
+    parser_batch = subparser.add_parser("batch", help="Run a batch of NL files")
     parser_batch.add_argument("algorithm")
     parser_batch.add_argument("target")
     parser_batch.add_argument("nlfiles", type=str, nargs="+")

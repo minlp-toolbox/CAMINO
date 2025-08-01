@@ -62,17 +62,21 @@ class Simulator(System):
 
     def _get_ambient_paramaters(self):
 
-        self._c_data = [convert_to_flat_list(
-            self.nc,
-            self.c_index,
-            self._ambient.interpolate(self._ambient.get_t0()))]
+        self._c_data = [
+            convert_to_flat_list(
+                self.nc, self.c_index, self._ambient.interpolate(self._ambient.get_t0())
+            )
+        ]
         tk = timedelta(seconds=0)
-        for i in range(self._N-1):
+        for i in range(self._N - 1):
             tk += self._ambient.time_steps[i]
-            self._c_data.append(convert_to_flat_list(
-                self.nc,
-                self.c_index,
-                self._ambient.interpolate(self._ambient.get_t0() + tk)))
+            self._c_data.append(
+                convert_to_flat_list(
+                    self.nc,
+                    self.c_index,
+                    self._ambient.interpolate(self._ambient.get_t0() + tk),
+                )
+            )
         self._c_data = ca.DM(self._c_data)
 
     def __init__(self, ambient: Ambient, N: int):
@@ -87,8 +91,11 @@ class Simulator(System):
 
     def _set_initial_state(self):
 
-        self._x_data = [convert_to_flat_list(
-            self.nx, self.x_index, self.get_default_initial_state())]
+        self._x_data = [
+            convert_to_flat_list(
+                self.nx, self.x_index, self.get_default_initial_state()
+            )
+        ]
 
     def _setup_controls(self):
 
@@ -115,8 +122,9 @@ class Simulator(System):
             ]
 
             if self._b_data[-1][self.b_index["b_ac"]] == 1:
-                self._remaining_min_up_time -= self._ambient.time_steps[pos].total_seconds(
-                )
+                self._remaining_min_up_time -= self._ambient.time_steps[
+                    pos
+                ].total_seconds()
 
         elif (T_hts < self.p["T_ac_ht_min"]) or (T_lts < self.p["T_ac_lt_min"]):
 
@@ -182,8 +190,7 @@ class Simulator(System):
             (self.p_op["p_mpsc"]["max"] - self.p_op["p_mpsc"]["min_real"])
             / (self.p_csim["dT_vtsc_fpsc_ub"] - self.p_csim["dT_vtsc_fpsc_lb"])
         ) * (
-            max(self.p_csim["dT_vtsc_fpsc_lb"], min(
-                self.p_csim["dT_vtsc_fpsc_ub"], dT))
+            max(self.p_csim["dT_vtsc_fpsc_lb"], min(self.p_csim["dT_vtsc_fpsc_ub"], dT))
             - self.p_csim["dT_vtsc_fpsc_lb"]
         )
 
@@ -214,11 +221,9 @@ class Simulator(System):
         dT = T_shx_ssc - T_sc_feed_max
 
         mdot_o_hts_b = (
-            (1.0 / (self.p_csim["dT_o_hts_b_ub"] -
-             self.p_csim["dT_o_hts_b_lb"]))
+            (1.0 / (self.p_csim["dT_o_hts_b_ub"] - self.p_csim["dT_o_hts_b_lb"]))
             * (
-                max(self.p_csim["dT_o_hts_b_lb"], min(
-                    self.p_csim["dT_o_hts_b_ub"], dT))
+                max(self.p_csim["dT_o_hts_b_lb"], min(self.p_csim["dT_o_hts_b_ub"], dT))
                 - self.p_csim["dT_o_hts_b_lb"]
             )
             * self.p["mdot_ssc_max"]
@@ -235,11 +240,9 @@ class Simulator(System):
         dT = T_hts_m - T_i_hts_b_active
 
         mdot_i_hts_b = (
-            (1.0 / (self.p_csim["dT_i_hts_b_ub"] -
-             self.p_csim["dT_i_hts_b_lb"]))
+            (1.0 / (self.p_csim["dT_i_hts_b_ub"] - self.p_csim["dT_i_hts_b_lb"]))
             * (
-                max(self.p_csim["dT_i_hts_b_lb"], min(
-                    self.p_csim["dT_i_hts_b_ub"], dT))
+                max(self.p_csim["dT_i_hts_b_lb"], min(self.p_csim["dT_i_hts_b_ub"], dT))
                 - self.p_csim["dT_i_hts_b_lb"]
             )
             * self._b_data[-1][self.b_index["b_ac"]]
@@ -268,8 +271,10 @@ class Simulator(System):
                     self._integrator(
                         x0=self.x_data[-1, :],
                         p=ca.veccat(
-                            step.total_seconds(
-                            ), self.c_data[pos, :], self.u_data[-1], self.b_data[-1]
+                            step.total_seconds(),
+                            self.c_data[pos, :],
+                            self.u_data[-1],
+                            self.b_data[-1],
                         ),
                     )["xf"]
                 )
@@ -321,9 +326,12 @@ class Simulator(System):
             x_hat = self._integrator(
                 x0=x_hat,
                 p=ca.veccat(
-                    self._ambient.time_steps[k].total_seconds(
-                    ), self.c_data[k, :], self.u_data[k, :], self.b_data[k, :]
-                ))["xf"]
+                    self._ambient.time_steps[k].total_seconds(),
+                    self.c_data[k, :],
+                    self.u_data[k, :],
+                    self.b_data[k, :],
+                ),
+            )["xf"]
 
         return x_hat
 

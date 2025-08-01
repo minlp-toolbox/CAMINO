@@ -16,7 +16,7 @@ from camino.utils.conversion import to_0d
 filename = "2025-07-09_17:21:38_cia_unstable_ocp_generic.pkl"
 
 file_path = os.path.join(GlobalSettings.OUT_DIR, filename)
-with open(file_path, 'rb') as f:
+with open(file_path, "rb") as f:
     stats = pickle.load(f)
 
 stats_df = pd.DataFrame(stats)
