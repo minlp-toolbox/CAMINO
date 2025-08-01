@@ -28,6 +28,7 @@ setup(
         "tox >= 4.1.2",
         "colored >= 1.4.4",
         "argcomplete >= 3.5.1",
+        "seaborn >= 0.13.1"
     ],
 
     classifiers=[

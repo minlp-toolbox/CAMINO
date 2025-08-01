@@ -14,7 +14,7 @@ from camino.settings import GlobalSettings
 from camino.utils.data import read_json, write_json, load_pickle, save_pickle
 
 logger = logging.getLogger(__name__)
-_COMPILERS = ["gcc"]
+_COMPILERS = ["gcc-15", "gcc"]
 _COMPILER = None
 
 

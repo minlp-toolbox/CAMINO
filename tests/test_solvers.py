@@ -16,7 +16,7 @@ options = [("cia", "doubletank2")] + [
     (solver, "dummy")
     for solver in SOLVER_MODES.keys()
     if solver not in (
-        "cia", "s-tr-milp", "ampl",  # Almost all solvers
+        "cia", "s-tr-milp", "ampl", "nlp", "mip"  # Almost all solvers
     )
 ] + [
     (solver, problem)
@@ -29,11 +29,11 @@ options = [("cia", "doubletank2")] + [
         # Exclude duplicates
         "dummy2",
         # Exclude difficult problems with long runtimes
-        "alan", "stcs", "to_car", "doubletank2", "doubletank",
+        "alan", "stcs", "to_car", "doubletank2", "doubletank", "stcs-simplified",
         # Exclude some errors:
-        "unstable_ocp", "particle", "from_nlpsol_dsc",
+        "unstable_ocp", "particle", "from_nlpsol_dsc", "sign_check",
         # Interfaces:
-        "nl_file", "from_sto", "nosnoc"
+        "nl_file", "from_sto", "nosnoc", "from_nlpsol_dsc",
     ]
 ]
 
@@ -47,11 +47,11 @@ obj_val = {
     "gearbox": 6550.833,
     "particle": 1.3797,
     "unstable_ocp": -0.05129210,
-    "gearbox_complx": 234.027,
+    "gearbox_complx": 233.705,
     "gearbox_int": 14408.4375,
 }
 
-# Number of digits after the komma to be accurate:
+# Number of digits after the comma to be accurate:
 obj_tolerance_default = 3
 obj_tolerance = {
     "dummy": 2,

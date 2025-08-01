@@ -235,17 +235,20 @@ class BendersRegionMasters(BendersMasterMILP):
         dx_min = abs(min(dx.full()))
         dx_max = abs(max(dx.full()))
         multiplier = min(1 / max(dx_min, dx_max), 1000)
-        if self.sol_best is not None:
-            sigma = max(
-                float(ca.dot(multiplier * dx,
-                      self.sol_best['x'][self.idx_x_integer] - sol['x'][self.idx_x_integer])),
-                0
-            )
-        else:
-            sigma = 0
 
-        self.g_infeasibility.add(
-            sol['x'][self.idx_x_integer], -sigma, multiplier * dx)
+        if self.sol_best_feasible:
+            if not self._check_cut_valid(0, dx * multiplier, self.sol_best['x'][self.idx_x_integer], sol['x'][self.idx_x_integer], 0):
+                grad_corr = compute_gradient_correction(
+                    self.sol_best['x'][self.idx_x_integer],
+                    sol['x'][self.idx_x_integer],
+                    0, 0, dx * multiplier,
+                    self.settings
+                )
+                self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx, grad_corr)
+            else:
+                self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx)
+        else:
+            self.g_infeasibility.add(sol['x'][self.idx_x_integer], 0, multiplier * dx)
         colored("Adding infeasible cut for closest point.", "blue")
 
     def _add_infeasible_cut(self, x_sol, lam_g_sol, nlpdata: MinlpData):
@@ -378,7 +381,7 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total = g_cur_lin + self.g_benders + self.g_infeasibility + \
             self.g_oa_objective + self.g_oa_cvx_constraints
 
-        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        available_time = max(1e-1, min(self.options_master[self.mip_timelimit_options_str], self.settings.TIME_LIMIT - toc()))
         self.options[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_constraint_{self.g_benders.nr}", self.settings.MIP_SOLVER, {
@@ -420,7 +423,7 @@ class BendersRegionMasters(BendersMasterMILP):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
 
-        available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
+        available_time = max(1e-1, min(self.options_master[self.mip_timelimit_options_str], self.settings.TIME_LIMIT - toc()))
         self.options_master[self.mip_timelimit_options_str] = available_time
         solver = ca.qpsol(
             f"benders_with_{self.g_benders.nr}_cut", self.settings.MIP_SOLVER, {
@@ -459,7 +462,10 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = self.y_N_val
 
         if relaxed:
-            self.options[self.mipgap_options_str] = 1.0
+            if self.settings.USE_TIGHT_MIPGAP_FIRST_ITERATION:
+                self.options[self.mipgap_options_str] = self.mipgap_miqp
+            else:
+                self.options[self.mipgap_options_str] = 1.0
         else:
             self.options[self.mipgap_options_str] = self.mipgap_miqp
 
@@ -472,7 +478,7 @@ class BendersRegionMasters(BendersMasterMILP):
             if solved:
                 # check if new best solution found
                 if np.isinf(self.internal_lb) or self.internal_lb > float(sol['f']):
-                    if self.settings.USE_RELAXED_AS_WARMSTART:
+                    if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
                         # warm start with relaxed solution
                         self.sol_best['x'] = sol['x'][:self.nr_x_orig]
                     self.internal_lb = float(sol['f'])
@@ -695,4 +701,5 @@ class BendersRegionMasters(BendersMasterMILP):
             self.add_solutions(relaxed, True)
 
         if not nlpdata.relaxed:
+            self.internal_lb = self.stats["lb"]
             self.add_solutions(nlpdata)

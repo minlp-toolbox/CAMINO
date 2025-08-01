@@ -39,7 +39,12 @@ class NlpSolver(SolverClass):
         #     problem.g.shape[0], problem.p.shape[0]
         # )
         # self.callback.add_to_solver_opts(options, 50)
-        self.g = ca.Function("g", [problem.x, problem.p], [problem.g])
+        if problem.idx_g_dwelltime is not None:
+            new_g_constraint = problem.g[problem.idx_g_without_dwelltime]
+        else:
+            new_g_constraint = problem.g
+        self.idx_g_without_dwelltime = problem.idx_g_without_dwelltime
+        self.g_fn = ca.Function("g", [problem.x, problem.p], [new_g_constraint])
 
         if problem.precompiled_nlp is not None:
             self.solver = ca.nlpsol(
@@ -50,7 +55,7 @@ class NlpSolver(SolverClass):
                 "jit": s.WITH_JIT,
             })
             self.solver = ca.nlpsol("nlpsol", "ipopt", {
-                "f": problem.f, "g": problem.g, "x": problem.x, "p": problem.p
+                "f": problem.f, "g": new_g_constraint, "x": problem.x, "p": problem.p
             }, options)
 
     def solve(self, nlpdata: MinlpData, set_x_bin=False) -> MinlpData:
@@ -71,8 +76,8 @@ class NlpSolver(SolverClass):
             sol_new = self.solver(
                 p=nlpdata.p, x0=nlpdata.x0,
                 lbx=lbx, ubx=ubx,
-                lbg=nlpdata.lbg,
-                ubg=nlpdata.ubg
+                lbg=nlpdata.lbg[self.idx_g_without_dwelltime].flatten(),
+                ubg=nlpdata.ubg[self.idx_g_without_dwelltime].flatten()
             )
 
             success, stats = self.collect_stats("NLP", sol=sol_new)
@@ -84,7 +89,7 @@ class NlpSolver(SolverClass):
                     "Not_Enough_Degrees_Of_Freedom", "Insufficient_Memory"
                 ]
                 if return_status_ok:
-                    gk = self.g(sol_new['x'], nlpdata.p).full()
+                    gk = self.g_fn(sol_new['x'], nlpdata.p).full()
                     if np.all(gk <= nlpdata.ubg) and np.all(gk >= nlpdata.lbg):
                         success = True
                     # if np.all(gk <= nlpdata.ubg + self.settings.CONSTRAINT_TOL) and \

@@ -21,17 +21,14 @@ from camino.utils.conversion import to_0d, convert_to_flat_list
 logger = logging.getLogger(__name__)
 
 
-def create_stcs_problem(n_steps=None, with_slack=True):
+def create_stcs_problem(simplified=False, with_slack=True):
     """Build problem."""
     logger.debug("Start processing")
     system = System()
-    timing = Timing()
+    timing = Timing(simplified=simplified)
     ambient = Ambient(timing)
     dsc = Description()
-    if n_steps is None:
-        n_steps = timing.N
-    else:
-        n_steps = int(n_steps)
+    n_steps = timing.N
 
     # Run simulator and predictor and use those output to warm start
     simulator = Simulator(ambient=ambient, N=n_steps)
@@ -207,50 +204,58 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     idx_b_2d = np.asarray(dsc.get_indices('b')).T
     w = ca.vertcat(*dsc.w)
 
-    # Add min uptime
-    for k in range(-1, n_steps + 1):
+    # Set min up time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            uptime = 0
+            uptime = dt.total_seconds()
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                uptime += dt.total_seconds()
-                if uptime < min_up_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(- w[idx_k] + w[idx_k_1] - w[idx_k_dt], 0)
-                    else:
-                        dsc.leq(w[idx_k_1] - w[idx_k_dt], 0)
-
-                    it += 1
-    # Add min downtime
-    for k in range(-1, n_steps + 1):
+            # logger.debug(f"{k=}, {i=}, {dt=}")
+            while uptime < min_up_times[i]:
+                # logger.debug(f"{uptime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(- b_k + b_k_1 - b_k_dt, 0, is_dwell_time=1)
+                it += 1
+                # logger.debug(f"{dsc.g[-1]}")
+                uptime += ambient.time_steps[k-it].total_seconds()
+    # Set min down time constraints
+    for k, dt in enumerate(ambient.time_steps):
         for i in range(system.nb):
-            downtime = 0
+            downtime = dt.total_seconds()
             it = 0
-            for dt in ambient.time_steps[max(0, k):]:
-                downtime += dt.total_seconds()
-                if downtime < min_down_times[i]:
-                    if k != -1:
-                        idx_k = idx_b_2d[i, k]
-
-                    try:
-                        idx_k_1 = idx_b_2d[i, k + 1]
-                        idx_k_dt = idx_b_2d[i, k + it + 2]
-                    except IndexError:
-                        pass
-                    if k != -1:
-                        dsc.leq(w[idx_k] - w[idx_k_1] + w[idx_k_dt], 1)
-                    else:
-                        dsc.leq(- w[idx_k_1] + w[idx_k_dt], 1)
-
-                    it += 1
+            # logger.debug(f"{k=}, {i=}, {dt=}")
+            while downtime < min_down_times[i]:
+                # logger.debug(f"{downtime=}")
+                if k>=0:
+                    b_k = w[idx_b_2d[i, k]]
+                else:
+                    b_k = 0
+                if (k-1>=0) and (k-1<n_steps):
+                    idx_k_1 = idx_b_2d[i, k - 1]
+                    b_k_1 = w[idx_k_1]
+                else:
+                    b_k_1 = 0
+                if (k-it-2>=0) and (k-it-2<n_steps) :
+                    idx_k_dt = idx_b_2d[i, k - it - 2]
+                    b_k_dt = w[idx_k_dt]
+                else:
+                    b_k_dt = 0
+                dsc.leq(b_k - b_k_1 + b_k_dt, 1, is_dwell_time=1)
+                it += 1
+                # logger.debug(f"{dsc.g[-1]}")
+                downtime += ambient.time_steps[k-it].total_seconds()
 
     # Setup objective
     dsc.f = 0.5 * ca.mtimes(F1.T, F1) + F2
@@ -289,11 +294,15 @@ def create_stcs_problem(n_steps=None, with_slack=True):
     data = dsc.get_data()
     data.x0[prob.idx_x_integer] = to_0d(simulator.b_data).flatten().tolist()
     s = Settings()
-    s.BRMIQP_GAP = 0.15
-    s.LBMILP_GAP = 0.15
-    s.ALPHA_KRONQVIST = 0.2
+    s.BRMIQP_GAP = 0.1
+    s.LBMILP_GAP = 0.05
+    s.ALPHA_KRONQVIST = 0.5
+    s.USE_RELAXED_SOL_AS_LINEARIZATION = True
+    s.USE_TIGHT_MIPGAP_FIRST_ITERATION = True
+    s.TIME_LIMIT = 0.5 * 3600
     s.IPOPT_SETTINGS.update({
         "ipopt.linear_solver": "ma57",
+        "ipopt.max_cpu_time": 300,
         "ipopt.mumps_mem_percent": 10000,
         "ipopt.mumps_pivtol": 0.001,
         "ipopt.max_cpu_time": 3600.0,
@@ -309,12 +318,25 @@ def create_stcs_problem(n_steps=None, with_slack=True):
         "ipopt.print_frequency_iter": 100,
     })
     s.MIP_SETTINGS_ALL["gurobi"].update({
+        "gurobi.MIPGap": 0.1,
+        "gurobi.FeasibilityTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
+        "gurobi.Heuristics": 0.05,
         "gurobi.PoolSearchMode": 0,
         "gurobi.PoolSolutions": 3,
         "gurobi.TimeLimit": 600,
+        "gurobi.NodeMethod": 2,
+        "gurobi.Method": 2,
     })
-    # 7 days...
-    s.TIME_LIMIT = 7 * 24 * 3600
+    s.BONMIN_SETTINGS = {
+        "bonmin.time_limit": s.TIME_LIMIT,
+        "bonmin.tree_search_strategy": "dive",
+        "bonmin.node_comparison": "best-bound",
+        "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
+        "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
+        "bonmin.constr_viol_tol":  s.CONSTRAINT_TOL,
+        "bonmin.linear_solver": "ma57",
+    }
 
     # Improve calculation speed by getting indices:
     # set_constraint_types(prob, *cache_data(
@@ -333,9 +355,7 @@ if __name__ == "__main__":
     import pickle
 
     setup_logger(logging.DEBUG)
-    prob, data = create_stcs_problem()
-    s = Settings()
-    s.IPOPT_SETTINGS
+    prob, data, s = create_stcs_problem()
     stats = Stats(mode='custom', problem_name='stcs',
                   datetime=datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), data={})
     nlp = NlpSolver(prob, stats, s)
