@@ -25,8 +25,9 @@ from camino.solvers import (
 from camino.settings import GlobalSettings, Settings
 import logging
 
-logger = logging.getLogger(__name__)
+from camino.solvers.decomposition.benders_master_callbacks import MipsolCallback
 
+logger = logging.getLogger(__name__)
 
 class BendersMasterMILP(SolverClass):
     """Create benders master problem."""
@@ -199,6 +200,83 @@ class BendersMasterMILP(SolverClass):
         solution["x"] = x_full
         nlpdata.prev_solution = solution
         nlpdata.solved, stats = self.collect_stats("BENDERS-MILP", solver, solution)
+        return nlpdata
+
+
+class BendersMasterMILPSingleTree(BendersMasterMILP):
+    """Create benders master problem."""
+
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        s: Settings,
+        with_lin_bounds=True,
+    ):
+        """Create benders master MILP."""
+        super(BendersMasterMILP, self).__init__(problem, stats, s)
+        self.setup_common(problem, s)
+        self.jac_g_bin = ca.Function(
+            "jac_g_bin",
+            [problem.x, problem.p],
+            [ca.jacobian(problem.g, problem.x)[:, problem.idx_x_integer]],
+            {"jit": s.WITH_JIT},
+        )
+        self._x = GlobalSettings.CASADI_VAR.sym("x_bin", self.nr_x_bin)
+        self.problem = problem
+
+        if with_lin_bounds:
+            self.idx_g_lin = get_idx_linear_bounds_binary_x(problem)
+            self.nr_g, self._g, self._lbg, self._ubg = extract_bounds(
+                problem, data, self.idx_g_lin, self._x, problem.idx_x_integer
+            )
+        else:
+            self.idx_g_lin = np.array([])
+            self.nr_g, self._g, self._lbg, self._ubg = 0, [], [], []
+
+        self.cut_id = 0
+
+
+    def solve(self, nlpdata: MinlpData, callback: MipsolCallback, integers_relaxed=False) -> MinlpData:
+        """solve."""
+        self.options['enable_mipsol_callback'] = True
+        self.options['mipsol_callback'] = callback
+
+        x_bin_star = nlpdata.x_sol[self.idx_x_integer]
+        if not integers_relaxed:
+            self.add_solution(
+                nlpdata,
+                nlpdata.x_sol,
+                nlpdata.lam_g_sol,
+                nlpdata.lam_x_sol,
+                nlpdata.solved,
+            )
+
+        solver = ca.qpsol(
+            f"benders_with_{self.nr_g}_cut",
+            self.settings.MIP_SOLVER,
+            {
+                "f": self._nu,
+                "g": self._g,
+                "x": ca.vertcat(self._x, self._nu),
+            },
+            self.options,
+        )
+        # This solver solves only to the binary variables (_x)!
+        solution = solver(
+            x0=ca.vertcat(x_bin_star, nlpdata.obj_val),
+            # NOTE harmonize lb with OA, here -1e5, in OA -1e8
+            lbx=ca.vertcat(nlpdata.lbx[self.idx_x_integer], -1e5),
+            ubx=ca.vertcat(nlpdata.ubx[self.idx_x_integer], ca.inf),
+            lbg=ca.vertcat(*self._lbg),
+            ubg=ca.vertcat(*self._ubg),
+        )
+        x_full = nlpdata.x_sol.full()[: self.nr_x_orig]
+        x_full[self.idx_x_integer] = solution["x"][:-1]
+        solution["x"] = x_full
+        nlpdata.prev_solution = solution
+        nlpdata.solved, stats = self.collect_stats("BENDERS-MILP", solver=solver, sol=solution)
         return nlpdata
 
 
