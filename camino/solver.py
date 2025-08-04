@@ -9,6 +9,7 @@ from camino.problem import MinlpProblem
 from camino.data import MinlpData
 from camino.solvers.decomposition import (
     GeneralizedBenders,
+    GeneralizedBendersSingleTree,
     GeneralizedBendersQP,
     OuterApproximation,
     OuterApproximationQP,
@@ -30,6 +31,7 @@ from camino.solvers.mip import MipSolver
 
 SOLVER_MODES = {
     "gbd": GeneralizedBenders,
+    "gbd-st": GeneralizedBendersSingleTree,
     "gbd-qp": GeneralizedBendersQP,
     "oa": OuterApproximation,
     "oa-qp": OuterApproximationQP,
