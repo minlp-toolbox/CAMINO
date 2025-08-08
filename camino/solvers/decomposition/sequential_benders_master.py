@@ -181,7 +181,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.options_master = self.options.copy()
         self.options_master["discrete"] = self.options["discrete"] + [0]
         self.options_master['error_on_fail'] = False
-        self.options_master['gurobi.PoolSolutions'] = 1 # TODO dont force pool 1 but check if pool contains the best solution and in case discard it.
+        # self.options_master['gurobi.PoolSolutions'] = 1 # TODO dont force pool 1 but check if pool contains the best solution and in case discard it.
         self.options['error_on_fail'] = False
 
         self.mipgap_miqp = s.BRMIQP_GAP
