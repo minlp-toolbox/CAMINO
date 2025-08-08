@@ -117,6 +117,7 @@ def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method
         ax.set(ylabel=r"Cum. runtime (min)")
         ax.set(xlim=[0, time_stats.shape[0]-1])
         ax.set(ylim=[0, 30.5])
+        ax.set_xticks(range(0, time_stats.shape[0]))
         plt.savefig(os.path.join("results", filename+"_runtime.pdf"), bbox_inches='tight')
 
 
