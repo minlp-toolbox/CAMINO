@@ -108,7 +108,6 @@ def plot_stcs(stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method
 
     if "s-b-miqp" in solution_method:
         time_stats = compute_timing_df(stats_df)
-        breakpoint()
         fig, ax = plt.subplots(1, 1, figsize=(4.5, 1.5))
         ax = sns.lineplot(time_stats[[elm for elm in time_stats.columns.tolist() if "wall-time" in elm]].cumsum(axis=0)/60, ax=ax, linewidth=1.5, alpha=0.8)
         ax = sns.lineplot(time_stats[[elm for elm in time_stats.columns.tolist() if "wall-time" in elm]].sum(axis=1).cumsum(axis=0)/60, ax=ax, color='gray', label="Sum")
