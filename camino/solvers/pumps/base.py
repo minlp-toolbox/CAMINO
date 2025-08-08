@@ -101,7 +101,7 @@ class PumpBase(MiSolverClass):
             # Added heuristic, not present in the original implementation
             if distances[-1] < self.settings.CONSTRAINT_INT_TOL:
                 datarounded = self.nlp.solve(
-                    create_rounded_data(data, self.idx_x_integer), True
+                    create_rounded_data(data, self.idx_x_integer), integers_relaxed=False
                 )
                 if self.update_best_solutions(datarounded):
                     return self.get_best_solutions(datarounded)
@@ -110,7 +110,7 @@ class PumpBase(MiSolverClass):
             logger.info(f"Iteration {self.stats['iter_nr']} finished")
 
         self.stats["total_time_calc"] += toc(reset=True)
-        data = self.nlp.solve(data, True)
+        data = self.nlp.solve(data, integers_relaxed=False)
         self.update_best_solutions(data)
         return self.get_best_solutions(data)
 
