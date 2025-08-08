@@ -577,14 +577,14 @@ if __name__ == "__main__":
     prob, data, settings = create_ocp_unstable_system()
 
     nlp = NlpSolver(prob, stats, settings)
-    data = nlp.solve(data, set_x_bin=False)
+    data = nlp.solve(data, integers_relaxed=True)
     print(f"Relaxed  {data.obj_val=}")
 
     # Solve MIQP around MINLP solution
     miqp = VoronoiTrustRegionMIQP(prob, data, stats, settings)
     data = miqp.solve(data, prev_feasible=True, is_qp=True)
 
-    data = nlp.solve(data, set_x_bin=True)
+    data = nlp.solve(data, integers_relaxed=False)
     x_star = data.x_sol
     print(f"{data.obj_val=}")
 

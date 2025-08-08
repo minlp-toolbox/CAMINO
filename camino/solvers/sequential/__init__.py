@@ -31,7 +31,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
 
     def solve(self, nlpdata: MinlpData, with_nlp_improvement: bool = False):
         self.reset()
-        nlpdata = self.nlp.solve(nlpdata, set_x_bin=True)
+        nlpdata = self.nlp.solve(nlpdata, integers_relaxed=False)
         phi = nlpdata.obj_val
         logger.info(f"Initial start {phi=}")
         while True:
@@ -42,7 +42,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
             # Make feasible if possible:
             if with_nlp_improvement:
                 # This is a step, not described by De Marchi:
-                data_p = self.nlp.solve(data_p, set_x_bin=True)
+                data_p = self.nlp.solve(data_p, integers_relaxed=False)
                 f = data_p.obj_val
             else:
                 f = float(self.tr_milp.f(data_p.x_sol, data_p.p))

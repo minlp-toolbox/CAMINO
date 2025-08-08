@@ -70,16 +70,15 @@ class NlpSolver(SolverClass):
                 options,
             )
 
-    def solve(self, nlpdata: MinlpData, set_x_bin=False) -> MinlpData:
+    def solve(self, nlpdata: MinlpData, integers_relaxed=True) -> MinlpData:
         """Solve NLP."""
         success_out = []
         sols_out = []
-        # if set_x_bin:
-        #     self.solver.set_option("ipopt.expect_infeasible_problem", "yes")
+
         for sol in nlpdata.solutions_all:
             lbx = nlpdata.lbx
             ubx = nlpdata.ubx
-            if set_x_bin:
+            if not integers_relaxed:
                 # Remove integer errors
                 x_bin_var = np.round(to_0d(sol["x"][self.idx_x_integer]))
                 lbx[self.idx_x_integer] = x_bin_var

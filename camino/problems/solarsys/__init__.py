@@ -406,7 +406,7 @@ if __name__ == "__main__":
     # data.lbg = nlpargs_adrian['lbg']
     # data.ubg = nlpargs_adrian['ubg']
 
-    data = nlp.solve(data, set_x_bin=False)  # solve relaxed problem
+    data = nlp.solve(data, integers_relaxed=True)  # solve relaxed problem
     with open("results/x_star_rel_test.pickle", "wb") as f:
         pickle.dump(data.x_sol, f)
     breakpoint()
