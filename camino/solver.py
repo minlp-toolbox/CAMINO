@@ -66,8 +66,8 @@ SOLVER_MODES = {
         *args, **kwargs, algo_type="B-iFP"
     ),
     "cia": CiaSolver,
-    "nlp": lambda *args, **kwargs: NlpSolver(*args, **kwargs, set_bin=False),
-    "nlp-fxd": lambda *args, **kwargs: NlpSolver(*args, **kwargs, set_bin=True),
+    "nlp": lambda *args, **kwargs: NlpSolver(*args, **kwargs, integers_relaxed=True),
+    "nlp-fxd": lambda *args, **kwargs: NlpSolver(*args, **kwargs, integers_relaxed=False),
     "mip": MipSolver,
 }
 

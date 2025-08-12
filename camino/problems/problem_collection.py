@@ -63,16 +63,15 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
 
                     if idx_1 >= 0:
                         b_idx_1 = int(np.array(dsc.get_indices("Uk")[idx_1]))
+                        b_idx_1 = dsc.w[b_idx_1]
                     else:
                         b_idx_1 = 0
-                    b_idx_1 = dsc.w[b_idx_1]
 
                     if idx_2 >= 0:
                         b_idx_2 = int(np.array(dsc.get_indices("Uk")[idx_2]))
+                        b_idx_2 = dsc.w[b_idx_2]
                     else:
                         b_idx_2 = 0
-                    b_idx_2 = dsc.w[b_idx_2]
-
                     dsc.leq(-Uk + b_idx_1 - b_idx_2, 0, is_dwell_time=1)
                     it += 1
                     uptime_step += 1
@@ -577,14 +576,14 @@ if __name__ == "__main__":
     prob, data, settings = create_ocp_unstable_system()
 
     nlp = NlpSolver(prob, stats, settings)
-    data = nlp.solve(data, set_x_bin=False)
+    data = nlp.solve(data, integers_relaxed=True)
     print(f"Relaxed  {data.obj_val=}")
 
     # Solve MIQP around MINLP solution
     miqp = VoronoiTrustRegionMIQP(prob, data, stats, settings)
     data = miqp.solve(data, prev_feasible=True, is_qp=True)
 
-    data = nlp.solve(data, set_x_bin=True)
+    data = nlp.solve(data, integers_relaxed=False)
     x_star = data.x_sol
     print(f"{data.obj_val=}")
 

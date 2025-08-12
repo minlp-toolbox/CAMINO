@@ -52,9 +52,9 @@ class GenericDecomposition(MiSolverClass):
         x_hat = np.nan * np.empty(data.x0.shape[0])
 
         if self.first_relaxed:
-            data = self.nlp.solve(data)
-            self.stats["lb"] = data.obj_val
-            data = self.master.solve(data, integers_relaxed=True)
+            integers_relaxed = True
+        else:
+            integers_relaxed = False
 
         while (
             not self.termination_condition(
@@ -67,7 +67,9 @@ class GenericDecomposition(MiSolverClass):
             )
         ) and feasible:
             # Solve NLP(y^k)
-            data = self.nlp.solve(data, set_x_bin=True)
+            data = self.nlp.solve(data, integers_relaxed=integers_relaxed)
+            if integers_relaxed:
+                self.stats["lb"] = data.obj_val
 
             # Is there any infeasible?
             if not np.all(data.solved_all):
@@ -75,11 +77,11 @@ class GenericDecomposition(MiSolverClass):
                 data = self.fnlp.solve(data)
                 logger.info(colored("Feasibility NLP solved.", "yellow"))
 
-            # Is there a feasible success?
-            self.update_best_solutions(data)
+            if not integers_relaxed:
+                self.update_best_solutions(data)
 
             # Solve master^k and set lower bound:
-            data = self.master.solve(data)
+            data = self.master.solve(data, integers_relaxed=integers_relaxed)
             feasible = data.solved
             self.stats["lb"] = max(data.obj_val, self.stats["lb"])
             x_hat = data.x_sol
@@ -87,6 +89,10 @@ class GenericDecomposition(MiSolverClass):
                 f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
             )
             logger.debug(f"{self.stats['ub']=}, {self.stats['lb']=}\n")
+
+            if self.stats["iter_nr"] == 0 and integers_relaxed == True:
+                integers_relaxed = False
+
             self.stats["iter_nr"] += 1
 
         self.stats["total_time_calc"] = toc(reset=True)

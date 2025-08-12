@@ -16,17 +16,17 @@ logger = logging.getLogger(__name__)
 
 class NlpSolver(MiSolverClass):
 
-    def __init__(self, problem, data, stats, settings, set_bin=False):
+    def __init__(self, problem, data, stats, settings, integers_relaxed=False):
         super(NlpSolver, self).__init__(problem, data, stats, settings)
         self.nlp = SubSolver(problem, stats, settings)
-        self.set_bin = set_bin
+        self.integers_relaxed = integers_relaxed
 
     def solve(self, nlpdata: MinlpData) -> MinlpData:
-        nlpdata = self.nlp.solve(nlpdata, set_x_bin=self.set_bin)
+        nlpdata = self.nlp.solve(nlpdata, integers_relaxed=self.integers_relaxed)
         nlpdata.relaxed = check_integer_feasible(
             self.nlp.idx_x_integer, nlpdata.x_sol, self.settings, throws=False
         )
-        if not self.set_bin:
+        if self.integers_relaxed:
             self.stats.relaxed_solution = nlpdata
         return nlpdata
 
