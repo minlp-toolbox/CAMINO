@@ -181,7 +181,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.options_master = self.options.copy()
         self.options_master["discrete"] = self.options["discrete"] + [0]
         self.options_master['error_on_fail'] = False
-        self.options_master['gurobi.PoolSolutions'] = 1 # TODO dont force pool 1 but check if pool contains the best solution and in case discard it.
+        # self.options_master['gurobi.PoolSolutions'] = 1 # TODO dont force pool 1 but check if pool contains the best solution and in case discard it.
         self.options['error_on_fail'] = False
 
         self.mipgap_miqp = s.BRMIQP_GAP
@@ -624,13 +624,10 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions[i]["f"] = self.internal_lb
         return nlpdata
 
-    def _solve_milp_only(self, nlpdata: MinlpData, integers_relaxed: bool):
+    def _solve_milp_only(self, nlpdata: MinlpData):
         """Solve lower bound MILP only (LB-MILP)."""
-        if integers_relaxed:
-            solution, success, stats = self._solve_milp_from_relaxed_solution(nlpdata)
-        else:
-            solution, success, stats = self._solve_lb_milp_problem(nlpdata)
-            self.internal_lb = float(solution["f"])
+        solution, success, stats = self._solve_lb_milp_problem(nlpdata)
+        self.internal_lb = float(solution["f"])
         return get_solutions_pool(
             nlpdata, success, stats, self.settings, solution, self.idx_x_integer
         )
@@ -654,7 +651,6 @@ class BendersRegionMasters(BendersMasterMILP):
             + self.g_oa_cvx_constraints
         )
 
-        self.options[self.mipgap_options_str] = 1.0
         available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
         self.options[self.mip_timelimit_options_str] = available_time
         self.options
@@ -783,16 +779,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.update_options(integers_relaxed)
         if self.with_lb_milp:
             if self.with_milp_only:
-                if (
-                    integers_relaxed
-                ):  # For computing y_0, we solve a BR-MILP with gap = 1 (similar to s-b-miqp but here it is milp only, i.e., no Hessian)
-                    return self._solve_milp_only(
-                        nlpdata, integers_relaxed=integers_relaxed
-                    )
-                else:
-                    return self._solve_milp_only(
-                        nlpdata, integers_relaxed=integers_relaxed
-                    )
+                return self._solve_milp_only(nlpdata)
             else:
                 return self._solve_mix(nlpdata)
         else:
