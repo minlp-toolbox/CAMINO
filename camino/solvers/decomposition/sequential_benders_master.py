@@ -624,10 +624,13 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions[i]["f"] = self.internal_lb
         return nlpdata
 
-    def _solve_milp_only(self, nlpdata: MinlpData):
+    def _solve_milp_only(self, nlpdata: MinlpData, integers_relaxed: bool):
         """Solve lower bound MILP only (LB-MILP)."""
-        solution, success, stats = self._solve_lb_milp_problem(nlpdata)
-        self.internal_lb = float(solution["f"])
+        if integers_relaxed:
+            solution, success, stats = self._solve_milp_from_relaxed_solution(nlpdata)
+        else:
+            solution, success, stats = self._solve_lb_milp_problem(nlpdata)
+            self.internal_lb = float(solution["f"])
         return get_solutions_pool(
             nlpdata, success, stats, self.settings, solution, self.idx_x_integer
         )
@@ -779,7 +782,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.update_options(integers_relaxed)
         if self.with_lb_milp:
             if self.with_milp_only:
-                return self._solve_milp_only(nlpdata)
+                return self._solve_milp_only(nlpdata, integers_relaxed)
             else:
                 return self._solve_mix(nlpdata)
         else:
