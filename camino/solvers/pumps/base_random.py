@@ -66,7 +66,7 @@ class PumpBaseRandom(MiSolverClass):
             colored(f"Current random NLP objective: {random_obj_f:.3e}", "blue")
             if random_obj_f < best_obj:
                 datarounded = self.nlp.solve(
-                    create_rounded_data(nlpdata, self.idx_x_integer), set_x_bin=True
+                    create_rounded_data(nlpdata, self.idx_x_integer), integers_relaxed=False
                 )
                 if datarounded.solved:
                     logger.debug(

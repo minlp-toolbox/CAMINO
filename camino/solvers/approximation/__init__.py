@@ -35,7 +35,7 @@ class CiaSolver(MiSolverClass):
 
         toc()
         # Solve relaxed NLP(y^k)
-        nlpdata = self.nlp.solve(nlpdata, set_x_bin=False)
+        nlpdata = self.nlp.solve(nlpdata, integers_relaxed=True)
         self.stats["iter_nr"] = 0
         self.stats["best_iter"] = 0
         self.stats["nlp_obj"] = nlpdata.obj_val
@@ -53,7 +53,7 @@ class CiaSolver(MiSolverClass):
         nlpdata = self.combina_solver.solve(nlpdata)
 
         # Solve NLP with fixed integers
-        nlpdata = self.nlp.solve(nlpdata, set_x_bin=True)
+        nlpdata = self.nlp.solve(nlpdata, integers_relaxed=False)
         self.stats["iter_nr"] = 1
         self.stats["best_iter"] = 1
         self.stats["nlp_obj"] = nlpdata.obj_val

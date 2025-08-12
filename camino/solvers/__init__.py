@@ -5,6 +5,7 @@
 """A generic simple solver."""
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import List, Optional
 from camino.problems import MinlpProblem, MinlpData
 from camino.settings import Settings
@@ -87,7 +88,7 @@ class MiSolverClass(SolverClass):
                         )
                         self.stats["ub"] = obj_val
                         self.best_solutions.append(data.prev_solutions[i])
-                        self.stats["best_iter"] = self.stats["iter_nr"]
+                        self.stats["best_iter"] = copy(self.stats["iter_nr"])
                     elif obj_val - self.settings.EPS < self.stats["ub"]:
                         self.best_solutions.append(data.prev_solutions[i])
 

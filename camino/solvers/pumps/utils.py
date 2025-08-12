@@ -46,7 +46,7 @@ def perturbe_x(x_current, idx_x_integer):
     is large than 0.02.
     """
     N = len(idx_x_integer)
-    T = N / 10  # TunedParameter
+    T = N // 10  # TunedParameter
     TT = min(randint(T // 2, (T * 3) // 2), N)
     x_bin = x_current[idx_x_integer]
     x_rounded = np.round(x_bin)

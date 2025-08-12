@@ -21,75 +21,143 @@ import pickle
 latexify()
 
 
+def calculate_wall_times(df):
+    """
+    Calculate wall times for each problem type from timestamp data.
+
+    Parameters:
+    df: pandas DataFrame with columns 'NLP-time', 'MIQP-time', 'MILP-time'
+
+    Returns:
+    DataFrame with wall times for each problem type
+    """
+
+    # Create a copy to avoid modifying the original
+    result_df = df.copy()
+
+    # Initialize wall time columns
+    result_df["NLP-wall-time"] = np.nan
+    result_df["MIQP-wall-time"] = np.nan
+    result_df["MILP-wall-time"] = np.nan
+
+    # Track the previous end time (start with 0)
+    previous_end = 0
+
+    for i in range(len(df)):
+        # NLP wall time
+        if not pd.isna(df.iloc[i]["NLP-time"]):
+            nlp_start = previous_end
+            nlp_end = df.iloc[i]["NLP-time"]
+            result_df.iloc[i, result_df.columns.get_loc("NLP-wall-time")] = (
+                nlp_end - nlp_start
+            )
+            previous_end = nlp_end
+
+        # MIQP wall time
+        if not pd.isna(df.iloc[i]["MIQP-time"]):
+            miqp_start = previous_end
+            miqp_end = df.iloc[i]["MIQP-time"]
+            result_df.iloc[i, result_df.columns.get_loc("MIQP-wall-time")] = (
+                miqp_end - miqp_start
+            )
+            previous_end = miqp_end
+
+        # MILP wall time
+        if not pd.isna(df.iloc[i]["MILP-time"]):
+            milp_start = previous_end
+            milp_end = df.iloc[i]["MILP-time"]
+            result_df.iloc[i, result_df.columns.get_loc("MILP-wall-time")] = (
+                milp_end - milp_start
+            )
+            previous_end = milp_end
+
+    return result_df
+
+
+def compute_timing_df(df):
+    time_milp = stats_df.loc[
+        stats_df["iter_type"] == "LB-MILP", ["iter_nr", "time"]
+    ].set_index("iter_nr")
+    time_milp.rename(columns={"time": "MILP-time"}, inplace=True)
+
+    time_miqp = stats_df.loc[
+        stats_df["iter_type"] == "BR-MIQP", ["iter_nr", "time"]
+    ].set_index("iter_nr")
+    time_miqp.rename(columns={"time": "MIQP-time"}, inplace=True)
+
+    time_nlp = (
+        stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "time"]]
+        .groupby("iter_nr")
+        .max()
+    )
+    time_nlp.rename(columns={"time": "NLP-time"}, inplace=True)
+
+    time_stats = pd.concat([time_nlp, time_miqp, time_milp], axis=1)
+    time_stats = calculate_wall_times(time_stats)
+    return time_stats
+
+
+def compute_objectives_df(stats_df):
+    lb_sequence = (
+        stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "lb"]]
+        .groupby("iter_nr")
+        .min()
+    )
+    ub_sequence = (
+        stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "ub"]]
+        .groupby("iter_nr")
+        .min()
+    )
+    obj_milp = (
+        stats_df.loc[stats_df["iter_type"] == "LB-MILP", ["iter_nr", "sol_obj"]]
+        .groupby("iter_nr")
+        .min()
+    )
+    obj_milp.rename(columns={"sol_obj": "MILP-obj"}, inplace=True)
+
+    obj_miqp = (
+        stats_df.loc[stats_df["iter_type"] == "BR-MIQP", ["iter_nr", "sol_obj"]]
+        .groupby("iter_nr")
+        .min()
+    )
+    obj_miqp.rename(columns={"sol_obj": "MIQP-obj"}, inplace=True)
+
+    obj_nlp = (
+        stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "sol_obj"]]
+        .groupby("iter_nr")
+        .min()
+    )
+    obj_nlp.rename(columns={"sol_obj": "NLP-obj"}, inplace=True)
+
+    obj_stats = pd.concat(
+        [ub_sequence, lb_sequence, obj_nlp, obj_miqp, obj_milp], axis=1
+    )
+    return obj_stats
+
+
 def plot_stcs(
     stats_df, best_iter_idx, best_sol_obj, best_sol_x, solution_method, simplified
 ):
 
     if "s-b-miqp" in solution_method:
-        # Plot objective of iterations
-        # Due to solution pool there are multiple NLP solution per iteration, we consider the one with lowest objective.
-
-        # print(stats_df.loc[(stats_df['sol_obj']>= 2051) & (stats['sol_obj'] <= 2052)])
-        obj_milp = stats_df.loc[stats_df["iter_type"] == "LB-MILP", "sol_obj"]
-        obj_miqp = stats_df.loc[stats_df["iter_type"] == "BR-MIQP", "sol_obj"]
-        obj_nlp = (
-            stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "sol_obj"]]
-            .groupby("iter_nr")
-            .min()
-        )
-        lb_sequence = (
-            stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "lb"]]
-            .groupby("iter_nr")
-            .min()
-        )
-        ub_sequence = (
-            stats_df.loc[stats_df["iter_type"] == "NLP", ["iter_nr", "ub"]]
-            .groupby("iter_nr")
-            .min()
-        )
-
-        plt.figure(figsize=(5, 3))
-        plt.plot(obj_nlp.values[:-1], marker=".", label="$J(y_k)$")
-        plt.plot(obj_miqp.values[:-1], marker=".", label="$V_{\mathrm{MIQP}, k}$")
-        plt.plot(obj_milp.values[:-1], marker=".", label="$V_{\mathrm{MILP}, k}$")
-        plt.plot(ub_sequence.values[:-1], label="UB")
-        plt.plot(lb_sequence.values[:-1], label="LB")
-        plt.ylim(-2000, 1e4)
-        plt.xlim(
-            0,
-        )
-        plt.legend()
-        plt.xlabel("Iteration")
-        plt.ylabel("Value")
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join("results", filename + "_iteration_values.pdf"),
-            bbox_inches="tight",
-        )
-
-        # Plot wall-time of each solver
-
-        grouped_stats_df = (
-            stats_df.loc[stats_df["iter_type"] == "NLP", stats_df.columns.tolist()]
-            .groupby("iter_nr")
-            .min("sol_obj")
-        )
-
+        time_stats = compute_timing_df(stats_df)
         fig, ax = plt.subplots(1, 1, figsize=(4.5, 1.5))
         ax = sns.lineplot(
-            grouped_stats_df[
-                [elm for elm in stats_df.columns.tolist() if ".time_wall" in elm]
-            ]
-            / 3600,
+            time_stats[
+                [elm for elm in time_stats.columns.tolist() if "wall-time" in elm]
+            ].cumsum(axis=0)
+            / 60,
             ax=ax,
             linewidth=1.5,
             alpha=0.8,
         )
         ax = sns.lineplot(
-            grouped_stats_df[
-                [elm for elm in stats_df.columns.tolist() if ".time_wall" in elm]
-            ].sum(axis=1)
-            / 3600,
+            time_stats[
+                [elm for elm in time_stats.columns.tolist() if "wall-time" in elm]
+            ]
+            .sum(axis=1)
+            .cumsum(axis=0)
+            / 60,
             ax=ax,
             color="gray",
             label="Sum",
@@ -97,16 +165,17 @@ def plot_stcs(
         legend_handles, _ = ax.get_legend_handles_labels()
         ax.legend(
             legend_handles,
-            ["NLP", "BR-MIQP", "LB-MILP", "F-NLP", "Sum"],
+            ["NLP", "BR-MIQP", "LB-MILP", "Sum"],
             loc="center right",
             ncol=1,
             bbox_to_anchor=(1.33, 0.5),
             fontsize=9,
         )
         ax.set(xlabel=r"Iteration")
-        ax.set(ylabel=r"Cumulative runtime (h)")
-        ax.set(xlim=[0, grouped_stats_df.shape[0]])
-        ax.set(ylim=[0, 13])
+        ax.set(ylabel=r"Cum. runtime (min)")
+        ax.set(xlim=[0, time_stats.shape[0] - 1])
+        ax.set(ylim=[0, 30.5])
+        ax.set_xticks(range(0, time_stats.shape[0]))
         plt.savefig(
             os.path.join("results", filename + "_runtime.pdf"), bbox_inches="tight"
         )
@@ -274,7 +343,7 @@ def plot_stcs(
     # axs[3].step(daytime_array, control_b_rel.b_hp, where="post", color = "C2", linestyle=':')
     axs[3].set_ylim(0, 1.1)
     axs[3].set_ylabel("Status \{0, 1\}")
-    axs[3].legend(loc="upper right", framealpha=0.0)
+    axs[3].legend(framealpha=0.0)
 
     axs[4].plot(daytime_array, params.T_amb[:-1], "-.", label="$T_\mathsf{amb}$")
     axs[4].set_ylim(10, 30)
@@ -371,16 +440,16 @@ if __name__ == "__main__":
 
     stats_df = pd.DataFrame(stats)
     if "cia+s-b-miqp" in filename:
-        stats_df = stats_df.loc[stats_df.index > 1]
+        # stats_df = stats_df.loc[stats_df.index > 1]
         solution_method = "s-b-miqp"
     elif "cia" in filename:
-        stats_df = stats_df.loc[stats_df.index > 1]
+        # stats_df = stats_df.loc[stats_df.index>1]
         solution_method = "cia"
     elif "s-b-miqp" in filename:
-        stats_df = stats_df.loc[stats_df.index > 1]
+        # stats_df = stats_df.loc[stats_df.index>1]
         solution_method = "s-b-miqp"
     elif "bonmin" in filename:
-        stats_df = stats_df
+        # stats_df = stats_df
         solution_method = "bonmin"
 
     if solution_method == "bonmin":
@@ -390,7 +459,9 @@ if __name__ == "__main__":
     else:
         best_iter_idx = (
             stats_df.loc[
-                (stats_df["success"] == True) & (stats_df["iter_type"] == "NLP")
+                (stats_df["iter_nr"] > 0)
+                & (stats_df["success"] == True)
+                & (stats_df["iter_type"] == "NLP")
             ]
             .sort_values("sol_obj")
             .index[0]
@@ -398,7 +469,13 @@ if __name__ == "__main__":
         best_sol_obj = stats_df.loc[stats_df.index == best_iter_idx, "sol_obj"]
         best_sol_x = stats_df.loc[stats_df.index == best_iter_idx, "sol_x"].iloc[0]
 
-    print(f"\n Best objective: {best_sol_obj} \n")
+        if solution_method == "s-b-miqp":
+            obj_stats = compute_objectives_df(stats_df)
+            time_stats = compute_timing_df(stats_df)
+            print(obj_stats)
+            print(time_stats)
+
+    print(f"\n Best objective: {float(best_sol_obj.values[0])} \n")
     print(f"\n Computation time: {stats[-1]['time']} \n")
 
     if "stcs" in filename:
