@@ -85,7 +85,7 @@ class MinlpData:
 
     @property
     def lam_x_sol(self):
-        """Get lambda g solution."""
+        """Get lambda x solution."""
         return self._sol["lam_x"]
 
     @prev_solution.setter

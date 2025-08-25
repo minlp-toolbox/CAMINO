@@ -7,6 +7,8 @@
 import casadi as ca
 import numpy as np
 from camino.solvers import MiSolverClass, Stats, MinlpProblem, MinlpData, Settings
+from camino.solvers.decomposition.benders_master import BendersMasterMILPSingleTree
+from camino.solvers.decomposition.benders_master_callbacks import MipsolCallback
 from camino.solvers.utils import get_termination_condition
 from camino.solvers.subsolvers.nlp import NlpSolver
 from camino.utils import colored, logging, toc, tic
@@ -95,6 +97,106 @@ class GenericDecomposition(MiSolverClass):
 
         self.stats["total_time_calc"] = toc(reset=True)
         return self.get_best_solutions(data)
+
+    def _get_x_star(self):
+        if len(self.best_solutions) == 0:
+            return self._x_nan
+        else:
+            return self.best_solutions[-1]["x"]
+
+    def reset(self, nlpdata: MinlpData):
+        """Reset Solvers."""
+        self.master.reset(nlpdata)
+        nlpdata.best_solutions = []
+
+    def warmstart(self, nlpdata: MinlpData):
+        """Warmstart procedure."""
+        if not nlpdata.relaxed:
+            self.first_relaxed = False
+            self.update_best_solutions(nlpdata)
+            self.master.warmstart(nlpdata)
+
+
+class GenericDecompositionSingleTree(MiSolverClass):
+
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        master: BendersMasterMILPSingleTree,
+        fnlp: NlpSolver,
+        termination_type: str = "std",
+        first_relaxed: bool = True,
+    ):
+        """Generic decomposition single tree algorithm."""
+        super(GenericDecompositionSingleTree, self).__init__(problem, data, stats, settings)
+        self.termination_condition = get_termination_condition(
+            termination_type, problem, data, settings
+        )
+        self.master = master
+        self.nlp = NlpSolver(problem, stats, settings)
+        self.fnlp = fnlp
+        self.settings = settings
+        self.stats = stats
+        self.first_relaxed = first_relaxed
+        self._x_nan = np.nan * np.empty(data.x0.shape[0])
+
+    def solve(self, data: MinlpData, *args, **kwargs) -> MinlpData:
+        """Solve the problem."""
+        logger.info("Solver initialized.")
+        tic()
+        # Benders algorithm
+        # feasible = True
+        # x_hat = np.nan * np.empty(data.x0.shape[0])
+
+        data = self.nlp.solve(data, set_x_bin=True)
+        if not np.all(data.solved_all):
+                # Solve NLPF(y^k)
+                data = self.fnlp.solve(data)
+                logger.info(colored("Feasibility NLP solved.", "yellow"))
+        self.update_best_solutions(data)
+        mipsol_callback = MipsolCallback("my_cb", opts={}, nlpdata=data, nlp_solver=self.nlp, fnlp_solver=self.fnlp)
+        data = self.master.solve(data, callback=mipsol_callback)
+        self.stats["total_time_calc"] = toc(reset=True)
+        return data
+
+        # while (
+        #     not self.termination_condition(
+        #         self.stats,
+        #         self.settings,
+        #         self.stats["lb"],
+        #         self.stats["ub"],
+        #         self._get_x_star(),
+        #         x_hat,
+        #     )
+        # ) and feasible:
+        #     # Solve NLP(y^k)
+        #     data = self.nlp.solve(data, set_x_bin=True)
+
+        #     # Is there any infeasible?
+        #     if not np.all(data.solved_all):
+        #         # Solve NLPF(y^k)
+        #         data = self.fnlp.solve(data)
+        #         logger.info(colored("Feasibility NLP solved.", "yellow"))
+
+        #     # Is there a feasible success?
+        #     self.update_best_solutions(data)
+
+        #     # Solve master^k and set lower bound:
+        #     data = self.master.solve(data)
+        #     feasible = data.solved
+        #     self.stats["lb"] = max(data.obj_val, self.stats["lb"])
+        #     x_hat = data.x_sol
+        #     logger.debug(
+        #         f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
+        #     )
+        #     logger.debug(f"{self.stats['ub']=}, {self.stats['lb']=}\n")
+        #     self.stats["iter_nr"] += 1
+
+        # self.stats["total_time_calc"] = toc(reset=True)
+        # return self.get_best_solutions(data)
 
     def _get_x_star(self):
         if len(self.best_solutions) == 0:
