@@ -82,10 +82,10 @@ class FindClosestNlpSolver(SolverClass):
                     lbx=lbx,
                     ubx=ubx,
                     lbg=ca.vertcat(
-                        nlpdata.lbg[self.idx_g_without_dwelltime].flatten(), 0
+                        to_0d(nlpdata.lbg[self.idx_g_without_dwelltime]), 0
                     ),
                     ubg=ca.vertcat(
-                        nlpdata.ubg[self.idx_g_without_dwelltime].flatten(), distance
+                        to_0d(nlpdata.ubg[self.idx_g_without_dwelltime]), distance
                     ),
                     p=ca.vertcat(nlpdata.p, x_bin_var, x_best),
                 )
