@@ -59,8 +59,8 @@ class FeasibilityNlpSolver(SolverClass):
             new_g_constraint = problem.g
         self.idx_g_without_dwelltime = problem.idx_g_without_dwelltime
 
-        self.lbg = self.lbg[self.idx_g_without_dwelltime].flatten()
-        self.ubg = self.ubg[self.idx_g_without_dwelltime].flatten()
+        self.lbg = to_0d(self.lbg[self.idx_g_without_dwelltime])
+        self.ubg = to_0d(self.ubg[self.idx_g_without_dwelltime])
 
         f = beta
         x = ca.vertcat(*[problem.x, beta])

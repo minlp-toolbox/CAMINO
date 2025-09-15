@@ -89,8 +89,8 @@ class NlpSolver(SolverClass):
                 x0=nlpdata.x0,
                 lbx=lbx,
                 ubx=ubx,
-                lbg=nlpdata.lbg[self.idx_g_without_dwelltime].flatten(),
-                ubg=nlpdata.ubg[self.idx_g_without_dwelltime].flatten(),
+                lbg=to_0d(nlpdata.lbg[self.idx_g_without_dwelltime]),
+                ubg=to_0d(nlpdata.ubg[self.idx_g_without_dwelltime]),
             )
 
             success, stats = self.collect_stats("NLP", sol=sol_new)
