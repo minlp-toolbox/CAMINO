@@ -132,7 +132,7 @@ class MinlpSolver(MiSolverClass):
 
     def reset(self, nlpdata: MinlpData):
         """Reset the results."""
-        [subsolver.reset() for subsolver in self._subsolvers]
+        [subsolver.reset(nlpdata) for subsolver in self._subsolvers]
         self.stats.reset()
 
     def warmstart(self, nlpdata: MinlpData):

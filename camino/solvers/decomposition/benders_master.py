@@ -64,7 +64,7 @@ class BendersMasterMILP(SolverClass):
 
     def reset(self, data):
         """Reset."""
-        if self.idx_g_lin.numel() > 0:
+        if self.idx_g_lin.shape[0] > 0:
             self.nr_g, self._g, self._lbg, self._ubg = extract_bounds(
                 self.problem, data, self.idx_g_lin, self._x, self.problem.idx_x_integer
             )
