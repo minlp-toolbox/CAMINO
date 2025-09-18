@@ -39,6 +39,10 @@ class _GlobalSettings:
             )
         self._CASADI_VAR = value
 
+    @CASADI_VAR.getter
+    def CASADI_VAR(self):
+        return self._CASADI_VAR
+
     @property
     def IMG_DIR(self):
         return create_and_return(self._IMG_DIR)
