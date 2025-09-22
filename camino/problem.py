@@ -42,6 +42,7 @@ class MetaDataOcp(MetaData):
     min_downtime: Optional[int] = None
     dump_solution: ca.Function = None
     idx_t: Optional[int] = None
+    stage_cost: ca.Function = None
 
 
 @dataclass

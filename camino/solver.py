@@ -137,7 +137,7 @@ class MinlpSolver(MiSolverClass):
 
     def warmstart(self, nlpdata: MinlpData):
         """Warmstart."""
-        self._subsolver[0].warmstart(nlpdata)
+        self._subsolvers[0].warmstart(nlpdata)
 
     def collect_stats(self):
         """Return the statistics."""
