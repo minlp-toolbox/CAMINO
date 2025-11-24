@@ -8,9 +8,9 @@ from camino.utils import toc
 from camino.solvers import Stats, MinlpProblem, MinlpData, Settings
 from camino.solvers.subsolvers.fnlp import FeasibilityNlpSolver
 from camino.solvers.subsolvers.fnlp_closest import FindClosestNlpSolver
-from camino.solvers.decomposition.base import GenericDecomposition
+from camino.solvers.decomposition.base import GenericDecomposition, GenericDecompositionSingleTree
 from camino.solvers.decomposition.benders_master import (
-    BendersMasterMILP,
+    BendersMasterMILP, BendersMasterMILPSingleTree,
     BendersMasterMIQP,
 )
 from camino.solvers.decomposition.oa_master import (
@@ -49,6 +49,34 @@ class GeneralizedBenders(GenericDecomposition):
             first_relaxed=False,
         )
         stats["total_time_loading"] = toc(reset=True)
+
+class GeneralizedBendersSingleTree(GenericDecompositionSingleTree):
+    """Generalized Benders."""
+
+    def __init__(
+        self,
+        problem: MinlpProblem,
+        data: MinlpData,
+        stats: Stats,
+        settings: Settings,
+        termination_type="std",
+    ):
+        """Generic decomposition algorithm."""
+        master = BendersMasterMILPSingleTree(problem, data, stats, settings)
+        fnlp = FeasibilityNlpSolver(problem, data, stats, settings)
+        GenericDecompositionSingleTree.__init__(
+            self,
+            problem,
+            data,
+            stats,
+            settings,
+            master,
+            fnlp,
+            termination_type,
+            first_relaxed=False,
+        )
+        stats["total_time_loading"] = toc(reset=True)
+
 
 
 class GeneralizedBendersQP(GenericDecomposition):
