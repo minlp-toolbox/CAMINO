@@ -93,7 +93,7 @@ class GenericDecomposition(MiSolverClass):
 
             self.stats["iter_nr"] += 1
 
-        self.stats["total_time_calc"] = toc(reset=True)
+        self.stats["total_wall_time"] = toc(reset=True)
         return self.get_best_solutions(data)
 
     def _get_x_star(self):

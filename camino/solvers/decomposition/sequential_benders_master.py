@@ -569,18 +569,20 @@ class BendersRegionMasters(BendersMasterMILP):
                     self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
-        self.add_python_solver_time(toc())
+        # self.add_python_solver_time(toc())
 
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
         # We miss the LB, try to find one...
 
-        need_lb_milp = np.isinf(self.internal_lb) or (
-            max(self.stats["BR-MIQP.iter"] - self.stats["best_iter"], 0)
-            - max(self.stats["LB-MILP.iter"] - self.stats["best_iter"], 0)
-            >= 3
-        )
-
+        # breakpoint()
+        need_lb_milp = np.isinf(self.internal_lb) or \
+            ((self.stats["iter_nr"] != self.stats["best_iter"]) and (self.stats["iter_nr"] > 0) and self.sol_best_feasible)
+        # (
+        #     max(self.stats["BR-MIQP.iter"] - self.stats["best_iter"], 0)
+        #     - max(self.stats["LB-MILP.iter"] - self.stats["best_iter"], 0)
+        #     >= 3
+        # )
         if not need_lb_milp:
             constraint = self.internal_lb + self.alpha_kronqvist * (
                 self.y_N_val - self.internal_lb
@@ -777,7 +779,7 @@ class BendersRegionMasters(BendersMasterMILP):
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve."""
         self.add_solutions(nlpdata, integers_relaxed)
-        self.add_python_solver_time(toc())
+        # self.add_python_solver_time(toc())
 
         self.update_options(integers_relaxed)
         if self.with_lb_milp:

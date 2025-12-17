@@ -52,7 +52,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
                 a_k = phi - f
                 logger.info(f"{a_k=} | {psi_k=} <? {self.eps=}")
                 if psi_k < self.eps:
-                    self.stats["total_time_calc"] = toc(reset=True)
+                    self.stats["total_wall_time"] = toc(reset=True)
                     colored("Problem solved", "green")
                     data_p.prev_solutions[0]["f"] = self.tr_milp.f(
                         data_p.x_sol, data_p.p

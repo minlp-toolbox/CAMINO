@@ -41,16 +41,16 @@ class SolverClass(ABC):
         else:
             stats = solver.stats()
 
-        t_proc = sum([v for k, v in stats.items() if "t_proc" in k])
+        # t_proc = sum([v for k, v in stats.items() if "t_proc" in k])
 
-        t_wall = sum([v for k, v in stats.items() if "t_wall" in k])
-        self.stats[f"{algo_name}.time"] += t_proc
-        self.stats[f"{algo_name}.time_wall"] += t_wall
+        # t_wall = sum([v for k, v in stats.items() if "t_wall" in k])
+        # self.stats[f"{algo_name}.time"] += t_proc
+        # self.stats[f"{algo_name}.time_wall"] += t_wall
         self.stats[f"{algo_name}.iter"] += max(
             stats.get("n_call_solver", 0), stats["iter_count"]
         )
         self.stats[f"{algo_name}.runs"] += 1
-        self.stats["t_solver_total"] += max(t_wall, t_proc)
+        # self.stats["t_solver_total"] += max(t_wall, t_proc)
         self.stats["success"] = stats["success"]
         self.stats["iter_type"] = algo_name
         if sol is not None:
@@ -60,9 +60,9 @@ class SolverClass(ABC):
             self.stats.save()
         return stats["success"], stats
 
-    def add_python_solver_time(self, time):
-        """Add solver time."""
-        self.stats["t_python_solver"] += time
+    # def add_python_solver_time(self, time):
+    #     """Add solver time."""
+    #     self.stats["t_python_solver"] += time
 
 
 class MiSolverClass(SolverClass):
