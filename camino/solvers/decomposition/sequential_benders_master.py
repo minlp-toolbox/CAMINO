@@ -341,19 +341,30 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _add_oa(self, x_sol, nlpdata: MinlpData):
         x_sol = x_sol[: self.nr_x_orig]
+
+        max_lam_g = max(to_0d(nlpdata.lam_g_sol[self.idx_g_conv]))
+        # threshold_add_oa = max_lam_g - max_lam_g * 0.9 # TODO
+        threshold_add_oa = 0
+
         g_k = self.g(x_sol, nlpdata.p)
         jac_g_k = self.jac_g(x_sol, nlpdata.p)
+
+        counter_oa_cut = 0
         if self.idx_g_conv is not None:
             for i in self.idx_g_conv:
-                if not np.isinf(nlpdata.ubg[i]):
-                    self.g_oa_cvx_constraints.add(
-                        x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T
-                    )
+                if nlpdata.lam_g_sol[i] < threshold_add_oa:
+                    continue
                 else:
-                    self.g_oa_cvx_constraints.add(
-                        x_sol, -g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T
-                    )
-            colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue")
+                    counter_oa_cut += 1
+                    if not np.isinf(nlpdata.ubg[i]):
+                        self.g_oa_cvx_constraints.add(
+                            x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T
+                        )
+                    else:
+                        self.g_oa_cvx_constraints.add(
+                            x_sol, -g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T
+                        )
+            colored(f"Add {counter_oa_cut} OA cuts.", "blue")
 
     def _lowerapprox_oa(self, x, nlpdata):
         """Add outer approximation-based cuts for the objective value, the gradient is corrected when needed to keep the current best point feasible."""
@@ -491,12 +502,18 @@ class BendersRegionMasters(BendersMasterMILP):
             + self.g_benders
             + self.g_infeasibility
             + self.g_oa_objective
-            + self.g_oa_cvx_constraints
+            + self.g_oa_cvx_constraints  # TODO
         )
 
         # Add extra constraint (one step OA):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
+
+        # TODO try to append only the last 100 g_oa_cvx_constraints and one-step OA
+        # g = ca.vertcat(g, self.g_oa_cvx_constraints.to_generic().eq[-100:], f-self._nu)
+        # lbg = ca.vertcat(lbg, self.g_oa_cvx_constraints.to_generic().lb[-100:], -ca.inf)
+        # ubg = ca.vertcat(ubg, self.g_oa_cvx_constraints.to_generic().ub[-100:], 0)
+
 
         available_time = max(
             1e-1,
@@ -781,7 +798,8 @@ class BendersRegionMasters(BendersMasterMILP):
             if (
                 self.with_oa_conv_cuts
             ):  # Add OA constraint cuts only for first solution in the pool to avoid slow down
-                self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
+                if self.idx_g_conv is not None:
+                    self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
 
             if needs_trust_region_update:
                 self._gradient_amplification()
