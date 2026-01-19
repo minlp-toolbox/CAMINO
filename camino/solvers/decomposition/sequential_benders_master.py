@@ -156,11 +156,17 @@ class BendersRegionMasters(BendersMasterMILP):
             self.f_qp = problem.f_qp
 
         if problem.gn_hessian is None:
+            mu_bar = GlobalSettings.CASADI_VAR.sym("mu_bar", problem.g.shape[0])
             self.f_hess = ca.Function(
                 "hess_f_x",
-                [problem.x, problem.p],
-                [ca.hessian(problem.f, problem.x)[0]],
+                [problem.x, mu_bar, problem.p],
+                [ca.hessian(problem.f + mu_bar.T @ problem.g, problem.x)[0]],
             )
+            # self.f_hess = ca.Function(
+                # "hess_f_x",
+                # [problem.x, mu_bar, problem.p],
+                # [ca.hessian(problem.f, problem.x)[0]],
+            # )
         else:
             self.f_hess = ca.Function(
                 "hess_f_x", [problem.x, problem.p], [problem.gn_hessian]
@@ -405,7 +411,7 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
             f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-            f_hess = self.f_hess(self.sol_best["x"], nlpdata.p)
+            f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p) + np.diag(np.ones(self.nr_x_orig)) * 1e-8
             if self.hessian_not_psd:
                 min_eigen_value = np.linalg.eigh(f_hess.full())[0][0]
                 if min_eigen_value < 0:
@@ -562,6 +568,10 @@ class BendersRegionMasters(BendersMasterMILP):
                     if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
                         # warm start with relaxed solution
                         self.sol_best["x"] = sol["x"][: self.nr_x_orig]
+                        lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
+                        lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
+                        # lam_g_correction = np.abs(lam_g_correction)
+                        self.sol_best["lam_g"] = ca.DM(lam_g_correction)
                     self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
