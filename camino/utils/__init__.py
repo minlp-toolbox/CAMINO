@@ -77,7 +77,7 @@ def toc(reset=False):
         tic()
     tim = perf_counter()
     dt = tim - perf_ti
-    logger.info(f"Elapsed time: {dt} s")
+    logger.info(f"Elapsed time: {dt:.3f} s")
     if reset:
         perf_ti = tim
     return dt

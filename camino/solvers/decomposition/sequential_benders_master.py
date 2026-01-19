@@ -535,7 +535,7 @@ class BendersRegionMasters(BendersMasterMILP):
             colored("Failed solving LB-MILP.")
         else:
             solution["x"] = solution["x"][:-1]
-            logger.info("SOLVED LB-MILP")
+            # logger.info("SOLVED LB-MILP")
 
         return solution, success, stats
 
@@ -711,8 +711,8 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
-        self.sol_infeasibility = obj_inf_sol
-        colored(f"Infeasible solution new upper bound: {self.sol_infeasibility}", "red")
+        self.sol_infeasibility = float(obj_inf_sol)
+        colored(f"Infeasible solution new upper bound: {self.sol_infeasibility:.3f}", "red")
         if not self.sol_best_feasible:
             self.sol_best = sol
 
@@ -723,7 +723,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.sol_best = sol
         self.y_N_val = float(sol["f"])
         self.early_benders = False
-        colored(f"New upper bound: {self.y_N_val}", "green")
+        colored(f"New upper bound: {self.y_N_val:.3f}", "green")
 
     def add_solutions(self, nlpdata: MinlpData, integers_relaxed=False):
         """Add solutions."""

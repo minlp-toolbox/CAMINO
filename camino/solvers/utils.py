@@ -8,7 +8,7 @@ from camino.settings import Settings
 from camino.data import MinlpData
 from camino.problem import MinlpProblem
 from camino.stats import Stats
-from camino.utils import toc, logging
+from camino.utils import colored, toc, logging
 from camino.utils.conversion import to_0d
 
 
@@ -211,9 +211,10 @@ def get_termination_condition(
             )
             ret = (lb + tol_abs - ub) >= 0
             if ret:
-                logging.info(f"Terminated: {lb} >= {ub} - {tol_abs} ({tol_abs})")
+                logging.info(colored(f"Not Terminated.", "green"))
             else:
-                logging.info(f"Not Terminated: {lb} <= {ub} - {tol_abs} ({tol_abs})")
+                logging.info(colored(f"Not Terminated."))
+            logging.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | ABS_TOL = {tol_abs:.3f}"))
             return max_time(ret, s, stats)
 
     else:

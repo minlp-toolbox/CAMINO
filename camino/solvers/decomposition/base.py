@@ -81,7 +81,9 @@ class GenericDecomposition(MiSolverClass):
             # Solve master^k and set lower bound:
             data = self.master.solve(data, integers_relaxed=integers_relaxed)
             feasible = data.solved
-            self.stats["lb"] = max(data.obj_val, self.stats["lb"])
+            if self.stats["lb"] < data.obj_val:  # Update LB
+                self.stats["lb"] = data.obj_val
+                logger.info(colored(f"New lower bound: {self.stats['lb']}", "green"))
             x_hat = data.x_sol
             logger.debug(
                 f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
