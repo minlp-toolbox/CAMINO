@@ -211,7 +211,7 @@ def get_termination_condition(
             )
             ret = (lb + tol_abs - ub) >= 0
             if ret:
-                logging.info(colored(f"Not Terminated.", "green"))
+                logging.info(colored(f"Terminated.", "green"))
             else:
                 logging.info(colored(f"Not Terminated."))
             logging.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | ABS_TOL = {tol_abs:.3f}"))
