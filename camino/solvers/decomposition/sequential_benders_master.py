@@ -569,16 +569,14 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
-        # We miss the LB, try to find one...
-
-        # breakpoint()
+        # We solve the LB-MILP if
+        # - LB is inf; OR
+        # - We have a best solution that is feasible but was not found in the last iteration
+        # This new condition avoid solving BR-MIQP when the linearization point doesn't change and only
+        # new constraints are added to it. Indeed for this case, the BR-MIQP cannot improve.
         need_lb_milp = np.isinf(self.internal_lb) or \
             ((self.stats["iter_nr"] != self.stats["best_iter"]) and (self.stats["iter_nr"] > 0) and self.sol_best_feasible)
-        # (
-        #     max(self.stats["BR-MIQP.iter"] - self.stats["best_iter"], 0)
-        #     - max(self.stats["LB-MILP.iter"] - self.stats["best_iter"], 0)
-        #     >= 3
-        # )
+
         if not need_lb_milp:
             constraint = self.internal_lb + self.alpha_kronqvist * (
                 self.y_N_val - self.internal_lb
