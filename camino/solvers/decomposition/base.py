@@ -73,7 +73,7 @@ class GenericDecomposition(MiSolverClass):
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
                 data = self.fnlp.solve(data)
-                logger.info(colored("Feasibility NLP solved.", "yellow"))
+                logger.info(colored("Feasibility NLP solved.", "blue"))
 
             if not integers_relaxed:
                 self.update_best_solutions(data)

@@ -21,13 +21,13 @@ try:
 
     def colored(text, color="red"):
         """Color a text."""
-        logger.info(stylize(text, fg(color)))
+        return stylize(text, fg(color))
 
 except Exception:
 
     def colored(text, color=None):
         """Color a text."""
-        logger.info(text)
+        return text
 
 
 perf_ti = None

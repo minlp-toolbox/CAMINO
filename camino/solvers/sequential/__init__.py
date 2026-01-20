@@ -53,14 +53,14 @@ class SequentialTrustRegionMILP(MiSolverClass):
                 logger.info(f"{a_k=} | {psi_k=} <? {self.eps=}")
                 if psi_k < self.eps:
                     self.stats["total_wall_time"] = toc(reset=True)
-                    colored("Problem solved", "green")
+                    logger.info(colored("Problem solved", "green"))
                     data_p.prev_solutions[0]["f"] = self.tr_milp.f(
                         data_p.x_sol, data_p.p
                     )
                     return data_p
                 if a_k < self.rho[0] * psi_k:
                     self.delta = self.kappa * self.delta
-                    colored(f"Trust region decreases to {self.delta}")
+                    logger.info(colored(f"Trust region decreases to {self.delta}"))
                 else:
                     # Accept step
                     nlpdata = data_p
@@ -75,7 +75,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
                     else:
                         self.delta = self.delta / self.kappa
                     self.delta = min(self.delta, self.delta_max)
-                    colored(f"Step accepted, trust radius {self.delta}", "green")
+                    logger.info(colored(f"Step accepted, trust radius {self.delta}", "green"))
             else:
                 raise NotImplementedError(
                     "The original paper doesn't handle nonlinear constraints, "

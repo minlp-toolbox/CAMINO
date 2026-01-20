@@ -291,7 +291,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 )
         else:
             self.g_infeasibility.add(sol["x"][self.idx_x_integer], 0, multiplier * dx)
-        colored("Adding infeasible cut for closest point.", "blue")
+        logger.info(colored("Adding infeasible cut for closest point.", "blue"))
 
     def _add_infeasible_cut(self, x_sol, lam_g_sol, nlpdata: MinlpData):
         """Add infeasibility cut using the default benders-inf cut method."""
@@ -310,10 +310,6 @@ class BendersRegionMasters(BendersMasterMILP):
             * (g_k - np.where(np.isinf(nlpdata.lbg), 0, nlpdata.lbg))
         )
         # assert g_bar_k > 0
-        if g_bar_k < self.settings.EPS:
-            colored(f"Infeasibility cut of {g_bar_k}.")
-        else:
-            colored(f"Infeasibility cut of {g_bar_k}.", "blue")
         g_bar_k = max(g_bar_k, self.settings.EPS)
         # g_bar_k is positive by definition
         # + 10 is an extra tolerance.
@@ -331,7 +327,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.g_infeasibility.add(x_bin_new, g_bar_k, grad_g_bar_k, grad_corr)
         else:
             self.g_infeasibility.add(x_bin_new, g_bar_k, grad_g_bar_k)
-        colored("Adding standard infeasible cut.", "blue")
+        logger.info(colored("Adding standard infeasible cut.", "blue"))
 
     def _add_oa(self, x_sol, nlpdata: MinlpData):
         x_sol = x_sol[: self.nr_x_orig]
@@ -347,7 +343,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     self.g_oa_cvx_constraints.add(
                         x_sol, -g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T
                     )
-            colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue")
+            logger.info(colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue"))
 
     def _lowerapprox_oa(self, x, nlpdata):
         """Add outer approximation-based cuts for the objective value, the gradient is corrected when needed to keep the current best point feasible."""
@@ -522,9 +518,9 @@ class BendersRegionMasters(BendersMasterMILP):
         if stats["return_status"] == "TIME_LIMIT" and not np.any(
             np.isnan(solution["x"].full())
         ):
-            colored(
+            logger.info(colored(
                 f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})"
-            )
+            ))
             success = True
             solution["x"] = solution["x"][:-1]
         elif not success:
@@ -532,7 +528,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 raise Exception("Problem can not be solved - Feasible zone is empty")
             solution = self.sol_best
             success = True
-            colored("Failed solving LB-MILP.")
+            logger.info(colored("Failed solving LB-MILP."))
         else:
             solution["x"] = solution["x"][:-1]
             # logger.info("SOLVED LB-MILP")
@@ -605,11 +601,11 @@ class BendersRegionMasters(BendersMasterMILP):
                     [sol["x"] for sol in nlpdata.best_solutions],
                     self.idx_x_integer,
                 ):
-                    colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow")
+                    logger.info(colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow"))
                     need_lb_milp = True
             else:
                 self.trust_region_fails = True
-                colored("Failed solving BR-MIQP.", "red")
+                logger.info(colored("Failed solving BR-MIQP.", "red"))
                 need_lb_milp = True
 
         if need_lb_milp:
@@ -712,7 +708,7 @@ class BendersRegionMasters(BendersMasterMILP):
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
         self.sol_infeasibility = float(obj_inf_sol)
-        colored(f"Infeasible solution new upper bound: {self.sol_infeasibility:.3f}", "red")
+        logger.info(colored(f"Infeasible solution new upper bound: {self.sol_infeasibility:.3f}", "red"))
         if not self.sol_best_feasible:
             self.sol_best = sol
 
@@ -723,7 +719,7 @@ class BendersRegionMasters(BendersMasterMILP):
         self.sol_best = sol
         self.y_N_val = float(sol["f"])
         self.early_benders = False
-        colored(f"New upper bound: {self.y_N_val:.3f}", "green")
+        logger.info(colored(f"New upper bound: {self.y_N_val:.3f}", "green"))
 
     def add_solutions(self, nlpdata: MinlpData, integers_relaxed=False):
         """Add solutions."""
@@ -744,7 +740,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     if float(sol["f"]) + self.settings.EPS < self.y_N_val:
                         sol["x"] = sol["x"][: self.nr_x_orig]
                         self.update_sol(sol)
-                    colored(f"Regular Cut {float(sol['f']):.3f} - {nonzero}.", "blue")
+                    logger.info(colored(f"Adding Benders cut | obj val = {float(sol['f']):.3f} | nonzero coeff: {nonzero}/{self.nr_x_bin}.", "blue"))
                     if self.with_oa_conv_cuts:
                         self._lowerapprox_oa(sol["x"], nlpdata)
                 else:
@@ -765,7 +761,7 @@ class BendersRegionMasters(BendersMasterMILP):
                         if infeas < self.sol_infeasibility:
                             self.update_sol_infeas(sol, infeas)
 
-                    colored(f"Infeasibility Cut - distance {nonzero}.", "blue")
+                    # logger.info(colored(f"Infeasibility Cut - distance {nonzero}.", "blue"))
                     self._add_infeasibility_cut(sol, nlpdata)
 
             if (

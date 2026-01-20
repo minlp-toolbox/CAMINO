@@ -109,7 +109,7 @@ def runner(solver_name, problem_name, target_file, args):
     if args is None:
         args = []
 
-    colored(f"Load problem {problem_name} with args: {args}", color="green")
+    logger.info(colored(f"Load problem {problem_name} with args: {args}", color="green"))
 
     output = PROBLEMS[problem_name](*args)
     if len(output) == 2:
