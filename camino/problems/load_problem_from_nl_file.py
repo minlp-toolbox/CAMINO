@@ -77,7 +77,7 @@ def create_from_nl_file(file, compiled=True):
     s.USE_RELAXED_SOL_AS_LINEARIZATION = True
     s.USE_TIGHT_MIPGAP_FIRST_ITERATION = True
     s.IPOPT_SETTINGS = {
-        "ipopt.linear_solver": "ma27",
+        "ipopt.linear_solver": "mumps",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.max_iter": 1000,
         "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
@@ -112,7 +112,7 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
         "bonmin.constr_viol_tol": s.CONSTRAINT_TOL,
-        "bonmin.linear_solver": "ma27",
+        "bonmin.linear_solver": "mumps",
         "bonmin.bound_relax_factor": 1e-14,
         "bonmin.honor_original_bounds": "yes",
     }
