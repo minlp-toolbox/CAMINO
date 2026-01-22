@@ -338,8 +338,9 @@ class BendersRegionMasters(BendersMasterMILP):
     def _add_oa(self, x_sol, nlpdata: MinlpData):
         x_sol = x_sol[: self.nr_x_orig]
 
-        max_lam_g = max(to_0d(nlpdata.lam_g_sol[self.idx_g_conv]))
-        # threshold_add_oa = max_lam_g - max_lam_g * 0.9 # TODO
+        # TODO Add a threshold to include only the most relevant OA cuts
+        # max_lam_g = max(to_0d(nlpdata.lam_g_sol[self.idx_g_conv]))
+        # threshold_add_oa = max_lam_g - max_lam_g * 0.9
         threshold_add_oa = 0
 
         g_k = self.g(x_sol, nlpdata.p)
@@ -422,18 +423,16 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
             f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-            f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p) + np.diag(np.ones(self.nr_x_orig)) * 1e-8
+            f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
             if self.hessian_not_psd:
                 min_eigen_value = np.linalg.eigh(f_hess.full())[0][0]
-                if min_eigen_value < 0:
+                if min_eigen_value < -self.settings.EPS**2:
                     f_hess -= min_eigen_value * ca.DM.eye(self.nr_x_orig)
                     logger.info(
                         colored(
                             f"Negative eigenvalue detected {min_eigen_value}.", "red"
                         )
                     )
-                else:
-                    self.hessian_not_psd = False
 
             f = f_k + f_lin.T @ dx + 0.5 * dx.T @ f_hess @ dx
         else:
