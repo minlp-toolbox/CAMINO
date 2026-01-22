@@ -36,11 +36,6 @@ perf_ti = None
 def make_bounded(problem: MinlpProblem, data: MinlpData, new_inf=1e3):
     """Make bounded."""
     lbx, ubx = data.lbx, data.ubx
-    lbg, ubg = data.lbg, data.ubg
-
-    # # Move all continuous bounds to g!
-    # when constraints are one sided the convention is -inf <= g <= ubg
-    g_extra, g_lb, g_ub = [], [], []
     for i in range(data.lbx.shape[0]):
         if i in problem.idx_x_integer:
             if lbx[i] < -new_inf:
@@ -49,10 +44,6 @@ def make_bounded(problem: MinlpProblem, data: MinlpData, new_inf=1e3):
                 ubx[i] = new_inf
 
     data.lbx, data.ubx = lbx, ubx
-    # Update
-    problem.g = ca.vertcat(problem.g, ca.vertcat(*g_extra))
-    data.lbg = np.concatenate((ca.DM(lbg), ca.DM(g_lb)))
-    data.ubg = np.concatenate((ca.DM(ubg), ca.DM(g_ub)))
 
 
 def setup_logger(level=logging.WARNING):

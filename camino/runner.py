@@ -120,7 +120,7 @@ def runner(solver_name, problem_name, target_file, args):
         logger.info("Using custom settings")
         problem, data, settings = output
 
-    make_bounded(problem, data, new_inf=1e3)
+    # make_bounded(problem, data, new_inf=1e3)
 
     if len(problem.idx_x_integer) == 0:
         solver_name = "relaxed"
