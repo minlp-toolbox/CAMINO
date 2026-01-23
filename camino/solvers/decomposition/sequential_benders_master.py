@@ -38,8 +38,31 @@ class LowerApproximation:
         if gradient_corrected is None:
             gradient_corrected = gradient
             self.is_corrected.append(False)
+            # max_val = abs(np.max(gradient))
+            # min_val = abs(np.min(gradient))
         else:
             self.is_corrected.append(True)
+            # max_val = abs(max(np.max(gradient), np.max(gradient_corrected)))
+            # min_val = abs(min(np.min(gradient), np.min(gradient_corrected)))
+
+        # TODO testing scaling for cuts
+        # scaling = min(max(1, 1 / max(max_val, min_val)), 1000)
+        point = to_0d(point)
+        point[np.abs(point)<1e-12] = 0
+
+        # gradient = to_0d(gradient*scaling)
+        gradient[np.abs(gradient)<1e-12] = 0
+
+        # gradient_corrected = to_0d(gradient_corrected*scaling)
+        gradient_corrected[np.abs(gradient_corrected)<1e-12] = 0
+
+        # offset = offset*scaling
+
+        point = ca.DM(point)
+        offset = ca.DM(offset)
+        gradient = ca.DM(gradient)
+        gradient_corrected = ca.DM(gradient_corrected)
+        # ===========================================================
 
         self.nr += 1
         self.x_lin.append(point)
