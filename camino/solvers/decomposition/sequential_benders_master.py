@@ -50,10 +50,10 @@ class LowerApproximation:
         point = to_0d(point)
         point[np.abs(point)<1e-12] = 0
 
-        # gradient = to_0d(gradient*scaling)
+        gradient = to_0d(gradient)  # * scaling
         gradient[np.abs(gradient)<1e-12] = 0
 
-        # gradient_corrected = to_0d(gradient_corrected*scaling)
+        gradient_corrected = to_0d(gradient_corrected) # * scaling
         gradient_corrected[np.abs(gradient_corrected)<1e-12] = 0
 
         # offset = offset*scaling
