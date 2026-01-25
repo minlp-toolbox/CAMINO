@@ -135,6 +135,10 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
             "bonmin.linear_solver": "ma27",
         }
     )
+
+    if not ca.has_linsol('ma27'):
+        raise ValueError("Could not find ma27. Install the library or set IPOPT linear solver to mumps.")
+
     return problem, data, s
 
 

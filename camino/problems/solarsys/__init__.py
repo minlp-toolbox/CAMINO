@@ -375,6 +375,8 @@ def create_stcs_problem(simplified=False, with_slack=True):
     # set_constraint_types(prob, *cache_data(
     #     f"scts_{n_steps}_{with_slack}", inspect_problem, prob, data
     # ))
+    if not ca.has_linsol('ma57'):
+        raise ValueError("Could not find ma57. Install the library or set IPOPT linear solver to mumps.")
 
     return prob, data, s
 

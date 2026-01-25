@@ -77,7 +77,7 @@ def create_from_nl_file(file, compiled=True):
     s.USE_RELAXED_SOL_AS_LINEARIZATION = True
     s.USE_TIGHT_MIPGAP_FIRST_ITERATION = True
     s.IPOPT_SETTINGS = {
-        "ipopt.linear_solver": "mumps",
+        "ipopt.linear_solver": "ma27",
         "ipopt.max_cpu_time": s.TIME_LIMIT / 4,
         "ipopt.max_iter": 1000,
         "ipopt.constr_viol_tol": s.CONSTRAINT_TOL,
@@ -112,11 +112,15 @@ def create_from_nl_file(file, compiled=True):
         "bonmin.allowable_fraction_gap": Settings.MINLP_TOLERANCE,
         "bonmin.allowable_gap": Settings.MINLP_TOLERANCE_ABS,
         "bonmin.constr_viol_tol": s.CONSTRAINT_TOL,
-        "bonmin.linear_solver": "mumps",
+        "bonmin.linear_solver": "ma27",
         "bonmin.bound_relax_factor": 1e-14,
         "bonmin.honor_original_bounds": "yes",
     }
     s.WITH_DEBUG = False
     s.WITH_LOG_DATA = False
+
+    if not ca.has_linsol('ma27'):
+        raise ValueError("Could not find ma27. Install the library or set IPOPT linear solver to mumps.")
+
 
     return problem, data, s
