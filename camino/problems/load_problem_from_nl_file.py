@@ -8,6 +8,11 @@ from camino.settings import Settings, GlobalSettings
 from camino.problems import MinlpProblem, MinlpData, MetaDataOcp
 import casadi as ca
 import numpy as np
+import logging
+
+from camino.utils import colored
+
+logger = logging.getLogger(__name__)
 
 
 def create_from_nl_file(file, compiled=True):
@@ -120,7 +125,10 @@ def create_from_nl_file(file, compiled=True):
     s.WITH_LOG_DATA = False
 
     if not ca.has_linsol('ma27'):
-        raise ValueError("Could not find ma27. Install the library or set IPOPT linear solver to mumps.")
+        logger.info(colored("Could not find ma27. Setting IPOPT linear solver to mumps."))
+        s.IPOPT_SETTINGS.update({"ipopt.linear_solver": "mumps"})
+        s.BONMIN_SETTINGS.update({"bonmin.linear_solver": "mumps"})
+
 
 
     return problem, data, s
