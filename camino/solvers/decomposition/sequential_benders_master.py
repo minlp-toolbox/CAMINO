@@ -47,21 +47,11 @@ class LowerApproximation:
 
         # TODO testing scaling for cuts
         # scaling = min(max(1, 1 / max(max_val, min_val)), 1000)
-        point = to_0d(point)
-        point[np.abs(point)<1e-12] = 0
-
-        gradient = to_0d(gradient)  # * scaling
-        gradient[np.abs(gradient)<1e-12] = 0
-
-        gradient_corrected = to_0d(gradient_corrected) # * scaling
-        gradient_corrected[np.abs(gradient_corrected)<1e-12] = 0
-
-        # offset = offset*scaling
-
-        point = ca.DM(point)
-        offset = ca.DM(offset)
-        gradient = ca.DM(gradient)
-        gradient_corrected = ca.DM(gradient_corrected)
+        mask = lambda casadi_dm: ca.sparsify(casadi_dm * (ca.fabs(casadi_dm) > 1e-12))
+        point = mask(point)
+        gradient = mask(gradient)  # * scaling
+        gradient_corrected = mask(gradient_corrected) # * scaling
+        offset = mask(offset)  # * scaling
         # ===========================================================
 
         self.nr += 1
