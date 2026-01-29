@@ -61,6 +61,7 @@ class FindClosestNlpSolver(SolverClass):
         success_out = []
         sols_out = []
         has_best = len(nlpdata.best_solutions) >= 1
+        fc_nlp_failed = 0
         if has_best:
             x_best = nlpdata.best_solutions[-1]["x"][self.idx_x_integer]
         for success_prev, sol in zip(nlpdata.solved_all, nlpdata.solutions_all):
@@ -91,11 +92,15 @@ class FindClosestNlpSolver(SolverClass):
                 )
                 sol_new["x_infeasible"] = sol["x"]
                 success, _ = self.collect_stats("FC-NLP", sol=sol_new)
-                if not success:
+                if success:
+                    success_out.append(False)
+                    sols_out.append(sol_new)
+                else:
+                    fc_nlp_failed += 1
                     logger.warning(colored("FC-NLP not solved", "yellow"))
 
-                success_out.append(False)
-                sols_out.append(sol_new)
+        if fc_nlp_failed == len(nlpdata.solved_all):
+            return None
 
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out

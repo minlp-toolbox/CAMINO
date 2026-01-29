@@ -72,8 +72,11 @@ class GenericDecomposition(MiSolverClass):
             # Is there any infeasible?
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
-                data = self.fnlp.solve(data)
-                logger.info(colored("Feasibility NLP solved.", "blue"))
+                tmp = self.fnlp.solve(data)
+                if tmp is not None:
+                    data = tmp
+                else:  # all NLPF failed, algorithm has to stop
+                    break
 
             if not integers_relaxed:
                 self.update_best_solutions(data)
