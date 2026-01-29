@@ -448,8 +448,13 @@ class BendersRegionMasters(BendersMasterMILP):
                             f"Negative eigenvalue detected {eigen_values[0]}.", "red"
                         )
                     )
-
-            f = f_k + f_lin.T @ dx + 0.5 * dx.T @ f_hess @ dx
+                if eigen_values[0] < -1e8:  # discard the hessian term
+                    f_hess = None
+                    logger.info(colored("Too large Negative eigenvalue, discarding Hessian term", "red"))
+            if f_hess is None:
+                f = f_k + f_lin.T @ dx
+            else:
+                f = f_k + f_lin.T @ dx + 0.5 * dx.T @ f_hess @ dx
         else:
             f = self.f_qp(self._x, self.sol_best["x"], nlpdata.p)
         # Order seems to be important!
