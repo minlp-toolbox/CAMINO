@@ -107,6 +107,7 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 5,
+        "gurobi.NonConvex": 2,
         "gurobi.OutputFlag": 0,
         "gurobi.LogToConsole": 0
     }
