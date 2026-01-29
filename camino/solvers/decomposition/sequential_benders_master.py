@@ -491,6 +491,8 @@ class BendersRegionMasters(BendersMasterMILP):
             np.isnan(solution["x"].full())
         ):
             success = True
+        elif not success:
+            logger.info(colored(f"Failed solving BR-MIQP, return status: {stats['return_status']}"))
         return solution, success, stats
 
     def _solve_lb_milp_problem(self, nlpdata: MinlpData) -> MinlpData:
@@ -737,7 +739,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions = [self.sol_best]
                 nlpdata.solved_all = [True]
             else:
-                Exception("Problem can not be solved")
+                nlpdata.solved_all = [False]
         return nlpdata
 
     def compute_lb(self, x_sol):
