@@ -103,6 +103,8 @@ class MiSolverClass(SolverClass):
         if len(data.best_solutions) > 0:
             data.prev_solutions = [data.best_solutions[-1]]
             data.solved_all = [True]
+            self.stats["sol_best_x"] = to_0d(data.best_solutions[-1]['x'])
+            self.stats["sol_best_obj_val"] = float(data.best_solutions[-1]['f'])
         else:
             data.solved_all = [False] * len(data.solutions_all)
         return data
