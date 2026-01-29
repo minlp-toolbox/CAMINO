@@ -599,18 +599,17 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_relaxed_solution(self, nlpdata: MinlpData):
         """Update the benders region using the relaxed solution."""
-        for solved, sol in zip(nlpdata.solved_all, nlpdata.prev_solutions):
-            if solved:
-                # check if new best solution found
-                if np.isinf(self.internal_lb) or self.internal_lb > float(sol["f"]):
-                    if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
-                        # warm start with relaxed solution
-                        self.sol_best["x"] = sol["x"][: self.nr_x_orig]
-                        lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
-                        lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
-                        # lam_g_correction = np.abs(lam_g_correction)
-                        self.sol_best["lam_g"] = ca.DM(lam_g_correction)
-                    self.internal_lb = float(sol["f"])
+        for sol in nlpdata.prev_solutions:
+            # check if new best solution found
+            if np.isinf(self.internal_lb) or self.internal_lb > float(sol["f"]):
+                if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
+                    # warm start with relaxed solution
+                    self.sol_best["x"] = sol["x"][: self.nr_x_orig]
+                    lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
+                    lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
+                    # lam_g_correction = np.abs(lam_g_correction)
+                    self.sol_best["lam_g"] = ca.DM(lam_g_correction)
+                self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
         # self.add_python_solver_time(toc())
