@@ -169,11 +169,17 @@ class BendersRegionMasters(BendersMasterMILP):
             self.f_qp = problem.f_qp
 
         if problem.gn_hessian is None:
-            mu_bar = GlobalSettings.CASADI_VAR.sym("mu_bar", problem.g.shape[0])
+            if problem.g.is_zero():
+                mu_bar = ca.GenMX_zeros(0,0)
+                hess_symbolic = problem.f
+            else:
+                mu_bar = GlobalSettings.CASADI_VAR.sym("mu_bar", problem.g.shape[0])
+                hess_symbolic = problem.f + mu_bar.T @ problem.g
+
             self.f_hess = ca.Function(
                 "hess_f_x",
                 [problem.x, mu_bar, problem.p],
-                [ca.hessian(problem.f + mu_bar.T @ problem.g, problem.x)[0]],
+                [ca.hessian(hess_symbolic, problem.x)[0]],
             )
             # self.f_hess = ca.Function(
                 # "hess_f_x",
@@ -650,7 +656,6 @@ class BendersRegionMasters(BendersMasterMILP):
                     need_lb_milp = True
             else:
                 self.trust_region_fails = True
-                logger.info(colored("Failed solving BR-MIQP.", "red"))
                 need_lb_milp = True
 
         if need_lb_milp:

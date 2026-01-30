@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 import casadi as ca
 from copy import deepcopy
+import numpy as np
 
 
 @dataclass
@@ -71,7 +72,15 @@ class MinlpData:
     @property
     def obj_val(self):
         """Get float value."""
-        return float(self._sol["f"])
+        val = self._sol["f"]
+        if isinstance(val, np.ndarray):
+            return val[0][0]
+        elif isinstance(val, list):
+            return val[0]
+        elif isinstance(val, ca.DM):
+            return val.full()[0][0]
+        return val
+
 
     @property
     def x_sol(self):

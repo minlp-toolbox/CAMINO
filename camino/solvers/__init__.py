@@ -15,7 +15,7 @@ import casadi as ca
 import numpy as np
 import logging
 
-from camino.utils.conversion import to_0d
+from camino.utils.conversion import to_0d, to_float
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class SolverClass(ABC):
         self.stats["iter_type"] = algo_name
         if sol is not None:
             self.stats["sol_x"] = to_0d(sol["x"])
-            self.stats["sol_obj"] = float(sol["f"])
+            self.stats["sol_obj"] = to_float(sol["f"])
         if self.settings.WITH_LOG_DATA:
             self.stats.save()
         return stats["success"], stats
@@ -259,8 +259,8 @@ def extract_bounds(
                     vec_fn(new_x), data.p
                 )
 
-            lbg = data.lbg[idx_g].flatten().tolist()
-            ubg = data.ubg[idx_g].flatten().tolist()
+            lbg = to_0d(data.lbg[idx_g]).tolist()
+            ubg = to_0d(data.ubg[idx_g]).tolist()
         except Exception as e:
             if allow_fail:
                 logger.warning(str(e))
