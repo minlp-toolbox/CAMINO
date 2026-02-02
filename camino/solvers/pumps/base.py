@@ -109,7 +109,7 @@ class PumpBase(MiSolverClass):
             self.stats["iter_nr"] += 1
             logger.info(f"Iteration {self.stats['iter_nr']} finished")
 
-        self.stats["total_time_calc"] += toc(reset=True)
+        self.stats["total_wall_time"] += toc(reset=True)
         data = self.nlp.solve(data, integers_relaxed=False)
         self.update_best_solutions(data)
         return self.get_best_solutions(data)

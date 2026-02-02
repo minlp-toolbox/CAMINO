@@ -59,8 +59,8 @@ def batch_runner(algorithm, target, nl_files):
                 "dual_obj",
                 "load_time",
                 "calc_time",
-                "solver_time",
-                "python_time",
+                # "solver_time",
+                # "python_time",
                 "iter_nr",
                 "NLP_runs",
                 "FNLP_runs",
@@ -85,9 +85,9 @@ def batch_runner(algorithm, target, nl_files):
                     data.obj_val,
                     stats.data["lb"],
                     stats["total_time_loading"],
-                    stats["total_time_calc"],
-                    stats["t_solver_total"],
-                    stats["t_python_solver"],
+                    stats["total_wall_time"],
+                    # stats["t_solver_total"],
+                    # stats["t_python_solver"],
                     stats["iter_nr"],
                     stats["NLP.runs"],
                     stats["FC-NLP.runs"],
@@ -109,7 +109,7 @@ def runner(solver_name, problem_name, target_file, args):
     if args is None:
         args = []
 
-    colored(f"Load problem {problem_name} with args: {args}", color="green")
+    logger.info(colored(f"Load problem {problem_name} with args: {args}", color="green"))
 
     output = PROBLEMS[problem_name](*args)
     if len(output) == 2:

@@ -59,7 +59,7 @@ class CiaSolver(MiSolverClass):
         self.stats["nlp_obj"] = nlpdata.obj_val
         # self.stats["lb"] = nlpdata.obj_val
         self.stats["x_sol"] = to_0d(nlpdata.x_sol)
-        self.stats["total_time_calc"] = toc(reset=True)
+        self.stats["total_wall_time"] = toc(reset=True)
         if not nlpdata.solved:
             logger.error(colored("NLP with fixed binary not solved."))
             raise RuntimeError()

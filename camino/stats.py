@@ -14,6 +14,7 @@ from camino.utils.conversion import to_0d
 from camino.settings import GlobalSettings
 from camino.utils.data import save_pickle
 from camino.data import MinlpData
+import casadi as ca
 
 
 @dataclass()
@@ -85,6 +86,11 @@ class Stats:
         self.data = {}
         self._full_stats_to_pickle = {}
         self.nr_reset += 1
+        self.data["lb"] = -ca.inf
+        self.data["ub"] = ca.inf
+        self.data["iter_nr"] = 0
+        self.data["best_iter"] = -1
+        self.best_solutions = []
 
     def save(self, dest=None):
         """Save statistics."""

@@ -8,8 +8,10 @@ from camino.settings import Settings
 from camino.data import MinlpData
 from camino.problem import MinlpProblem
 from camino.stats import Stats
-from camino.utils import toc, logging
+from camino.utils import colored, toc, logging
 from camino.utils.conversion import to_0d
+
+logger = logging.getLogger(__name__)
 
 
 def almost_equal(a, b, EPS=1e-5):
@@ -141,7 +143,7 @@ def get_termination_condition(
             done = toc() > s.TIME_LIMIT
 
         if done:
-            logging.info("Terminated - TIME LIMIT")
+            logger.info("Terminated - TIME LIMIT")
             return True
         return ret
 
@@ -170,7 +172,7 @@ def get_termination_condition(
                 >= 0
             )
             if ret:
-                logging.info("Terminated - gradient ok")
+                logger.info("Terminated - gradient ok")
             return max_time(ret, s, stats)
 
     elif termination_type == "equality":
@@ -187,7 +189,7 @@ def get_termination_condition(
                         equal_nan=False,
                         atol=s.EPS,
                     ):
-                        logging.info(f"Terminated - all close within {s.EPS}")
+                        logger.info(f"Terminated - all close within {s.EPS}")
                         return True
                 return max_time(False, s, stats)
             else:
@@ -198,7 +200,7 @@ def get_termination_condition(
                     atol=s.EPS,
                 )
                 if ret:
-                    logging.info(f"Terminated - all close within {s.EPS}")
+                    logger.info(f"Terminated - all close within {s.EPS}")
                 return max_time(ret, s, stats)
 
     elif termination_type == "std":
@@ -211,9 +213,10 @@ def get_termination_condition(
             )
             ret = (lb + tol_abs - ub) >= 0
             if ret:
-                logging.info(f"Terminated: {lb} >= {ub} - {tol_abs} ({tol_abs})")
+                logger.info(colored(f"Terminated.", "green"))
             else:
-                logging.info(f"Not Terminated: {lb} <= {ub} - {tol_abs} ({tol_abs})")
+                logger.info(colored(f"Not Terminated."))
+            logger.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | ABS_TOL = {tol_abs:.3f}"))
             return max_time(ret, s, stats)
 
     else:

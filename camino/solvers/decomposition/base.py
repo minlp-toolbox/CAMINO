@@ -73,7 +73,7 @@ class GenericDecomposition(MiSolverClass):
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
                 data = self.fnlp.solve(data)
-                logger.info(colored("Feasibility NLP solved.", "yellow"))
+                logger.info(colored("Feasibility NLP solved.", "blue"))
 
             if not integers_relaxed:
                 self.update_best_solutions(data)
@@ -81,7 +81,9 @@ class GenericDecomposition(MiSolverClass):
             # Solve master^k and set lower bound:
             data = self.master.solve(data, integers_relaxed=integers_relaxed)
             feasible = data.solved
-            self.stats["lb"] = max(data.obj_val, self.stats["lb"])
+            if self.stats["lb"] < data.obj_val:  # Update LB
+                self.stats["lb"] = data.obj_val
+                logger.info(colored(f"New lower bound: {self.stats['lb']}", "green"))
             x_hat = data.x_sol
             logger.debug(
                 f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
@@ -93,7 +95,7 @@ class GenericDecomposition(MiSolverClass):
 
             self.stats["iter_nr"] += 1
 
-        self.stats["total_time_calc"] = toc(reset=True)
+        self.stats["total_wall_time"] = toc(reset=True)
         return self.get_best_solutions(data)
 
     def _get_x_star(self):

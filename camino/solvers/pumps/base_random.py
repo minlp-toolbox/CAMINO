@@ -63,7 +63,7 @@ class PumpBaseRandom(MiSolverClass):
             random_obj_f = float(self.pump.f(nlpdata.x_sol, nlpdata.p))
             lb = min(random_obj_f, lb)
 
-            colored(f"Current random NLP objective: {random_obj_f:.3e}", "blue")
+            logger.info(colored(f"Current random NLP objective: {random_obj_f:.3e}", "blue"))
             if random_obj_f < best_obj:
                 datarounded = self.nlp.solve(
                     create_rounded_data(nlpdata, self.idx_x_integer), integers_relaxed=False
@@ -75,9 +75,9 @@ class PumpBaseRandom(MiSolverClass):
                     )
                     self.update_best_solutions(datarounded)
                 else:
-                    colored("Infeasible")
+                    logger.warning(colored("Infeasible", "yellow"))
             else:
-                colored("Not better than best found yet")
+                logger.info(colored("Not better than best found yet"))
 
             int_error = integer_error(nlpdata.x_sol[self.idx_x_integer])
 

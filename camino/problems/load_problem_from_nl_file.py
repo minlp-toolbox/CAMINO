@@ -102,7 +102,8 @@ def create_from_nl_file(file, compiled=True):
         "gurobi.PoolSolutions": 5,
         "gurobi.Threads": 1,
         "gurobi.TimeLimit": s.TIME_LIMIT / 2,
-        "gurobi.output_flag": 0,
+        "gurobi.OutputFlag": 0,
+        "gurobi.LogToConsole": 0
     }
     s.BONMIN_SETTINGS = {
         "bonmin.time_limit": s.TIME_LIMIT,

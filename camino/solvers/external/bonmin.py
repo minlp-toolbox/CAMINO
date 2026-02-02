@@ -61,7 +61,7 @@ class BonminSolver(MiSolverClass):
         nlpdata.solved, stats = self.collect_stats(
             "MINLP", sol=nlpdata.prev_solutions[-1]
         )
-        self.stats["total_time_calc"] = toc(reset=True)
+        self.stats["total_wall_time"] = toc(reset=True)
         return nlpdata
 
     def reset(self, nlpdata: MinlpData):
