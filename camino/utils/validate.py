@@ -13,7 +13,7 @@ from camino.data import MinlpData
 import casadi as ca
 from camino.settings import Settings
 import numpy as np
-from camino.utils.conversion import to_float
+from camino.utils.conversion import to_0d, to_float
 
 
 def check_solution(
@@ -29,7 +29,7 @@ def check_solution(
     g = ca.Function("g", [problem.x, problem.p], [problem.g])
     f_val = to_float(f(x_star, data.p).full())
     g_val = g(x_star, data.p).full().squeeze()
-    lbg, ubg = data.lbg.squeeze(), data.ubg.squeeze()
+    lbg, ubg = to_0d(data.lbg), to_0d(data.ubg)
     print(f"Objective value {f_val} (real) vs {data.obj_val}")
     msg = []
     if check_objval and abs(to_float(data.obj_val) - f_val) > s.EPS:

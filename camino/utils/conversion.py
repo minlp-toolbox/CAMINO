@@ -5,6 +5,7 @@
 """A set of conversion tools."""
 
 import numpy as np
+import casadi as ca
 
 
 def to_bool(val):
@@ -21,19 +22,21 @@ def to_float(val):
         return to_float(val[0])
     elif isinstance(val, list):
         return to_float(val[0])
+    elif isinstance(val, ca.DM):
+        return to_float(val.full())
     return val
 
 
 def to_0d(array):
     """To zero dimensions."""
     if isinstance(array, np.ndarray):
-        ret = array.squeeze()
+        ret = np.atleast_1d(array.squeeze())
     elif isinstance(array, list):
-        ret = np.array(array).squeeze()
+        ret = np.atleast_1d(np.array(array).squeeze())
+    elif isinstance(array, float):
+        ret = np.atleast_1d(np.array(array))
     else:
-        ret = array.full().squeeze()
-    if ret.size == 1:
-        ret = ret.reshape((-1, 1))
+        ret = np.atleast_1d(array.full().squeeze())
     return ret
 
 

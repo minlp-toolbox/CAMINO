@@ -72,9 +72,11 @@ class Stats:
                 "solutions",
                 "mip_solutions_all",
                 "mip_solved_all",
+                "sol_x",
+                "sol_obj",
             ]:
-                if k == "sol_x":
-                    if len(self.data["sol_x"]) < 10:
+                if k == "sol_best_x":
+                    if len(self.data["sol_best_x"]) < 10:
                         print(f"\t{k}: {v}")
                     else:
                         print(f"\t{k}: {v[:5]}, ...")

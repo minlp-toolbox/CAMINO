@@ -38,8 +38,21 @@ class LowerApproximation:
         if gradient_corrected is None:
             gradient_corrected = gradient
             self.is_corrected.append(False)
+            # max_val = abs(np.max(gradient))
+            # min_val = abs(np.min(gradient))
         else:
             self.is_corrected.append(True)
+            # max_val = abs(max(np.max(gradient), np.max(gradient_corrected)))
+            # min_val = abs(min(np.min(gradient), np.min(gradient_corrected)))
+
+        # TODO testing scaling for cuts
+        # scaling = min(max(1, 1 / max(max_val, min_val)), 1000)
+        mask = lambda casadi_dm: ca.sparsify(casadi_dm * (ca.fabs(casadi_dm) > 1e-12))
+        point = mask(point)
+        gradient = mask(gradient)  # * scaling
+        gradient_corrected = mask(gradient_corrected) # * scaling
+        offset = mask(offset)  # * scaling
+        # ===========================================================
 
         self.nr += 1
         self.x_lin.append(point)
@@ -156,11 +169,23 @@ class BendersRegionMasters(BendersMasterMILP):
             self.f_qp = problem.f_qp
 
         if problem.gn_hessian is None:
+            if problem.g.is_zero():
+                mu_bar = ca.GenMX_zeros(0,0)
+                hess_symbolic = problem.f
+            else:
+                mu_bar = GlobalSettings.CASADI_VAR.sym("mu_bar", problem.g.shape[0])
+                hess_symbolic = problem.f + mu_bar.T @ problem.g
+
             self.f_hess = ca.Function(
                 "hess_f_x",
-                [problem.x, problem.p],
-                [ca.hessian(problem.f, problem.x)[0]],
+                [problem.x, mu_bar, problem.p],
+                [ca.hessian(hess_symbolic, problem.x)[0]],
             )
+            # self.f_hess = ca.Function(
+                # "hess_f_x",
+                # [problem.x, mu_bar, problem.p],
+                # [ca.hessian(problem.f, problem.x)[0]],
+            # )
         else:
             self.f_hess = ca.Function(
                 "hess_f_x", [problem.x, problem.p], [problem.gn_hessian]
@@ -331,19 +356,31 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def _add_oa(self, x_sol, nlpdata: MinlpData):
         x_sol = x_sol[: self.nr_x_orig]
+
+        # TODO Add a threshold to include only the most relevant OA cuts
+        # max_lam_g = max(to_0d(nlpdata.lam_g_sol[self.idx_g_conv]))
+        # threshold_add_oa = max_lam_g - max_lam_g * 0.9
+        threshold_add_oa = 0
+
         g_k = self.g(x_sol, nlpdata.p)
         jac_g_k = self.jac_g(x_sol, nlpdata.p)
+
+        counter_oa_cut = 0
         if self.idx_g_conv is not None:
             for i in self.idx_g_conv:
-                if not np.isinf(nlpdata.ubg[i]):
-                    self.g_oa_cvx_constraints.add(
-                        x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T
-                    )
+                if nlpdata.lam_g_sol[i] < threshold_add_oa:
+                    continue
                 else:
-                    self.g_oa_cvx_constraints.add(
-                        x_sol, -g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T
-                    )
-            logger.info(colored(f"Add {len(self.idx_g_conv)} OA cuts.", "blue"))
+                    counter_oa_cut += 1
+                    if not np.isinf(nlpdata.ubg[i]):
+                        self.g_oa_cvx_constraints.add(
+                            x_sol, g_k[i] - nlpdata.ubg[i], jac_g_k[i, :].T
+                        )
+                    else:
+                        self.g_oa_cvx_constraints.add(
+                            x_sol, -g_k[i] + nlpdata.lbg[i], -jac_g_k[i, :].T
+                        )
+            logger.info(colored(f"Add {counter_oa_cut} OA cuts.", "blue"))
 
     def _lowerapprox_oa(self, x, nlpdata):
         """Add outer approximation-based cuts for the objective value, the gradient is corrected when needed to keep the current best point feasible."""
@@ -405,20 +442,25 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
             f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-            f_hess = self.f_hess(self.sol_best["x"], nlpdata.p)
+            f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
             if self.hessian_not_psd:
-                min_eigen_value = np.linalg.eigh(f_hess.full())[0][0]
-                if min_eigen_value < 0:
-                    f_hess -= min_eigen_value * ca.DM.eye(self.nr_x_orig)
+                eigen_values = np.linalg.eigh(f_hess.full())[0]
+                if eigen_values[-1] < 1e-8 or self.stats["iter_nr"] == 0:  # largest eigenvalue
+                    f_hess += ca.DM.eye(self.nr_x_orig) * 1e-12
+                if eigen_values[0] < -self.settings.EPS**2:  # smallest eigenvalue
+                    f_hess -= eigen_values[0] * ca.DM.eye(self.nr_x_orig)
                     logger.info(
                         colored(
-                            f"Negative eigenvalue detected {min_eigen_value}.", "red"
+                            f"Negative eigenvalue detected {eigen_values[0]}.", "red"
                         )
                     )
-                else:
-                    self.hessian_not_psd = False
-
-            f = f_k + f_lin.T @ dx + 0.5 * dx.T @ f_hess @ dx
+                if eigen_values[0] < -1e8:  # discard the hessian term
+                    f_hess = None
+                    logger.info(colored("Too large Negative eigenvalue, discarding Hessian term", "red"))
+            if f_hess is None:
+                f = f_k + f_lin.T @ dx
+            else:
+                f = f_k + f_lin.T @ dx + 0.5 * dx.T @ f_hess @ dx
         else:
             f = self.f_qp(self._x, self.sol_best["x"], nlpdata.p)
         # Order seems to be important!
@@ -460,6 +502,8 @@ class BendersRegionMasters(BendersMasterMILP):
             np.isnan(solution["x"].full())
         ):
             success = True
+        elif not success:
+            logger.info(colored(f"Failed solving BR-MIQP, return status: {stats['return_status']}"))
         return solution, success, stats
 
     def _solve_lb_milp_problem(self, nlpdata: MinlpData) -> MinlpData:
@@ -481,12 +525,18 @@ class BendersRegionMasters(BendersMasterMILP):
             + self.g_benders
             + self.g_infeasibility
             + self.g_oa_objective
-            + self.g_oa_cvx_constraints
+            + self.g_oa_cvx_constraints  # TODO
         )
 
         # Add extra constraint (one step OA):
         g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
+
+        # TODO try to append only the last 100 g_oa_cvx_constraints and one-step OA
+        # g = ca.vertcat(g, self.g_oa_cvx_constraints.to_generic().eq[-100:], f-self._nu)
+        # lbg = ca.vertcat(lbg, self.g_oa_cvx_constraints.to_generic().lb[-100:], -ca.inf)
+        # ubg = ca.vertcat(ubg, self.g_oa_cvx_constraints.to_generic().ub[-100:], 0)
+
 
         available_time = max(
             1e-1,
@@ -555,14 +605,17 @@ class BendersRegionMasters(BendersMasterMILP):
 
     def update_relaxed_solution(self, nlpdata: MinlpData):
         """Update the benders region using the relaxed solution."""
-        for solved, sol in zip(nlpdata.solved_all, nlpdata.prev_solutions):
-            if solved:
-                # check if new best solution found
-                if np.isinf(self.internal_lb) or self.internal_lb > float(sol["f"]):
-                    if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
-                        # warm start with relaxed solution
-                        self.sol_best["x"] = sol["x"][: self.nr_x_orig]
-                    self.internal_lb = float(sol["f"])
+        for sol in nlpdata.prev_solutions:
+            # check if new best solution found
+            if np.isinf(self.internal_lb) or self.internal_lb > float(sol["f"]):
+                if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
+                    # warm start with relaxed solution
+                    self.sol_best["x"] = sol["x"][: self.nr_x_orig]
+                    lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
+                    lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
+                    # lam_g_correction = np.abs(lam_g_correction)
+                    self.sol_best["lam_g"] = ca.DM(lam_g_correction)
+                self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
         # self.add_python_solver_time(toc())
@@ -603,7 +656,6 @@ class BendersRegionMasters(BendersMasterMILP):
                     need_lb_milp = True
             else:
                 self.trust_region_fails = True
-                logger.info(colored("Failed solving BR-MIQP.", "red"))
                 need_lb_milp = True
 
         if need_lb_milp:
@@ -696,7 +748,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 nlpdata.prev_solutions = [self.sol_best]
                 nlpdata.solved_all = [True]
             else:
-                Exception("Problem can not be solved")
+                nlpdata.solved_all = [False]
         return nlpdata
 
     def compute_lb(self, x_sol):
@@ -765,7 +817,8 @@ class BendersRegionMasters(BendersMasterMILP):
             if (
                 self.with_oa_conv_cuts
             ):  # Add OA constraint cuts only for first solution in the pool to avoid slow down
-                self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
+                if self.idx_g_conv is not None:
+                    self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
 
             if needs_trust_region_update:
                 self._gradient_amplification()

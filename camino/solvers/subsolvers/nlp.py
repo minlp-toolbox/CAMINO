@@ -78,19 +78,26 @@ class NlpSolver(SolverClass):
         for sol in nlpdata.solutions_all:
             lbx = nlpdata.lbx
             ubx = nlpdata.ubx
+            lbg=to_0d(nlpdata.lbg)[self.idx_g_without_dwelltime]
+            ubg=to_0d(nlpdata.ubg)[self.idx_g_without_dwelltime]
+
             if not integers_relaxed:
                 # Remove integer errors
-                x_bin_var = np.round(to_0d(sol["x"][self.idx_x_integer]))
-                lbx[self.idx_x_integer] = x_bin_var
-                ubx[self.idx_x_integer] = x_bin_var
+                x_integer = np.round(to_0d(sol["x"][self.idx_x_integer]))
+                lbx[self.idx_x_integer] = to_0d(x_integer)
+                ubx[self.idx_x_integer] = to_0d(x_integer)
+                if (len(self.idx_x_integer) + np.sum(lbg == ubg)) > nlpdata.x_sol.shape[0]:
+                    # TODO NLP is overconstrained I could simply check if x0 is feasible without calling IPOPT
+                    # breakpoint()
+                    pass
 
             sol_new = self.solver(
                 p=nlpdata.p,
                 x0=nlpdata.x0,
                 lbx=lbx,
                 ubx=ubx,
-                lbg=to_0d(nlpdata.lbg[self.idx_g_without_dwelltime]),
-                ubg=to_0d(nlpdata.ubg[self.idx_g_without_dwelltime]),
+                lbg=lbg,
+                ubg=ubg,
             )
 
             success, stats = self.collect_stats("NLP", sol=sol_new)

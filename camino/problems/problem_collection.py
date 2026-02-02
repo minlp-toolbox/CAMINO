@@ -11,6 +11,7 @@ import casadi as ca
 import numpy as np
 from camino.problems.dsc import Description
 from camino.solvers import Stats
+from camino.utils import colored
 from camino.utils.integrators import integrate_rk4  # integrate_ee
 from camino.problems.double_tank import create_double_tank_problem2
 from camino.problems.solarsys import create_stcs_problem
@@ -135,6 +136,12 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
             "bonmin.linear_solver": "ma27",
         }
     )
+
+    if not ca.has_linsol('ma27'):
+        logger.info(colored("Could not find ma27. Setting IPOPT linear solver to mumps."))
+        s.IPOPT_SETTINGS.update({"ipopt.linear_solver": "mumps"})
+        s.BONMIN_SETTINGS.update({"bonmin.linear_solver": "mumps"})
+
     return problem, data, s
 
 

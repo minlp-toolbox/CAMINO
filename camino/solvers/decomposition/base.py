@@ -72,18 +72,24 @@ class GenericDecomposition(MiSolverClass):
             # Is there any infeasible?
             if not np.all(data.solved_all):
                 # Solve NLPF(y^k)
-                data = self.fnlp.solve(data)
-                logger.info(colored("Feasibility NLP solved.", "blue"))
+                tmp = self.fnlp.solve(data)
+                if tmp is not None:
+                    data = tmp
+                else:  # all NLPF failed, algorithm has to stop
+                    break
 
             if not integers_relaxed:
                 self.update_best_solutions(data)
 
             # Solve master^k and set lower bound:
             data = self.master.solve(data, integers_relaxed=integers_relaxed)
-            feasible = data.solved
-            if self.stats["lb"] < data.obj_val:  # Update LB
-                self.stats["lb"] = data.obj_val
-                logger.info(colored(f"New lower bound: {self.stats['lb']}", "green"))
+            if not data.solved:  # failed to solve the master problem
+                break
+            else:
+                if self.stats["lb"] < data.obj_val:  # Update LB
+                    # if (self.stats.mode == "s-b-miqp-early-exit") and (len(data.best_solutions)>0):  TODO?
+                    self.stats["lb"] = data.obj_val
+                    logger.info(colored(f"New lower bound: {self.stats['lb']}", "green"))
             x_hat = data.x_sol
             logger.debug(
                 f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."

@@ -103,7 +103,7 @@ def any_equal(sol, refs, idx_x_integer):
     return False
 
 
-def get_solutions_pool(nlpdata, success, stats, s: Settings, solution, idx_x_integer):
+def get_solutions_pool(nlpdata, success, stats, s: Settings, solution, idx_x_integer) -> MinlpData:
     """Get pool of solutions if exists."""
     if s.USE_SOLUTION_POOL and stats and "pool_sol_nr" in stats:
         sols = [solution]
