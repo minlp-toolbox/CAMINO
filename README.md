@@ -1,6 +1,8 @@
 # CAMINO: Collection of Algorithms for Mixed-Integer Nonlinear Optimization
 This software package provides a Python/CasADi-based implementation of several algorithms for solving mixed-integer nonlinear programs (MINLPs).
 
+*For benchmark on MINLPLib instances checkout [CAMINO-benchmark](https://github.com/minlp-toolbox/CAMINO-benchmark/)*
+
 ## Installation
 
 Set up and activate a fresh Python virtual environment (**required** Python >= 3.8)
