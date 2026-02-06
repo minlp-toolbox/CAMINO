@@ -214,9 +214,10 @@ def get_termination_condition(
             ret = (lb + tol_abs - ub) >= 0
             if ret:
                 logger.info(colored(f"Terminated.", "green"))
+                logger.info(colored(f"LB = {lb:.8f} | UB = {ub:.8f} | TOL = {tol_abs:.8f}", "green"))
             else:
                 logger.info(colored(f"Not Terminated."))
-            logger.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | ABS_TOL = {tol_abs:.3f}"))
+                logger.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | TOL = {tol_abs:.3f}"))
             return max_time(ret, s, stats)
 
     else:

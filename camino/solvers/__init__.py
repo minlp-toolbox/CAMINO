@@ -83,9 +83,7 @@ class MiSolverClass(SolverClass):
                 obj_val = float(data.prev_solutions[i]["f"])
                 if success:
                     if obj_val + self.settings.EPS < self.stats["ub"]:
-                        logger.info(
-                            f"Decreased UB from {self.stats['ub']} to {obj_val}"
-                        )
+                        logger.info(colored(f"New upper bound: {obj_val}", "green"))
                         self.stats["ub"] = obj_val
                         self.best_solutions.append(data.prev_solutions[i])
                         self.stats["best_iter"] = copy(self.stats["iter_nr"])
