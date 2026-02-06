@@ -769,7 +769,6 @@ class BendersRegionMasters(BendersMasterMILP):
         self.sol_best = sol
         self.y_N_val = float(sol["f"])
         self.early_benders = False
-        logger.info(colored(f"New upper bound: {self.y_N_val:.3f}", "green"))
 
     def add_solutions(self, nlpdata: MinlpData, integers_relaxed=False):
         """Add solutions."""
