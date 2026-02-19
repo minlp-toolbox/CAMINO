@@ -540,6 +540,12 @@ class BendersRegionMasters(BendersMasterMILP):
             + self.g_oa_cvx_constraints
         )
 
+        if self.stats.data["iter_nr"] == 0:
+            f_k = self.f(self.sol_best["x"], nlpdata.p)
+            f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
+            # Add OA objective cut on first relaxed NLP
+            g_total.add(-ca.inf, f_k + f_lin.T @ dx - self._nu, 0)
+
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
 
         available_time = max(
