@@ -467,11 +467,24 @@ class BendersRegionMasters(BendersMasterMILP):
         # Order seems to be important!
         g_cur_lin = self._get_g_linearized(self.sol_best["x"], dx, nlpdata)
 
+        # Remove the OA objective cut corresponding to best sol
+        # Otherwise the cost function is similar to the OA obj cut which has to be < J_bar
+        oa_objective_cuts_to_apply = copy.deepcopy(self.g_oa_objective)
+        for i, x_i in enumerate(oa_objective_cuts_to_apply.x_lin):
+            if np.allclose(to_0d(x_i), to_0d(self.sol_best["x"])):
+                oa_objective_cuts_to_apply.nr -= 1
+                oa_objective_cuts_to_apply.g.pop(i)
+                oa_objective_cuts_to_apply.dg.pop(i)
+                oa_objective_cuts_to_apply.dg_corrected.pop(i)
+                oa_objective_cuts_to_apply.x_lin.pop(i)
+                oa_objective_cuts_to_apply.multipliers.pop(i)
+                oa_objective_cuts_to_apply.is_corrected.pop(i)
+
         g_total = (
             g_cur_lin
             + self.g_benders
             + self.g_infeasibility
-            + self.g_oa_objective
+            + oa_objective_cuts_to_apply
             + self.g_oa_cvx_constraints
         )
 
@@ -511,36 +524,23 @@ class BendersRegionMasters(BendersMasterMILP):
         return solution, success, stats
 
     def _solve_lb_milp_problem(self, nlpdata: MinlpData) -> MinlpData:
-        """Solve LB-MILP problem - Benders master problem with one OA constraint."""
+        """Solve LB-MILP problem - Benders master problem with one OA objective cut at the best solution."""
+        # The OA objective cut at the best solution is already stored in self.g_oa_objective
+
         dx = self._x - self.sol_best["x"]
-
-        f_k = self.f(self.sol_best["x"], nlpdata.p)
-        f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-        f = f_k + f_lin.T @ dx
-
-        # Adding the following linearization might not be the best idea since
-        # They can lead to false results!
-        if not self.sol_best_feasible:
-            g_cur_lin = Constraints()
-        else:
+        if self.sol_best_feasible:
             g_cur_lin = self._get_g_linearized(self.sol_best["x"], dx, nlpdata)
+        else:
+            g_cur_lin = Constraints()
         g_total = (
             g_cur_lin
             + self.g_benders
             + self.g_infeasibility
             + self.g_oa_objective
-            + self.g_oa_cvx_constraints  # TODO
+            + self.g_oa_cvx_constraints
         )
 
-        # Add extra constraint (one step OA):
-        g_total.add(-ca.inf, f - self._nu, 0)
         g, ubg, lbg = g_total.eq, g_total.ub, g_total.lb
-
-        # TODO try to append only the last 100 g_oa_cvx_constraints and one-step OA
-        # g = ca.vertcat(g, self.g_oa_cvx_constraints.to_generic().eq[-100:], f-self._nu)
-        # lbg = ca.vertcat(lbg, self.g_oa_cvx_constraints.to_generic().lb[-100:], -ca.inf)
-        # ubg = ca.vertcat(ubg, self.g_oa_cvx_constraints.to_generic().ub[-100:], 0)
-
 
         available_time = max(
             1e-1,
@@ -795,13 +795,14 @@ class BendersRegionMasters(BendersMasterMILP):
                 )
                 if solved:
                     self._gradient_correction(sol["x"], sol["lam_x"], nlpdata)
+                    logger.info(colored(f"Adding Benders cut | obj val = {float(sol['f']):.3f} | nonzero coeff: {nonzero}/{self.nr_x_bin}.", "blue"))
+                    self._lowerapprox_oa(sol["x"], nlpdata)
+                    logger.info(colored(f"Adding OA objective cut.", "blue"))
                     needs_trust_region_update = True
+
                     if float(sol["f"]) + self.settings.EPS < self.y_N_val:
                         sol["x"] = sol["x"][: self.nr_x_orig]
                         self.update_sol(sol)
-                    logger.info(colored(f"Adding Benders cut | obj val = {float(sol['f']):.3f} | nonzero coeff: {nonzero}/{self.nr_x_bin}.", "blue"))
-                    if self.with_oa_conv_cuts:
-                        self._lowerapprox_oa(sol["x"], nlpdata)
                 else:
                     if not self.sol_best_feasible:
                         if "x_infeasible" in sol:
@@ -823,10 +824,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     # logger.info(colored(f"Infeasibility Cut - distance {nonzero}.", "blue"))
                     self._add_infeasibility_cut(sol, nlpdata)
 
-            if (
-                self.with_oa_conv_cuts
-            ):  # Add OA constraint cuts only for first solution in the pool to avoid slow down
-                if self.idx_g_conv is not None:
+            if self.with_oa_conv_cuts:
+                if self.idx_g_conv is not None:  # Add OA constraint cuts only for first solution in the pool to avoid slow down
                     self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
 
             if needs_trust_region_update:
