@@ -15,7 +15,7 @@ from camino.solvers import (
     regularize_options,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import colored
+from camino.utils import colored, toc
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,7 @@ class NlpSolver(SolverClass):
                     # breakpoint()
                     pass
 
+            solver_time = toc()
             sol_new = self.solver(
                 p=nlpdata.p,
                 x0=nlpdata.x0,
@@ -99,7 +100,8 @@ class NlpSolver(SolverClass):
                 lbg=lbg,
                 ubg=ubg,
             )
-
+            solver_time = toc() - solver_time
+            sol_new["solver_wall_time"] = solver_time
             success, stats = self.collect_stats("NLP", sol=sol_new)
             if not success:
                 return_status_ok = stats["return_status"] in [

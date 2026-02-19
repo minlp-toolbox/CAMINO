@@ -14,7 +14,7 @@ from camino.solvers import (
     regularize_options,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import logging
+from camino.utils import logging, toc
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)

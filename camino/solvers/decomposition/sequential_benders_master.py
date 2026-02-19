@@ -5,6 +5,7 @@
 """Master solver used in sequential Benders-baded MIQP algorithm."""
 import numpy as np
 import casadi as ca
+import copy
 from camino.solvers import Stats, MinlpProblem, MinlpData
 from camino.utils import colored, toc
 from camino.settings import GlobalSettings, Settings
@@ -489,6 +490,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.options,  # + {"error_on_fail": False}
         )
 
+        solver_time = toc()
         solution = solver(
             x0=self.sol_best["x"],
             lbx=nlpdata.lbx,
@@ -497,6 +499,8 @@ class BendersRegionMasters(BendersMasterMILP):
             ubg=g_total.ub,
             p=[constraint],
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         success, stats = self.collect_stats("BR-MIQP", solver, solution)
         if stats["return_status"] == "TIME_LIMIT" and not np.any(
             np.isnan(solution["x"].full())
@@ -557,6 +561,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.options_master,
         )
 
+        solver_time = toc()
         solution = solver(
             x0=ca.vertcat(self.sol_best["x"], self.y_N_val + 1e-5),
             lbx=ca.vertcat(nlpdata.lbx, -ca.inf),
@@ -564,6 +569,8 @@ class BendersRegionMasters(BendersMasterMILP):
             lbg=lbg,
             ubg=ubg,
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         success, stats = self.collect_stats("LB-MILP", solver, solution)
         if stats["return_status"] == "TIME_LIMIT" and not np.any(
             np.isnan(solution["x"].full())
@@ -704,7 +711,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
         available_time = max(1e-1, self.settings.TIME_LIMIT - toc())
         self.options[self.mip_timelimit_options_str] = available_time
-        self.options
+
         solver = ca.qpsol(
             "milp_from_relaxed_solution",
             self.settings.MIP_SOLVER,
@@ -712,6 +719,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.options,  # + {"error_on_fail": False}
         )
 
+        solver_time = toc()
         solution = solver(
             x0=self.sol_best["x"],
             lbx=nlpdata.lbx,
@@ -720,6 +728,8 @@ class BendersRegionMasters(BendersMasterMILP):
             ubg=g_total.ub,
             p=[constraint],
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         success, stats = self.collect_stats("R-MILP", solver, solution)
         if stats["return_status"] == "TIME_LIMIT" and not np.any(
             np.isnan(solution["x"].full())

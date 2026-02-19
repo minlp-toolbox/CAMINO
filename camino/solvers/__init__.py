@@ -50,7 +50,10 @@ class SolverClass(ABC):
             stats.get("n_call_solver", 0), stats["iter_count"]
         )
         self.stats[f"{algo_name}.runs"] += 1
-        # self.stats["t_solver_total"] += max(t_wall, t_proc)
+        try:
+            self.stats["solver_wall_time"] += sol["solver_wall_time"]
+        except:
+            self.stats["solver_wall_time"] += np.nan
         self.stats["success"] = stats["success"]
         self.stats["iter_type"] = algo_name
         if sol is not None:

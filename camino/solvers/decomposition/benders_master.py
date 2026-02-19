@@ -23,6 +23,7 @@ from camino.solvers import (
     extract_bounds,
 )
 from camino.settings import GlobalSettings, Settings
+from camino.utils import toc
 import logging
 
 logger = logging.getLogger(__name__)
@@ -174,6 +175,7 @@ class BendersMasterMILP(SolverClass):
                 nlpdata.lam_x_sol,
                 nlpdata.solved,
             )
+
         solver = ca.qpsol(
             f"benders_with_{self.nr_g}_cut",
             self.settings.MIP_SOLVER,
@@ -185,6 +187,7 @@ class BendersMasterMILP(SolverClass):
             self.options,
         )
 
+        solver_time = toc()
         # This solver solves only to the binary variables (_x)!
         solution = solver(
             x0=ca.vertcat(x_bin_star, nlpdata.obj_val),
@@ -198,6 +201,8 @@ class BendersMasterMILP(SolverClass):
         x_full[self.idx_x_integer] = solution["x"][:-1]
         solution["x"] = x_full
         nlpdata.prev_solution = solution
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         nlpdata.solved, stats = self.collect_stats("BENDERS-MILP", solver, solution)
         return nlpdata
 
@@ -243,8 +248,8 @@ class BendersMasterMIQP(BendersMasterMILP):
             self.nr_g += 1
 
         f_hess = self.f_hess_bin(nlpdata.x_sol[: self.nr_x_orig], nlpdata.p)
-
         dx = self._x - x_bin_star
+
         solver = ca.qpsol(
             f"benders_qp{self.nr_g}",
             self.settings.MIP_SOLVER,
@@ -256,6 +261,7 @@ class BendersMasterMIQP(BendersMasterMILP):
             self.options,
         )
 
+        solver_time = toc()
         # This solver solves only to the binary variables (_x)!
         solution = solver(
             x0=ca.vertcat(x_bin_star, nlpdata.obj_val),
@@ -272,6 +278,8 @@ class BendersMasterMIQP(BendersMasterMILP):
         x_full[self.idx_x_integer] = solution["x"][:-1]
         solution["x"] = x_full
         nlpdata.prev_solution = solution
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         nlpdata.solved, stats = self.collect_stats("BENDERS-MIQP", solver, solution)
         return nlpdata
 
@@ -411,6 +419,7 @@ class BendersTrustRegionMIP(BendersMasterMILP):
             self.options,
         )
 
+        solver_time = toc()
         sol = solver(
             x0=self.x_sol_best,
             lbx=nlpdata.lbx,
@@ -419,7 +428,8 @@ class BendersTrustRegionMIP(BendersMasterMILP):
             ubg=ubg,
             p=[self.y_N_val - 1e-4],
         )
-
+        solver_time = toc() - solver_time
+        sol["solver_wall_time"] = solver_time
         nlpdata.solved, stats = self.collect_stats("BTR-MIP", solver, sol)
         if nlpdata.solved:
             nlpdata.prev_solution = sol

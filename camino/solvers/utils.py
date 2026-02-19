@@ -138,7 +138,7 @@ def get_termination_condition(
     def max_time(ret, s, stats):
         done = False
         if s.TIME_LIMIT_SOLVER_ONLY:
-            done = stats["t_solver_total"] > s.TIME_LIMIT or toc() > s.TIME_LIMIT * 3
+            done = stats["solver_wall_time"] > s.TIME_LIMIT or toc() > s.TIME_LIMIT * 3
         else:
             done = toc() > s.TIME_LIMIT
 

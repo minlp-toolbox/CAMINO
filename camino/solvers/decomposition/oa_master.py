@@ -18,6 +18,7 @@ from camino.solvers import (
     extract_bounds,
 )
 from camino.settings import GlobalSettings, Settings
+from camino.utils import toc
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,7 @@ class OuterApproxMILP(SolverClass):
             self.options,
         )
 
+        solver_time = toc()
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
             lbx=ca.vertcat(nlpdata.lbx, -1e8),
@@ -129,6 +131,8 @@ class OuterApproxMILP(SolverClass):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         x_full = solution["x"].full()[: self.nr_x]
         solution["x"] = x_full
         nlpdata.prev_solution = solution
@@ -213,6 +217,7 @@ class OuterApproxMIQP(OuterApproxMILP):
             self.options,
         )
 
+        solver_time = toc()
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
             lbx=ca.vertcat(nlpdata.lbx, -1e8),
@@ -220,6 +225,8 @@ class OuterApproxMIQP(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         x_full = solution["x"].full()[: self.nr_x]
         solution["x"] = x_full
         nlpdata.prev_solution = solution
@@ -289,6 +296,7 @@ class OuterApproxMILPImproved(OuterApproxMILP):
             self.options,
         )
 
+        solver_time = toc()
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
             lbx=ca.vertcat(nlpdata.lbx, -1e8),
@@ -296,6 +304,8 @@ class OuterApproxMILPImproved(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         x_full = solution["x"].full()[: self.nr_x]
         solution["x"] = x_full
         nlpdata.prev_solution = solution
@@ -401,6 +411,7 @@ class OuterApproxMIQPImproved(OuterApproxMILP):
             self.options,
         )
 
+        solver_time = toc()
         solution = solver(
             x0=ca.vertcat(x_sol, nlpdata.obj_val),
             lbx=ca.vertcat(nlpdata.lbx, -1e8),
@@ -408,6 +419,8 @@ class OuterApproxMIQPImproved(OuterApproxMILP):
             lbg=ca.vertcat(*self._lbg),
             ubg=ca.vertcat(*self._ubg),
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         x_full = solution["x"].full()[: self.nr_x]
         solution["x"] = x_full
         nlpdata.prev_solution = solution

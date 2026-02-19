@@ -96,6 +96,7 @@ class TrustRegionMILP(SolverClass):
             },
             self.options,
         )
+        solver_time = toc()
         solution = solver(
             x0=x_hat,
             ubx=nlpdata.ubx,
@@ -103,6 +104,8 @@ class TrustRegionMILP(SolverClass):
             ubg=ca.vertcat(nlpdata.ubg, g_extra_ub),
             lbg=ca.vertcat(nlpdata.lbg, g_extra_lb),
         )
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
         success, _ = self.collect_stats("TR-MILP", solver, solution)
         nlpdata.prev_solution = solution
         nlpdata.solved = success
