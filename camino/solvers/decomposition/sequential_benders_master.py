@@ -623,7 +623,6 @@ class BendersRegionMasters(BendersMasterMILP):
                 if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
                     # warm start with relaxed solution
                     self.sol_best["x"] = sol["x"][: self.nr_x_orig]
-                    breakpoint()
                     if self.f_hess.size1_in(1) == 0:
                         self.sol_best["lam_g"] = ca.DM(np.nan)  # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
                     else:
