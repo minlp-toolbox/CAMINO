@@ -182,14 +182,10 @@ class BendersRegionMasters(BendersMasterMILP):
                 [problem.x, mu_bar, problem.p],
                 [ca.hessian(hess_symbolic, problem.x)[0]],
             )
-            # self.f_hess = ca.Function(
-                # "hess_f_x",
-                # [problem.x, mu_bar, problem.p],
-                # [ca.hessian(problem.f, problem.x)[0]],
-            # )
         else:
+            mu_bar = ca.GenMX_zeros(0,0)
             self.f_hess = ca.Function(
-                "hess_f_x", [problem.x, problem.p], [problem.gn_hessian]
+                "hess_f_x", [problem.x, mu_bar, problem.p], [problem.gn_hessian]
             )
 
         self._x = GlobalSettings.CASADI_VAR.sym("x_benders", problem.x.numel())
@@ -443,7 +439,10 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
             f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-            f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
+            if self.f_hess.size1_in(1) == 0:  # Identify GN hessian by checking if lam_g field has shape zero!
+                f_hess = self.f_hess(self.sol_best["x"], [], nlpdata.p)
+            else:
+                f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
             if self.hessian_not_psd:
                 eigen_values = np.linalg.eigh(f_hess.full())[0]
                 if eigen_values[-1] < 1e-8 or self.stats["iter_nr"] == 0:  # largest eigenvalue
@@ -624,10 +623,13 @@ class BendersRegionMasters(BendersMasterMILP):
                 if self.settings.USE_RELAXED_SOL_AS_LINEARIZATION:
                     # warm start with relaxed solution
                     self.sol_best["x"] = sol["x"][: self.nr_x_orig]
-                    lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
-                    lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
-                    # lam_g_correction = np.abs(lam_g_correction)
-                    self.sol_best["lam_g"] = ca.DM(lam_g_correction)
+                    breakpoint()
+                    if self.f_hess.size1_in(1) == 0:
+                        self.sol_best["lam_g"] = ca.DM(np.nan)  # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
+                    else:
+                        lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
+                        lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
+                        self.sol_best["lam_g"] = ca.DM(lam_g_correction)
                 self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
