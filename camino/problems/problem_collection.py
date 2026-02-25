@@ -124,7 +124,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
             "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
             #  "gurobi.Threads": 1,
             "gurobi.PoolSearchMode": 0,
-            "gurobi.PoolSolutions": 3,
+            "gurobi.PoolSolutions": 5,
             # "gurobi.NodeMethod": 2,
             # "gurobi.Method": 2,
         }
