@@ -640,7 +640,7 @@ class BendersRegionMasters(BendersMasterMILP):
         # - LB is inf; OR
         # - We have a best solution that is feasible but was not found in the last iteration
         # This new condition avoid solving BR-MIQP when the linearization point doesn't change and only
-        # new constraints are added to it. Indeed for this case, the BR-MIQP cannot improve.
+        # new constraints are added to it. Indeed for this case, the objective of BR-MIQP cannot improve.
         need_lb_milp = np.isinf(self.internal_lb) or \
             ((self.stats["iter_nr"] != self.stats["best_iter"]) and (self.stats["iter_nr"] > 0) and self.sol_best_feasible)
 
@@ -841,7 +841,6 @@ class BendersRegionMasters(BendersMasterMILP):
     def solve(self, nlpdata: MinlpData, integers_relaxed=False) -> MinlpData:
         """Solve."""
         self.add_solutions(nlpdata, integers_relaxed)
-        # self.add_python_solver_time(toc())
 
         self.update_options(integers_relaxed)
         if self.with_lb_milp:
