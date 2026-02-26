@@ -188,7 +188,9 @@ def create_dummy_problem(p_val=[1000, 3]):
     )
     problem = opti.get_problem()
     data = opti.get_data()
-    return problem, data
+    s = Settings()
+    s.USE_RELAXED_SOL_AS_LINEARIZATION = False
+    return problem, data, s
 
 
 def create_dummy_problem_2():
