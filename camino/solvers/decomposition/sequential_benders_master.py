@@ -18,6 +18,8 @@ from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
 
+TRIM_THRESH = 1e-8
+
 
 class LowerApproximation:
     """Store info on lower approximation cuts."""
@@ -39,22 +41,15 @@ class LowerApproximation:
         if gradient_corrected is None:
             gradient_corrected = gradient
             self.is_corrected.append(False)
-            # max_val = abs(np.max(gradient))
-            # min_val = abs(np.min(gradient))
         else:
             self.is_corrected.append(True)
-            # max_val = abs(max(np.max(gradient), np.max(gradient_corrected)))
-            # min_val = abs(min(np.min(gradient), np.min(gradient_corrected)))
 
-        # TODO testing scaling for cuts
-        # scaling = min(max(1, 1 / max(max_val, min_val)), 1000)
-        mask = lambda casadi_dm: ca.sparsify(casadi_dm * (ca.fabs(casadi_dm) > 1e-12))
-        point = mask(point)
-        gradient = mask(gradient)  # * scaling
-        gradient_corrected = mask(gradient_corrected) # * scaling
-        offset = mask(offset)  # * scaling
+        mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
+        point = mask(point, TRIM_THRESH)
+        gradient = mask(gradient, TRIM_THRESH)
+        gradient_corrected = mask(gradient_corrected, TRIM_THRESH)
+        offset = mask(offset, TRIM_THRESH)
         # ===========================================================
-
         self.nr += 1
         self.x_lin.append(point)
         self.g.append(offset)
@@ -396,6 +391,9 @@ class BendersRegionMasters(BendersMasterMILP):
         """Correct gradient of the existing lower approximation cuts."""
         # TODO: (to improve computation speed) if the best point does not change, check only the last point
         x_sol_best_bin = self.sol_best["x"][self.idx_x_integer]
+        lam_x_sol = to_0d(lam_x_sol)
+        lam_x_sol[np.abs(lam_x_sol) < TRIM_THRESH] = 0
+        lam_x_sol = ca.DM(lam_x_sol)
 
         # On the last integer point: check, correct (if needed) and add to g_lowerapprox
         f_k = self.f(x_sol, nlpdata.p)
@@ -415,7 +413,7 @@ class BendersRegionMasters(BendersMasterMILP):
         else:
             self.g_benders.add(x_bin_new, f_k, lambda_k)
 
-    def _get_g_linearized(self, x, dx, nlpdata):
+    def _get_g_linearized(self, x_best, nlpdata):
         if not self.sol_best_feasible and self.trust_region_fails:
             return Constraints()
         elif (self.g.size1_out("o0") == 0) & (self.g.size2_out("o0") == 0):
@@ -423,13 +421,20 @@ class BendersRegionMasters(BendersMasterMILP):
                 breakpoint()
             return Constraints()
         else:
-            g_lin = self.g(x, nlpdata.p)
-            jac_g = self.jac_g(x, nlpdata.p)
+            g_lin = self.g(x_best, nlpdata.p)
+            jac_g = self.jac_g(x_best, nlpdata.p)
+
+            mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
+            jac_g = mask(jac_g, TRIM_THRESH)
+            offset = g_lin - jac_g @ x_best
+            lbg = mask(nlpdata.lbg - offset, TRIM_THRESH)
+            ubg = mask(nlpdata.ubg - offset, TRIM_THRESH)
+
             return Constraints(
                 g_lin.numel(),
-                (g_lin + jac_g @ dx),
-                nlpdata.lbg - self.settings.EPS,
-                nlpdata.ubg + self.settings.EPS,
+                jac_g @ self._x,
+                lbg - self.settings.EPS,
+                ubg + self.settings.EPS,
             )
 
     def _solve_br_miqp_problem(self, nlpdata: MinlpData, constraint) -> MinlpData:
@@ -438,25 +443,26 @@ class BendersRegionMasters(BendersMasterMILP):
 
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
-            f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
+            f_lin = ca.sparsify(self.grad_f_x(self.sol_best["x"], nlpdata.p))
             if self.f_hess.size1_in(1) == 0:  # Identify GN hessian by checking if lam_g field has shape zero!
                 f_hess = self.f_hess(self.sol_best["x"], [], nlpdata.p)
             else:
                 f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
             if self.hessian_not_psd:
+                mask = ca.fabs(f_hess) >= self.settings.EPS**2 # Clip to zero values with abs < 1e-12
+                f_hess *= mask
                 eigen_values = np.linalg.eigh(f_hess.full())[0]
-                if eigen_values[-1] < 1e-8 or self.stats["iter_nr"] == 0:  # largest eigenvalue
-                    f_hess += ca.DM.eye(self.nr_x_orig) * 1e-12
-                if eigen_values[0] < -self.settings.EPS**2:  # smallest eigenvalue
-                    f_hess -= eigen_values[0] * ca.DM.eye(self.nr_x_orig)
-                    logger.info(
-                        colored(
-                            f"Negative eigenvalue detected {eigen_values[0]}.", "red"
-                        )
-                    )
-                if eigen_values[0] < -1e8:  # discard the hessian term
-                    f_hess = None
-                    logger.info(colored("Too large Negative eigenvalue, discarding Hessian term", "red"))
+                if not np.any(eigen_values) or eigen_values[0] < -1e8:  # all eigval are zero or smallest eigval is a very large negative number
+                    f_hess = None  # discard hessian term
+                    logger.info(colored("Hessian discarded, eigenvalue all zero or smallest eigenvalue <-1e8"))
+                else:
+                    smallest_eigval_notnull = eigen_values[eigen_values != 0][0]
+                    eta = abs(smallest_eigval_notnull)/max(abs(smallest_eigval_notnull), abs(eigen_values[-1]))  # a kind of inverse of the condition number
+                    if eta >= TRIM_THRESH:
+                        f_hess -= eigen_values[0] * ca.DM.eye(self.nr_x_orig)  # make hessian PSD
+                        logger.info(colored(f"Smallest eigenvalue is negative | Value = {eigen_values[0]}"))
+                        logger.info(colored("Make Hessian PSD by (+ ||lambda_min|| @ I)", color="green"))
+
             if f_hess is None:
                 f = f_k + f_lin.T @ dx
             else:
@@ -584,7 +590,11 @@ class BendersRegionMasters(BendersMasterMILP):
                 f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})"
             ))
             success = True
-            solution["x"] = solution["x"][:-1]
+            if solution["f"] == self.y_N_val:
+                solution["f"] = self.internal_lb
+                solution = self.sol_best
+            else:
+                solution["x"] = solution["x"][:-1]
         elif not success:
             if not self.sol_best_feasible:
                 raise Exception("Problem can not be solved - Feasible zone is empty")
@@ -627,12 +637,11 @@ class BendersRegionMasters(BendersMasterMILP):
                         self.sol_best["lam_g"] = ca.DM(np.nan)  # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
                     else:
                         lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
-                        lam_g_correction[np.abs(lam_g_correction) < 1e-8] = 0
+                        lam_g_correction[np.abs(lam_g_correction) < TRIM_THRESH] = 0
                         self.sol_best["lam_g"] = ca.DM(lam_g_correction)
                 self.internal_lb = float(sol["f"])
 
         self._gradient_corrections_old_cuts()
-        # self.add_python_solver_time(toc())
 
     def _solve_mix(self, nlpdata: MinlpData):
         """Preparation for solving both Benders region master problem (BR-MIQP) and lower bound master problem (LB-MILP)."""
