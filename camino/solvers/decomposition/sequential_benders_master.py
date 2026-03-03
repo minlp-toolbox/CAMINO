@@ -459,8 +459,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     smallest_eigval_notnull = eigen_values[eigen_values != 0][0]
                     eta = abs(smallest_eigval_notnull)/max(abs(smallest_eigval_notnull), abs(eigen_values[-1]))  # a kind of inverse of the condition number
                     if eta >= TRIM_THRESH:
-                        f_hess -= eigen_values[0] * ca.DM.eye(self.nr_x_orig)  # make hessian PSD
-                        logger.info(colored(f"Smallest eigenvalue is negative | Value = {eigen_values[0]}"))
+                        f_hess -= smallest_eigval_notnull * ca.DM.eye(self.nr_x_orig)  # make hessian PSD
+                        logger.info(colored(f"Smallest eigenvalue is negative | Value = {smallest_eigval_notnull}"))
                         logger.info(colored("Make Hessian PSD by (+ ||lambda_min|| @ I)", color="green"))
 
             if f_hess is None:
