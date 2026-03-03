@@ -464,7 +464,7 @@ class BendersRegionMasters(BendersMasterMILP):
         else:
             f = self.f_qp(self._x, self.sol_best["x"], nlpdata.p)
         # Order seems to be important!
-        g_cur_lin = self._get_g_linearized(self.sol_best["x"], dx, nlpdata)
+        g_cur_lin = self._get_g_linearized(self.sol_best["x"], nlpdata)
 
         # Remove the OA objective cut corresponding to best sol
         # Otherwise the cost function is similar to the OA obj cut which has to be < J_bar
@@ -528,7 +528,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
         dx = self._x - self.sol_best["x"]
         if self.sol_best_feasible:
-            g_cur_lin = self._get_g_linearized(self.sol_best["x"], dx, nlpdata)
+            g_cur_lin = self._get_g_linearized(self.sol_best["x"], nlpdata)
         else:
             g_cur_lin = Constraints()
         g_total = (
@@ -658,6 +658,7 @@ class BendersRegionMasters(BendersMasterMILP):
                         stats,
                         self.settings,
                         solution,
+                        self.sol_best['x'],
                         self.idx_x_integer,
                     )
                     need_lb_milp = True
@@ -677,7 +678,7 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = float(solution["f"])
 
         nlpdata = get_solutions_pool(
-            nlpdata, success, stats, self.settings, solution, self.idx_x_integer
+            nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
         )
 
         if not need_lb_milp:
@@ -694,7 +695,7 @@ class BendersRegionMasters(BendersMasterMILP):
             solution, success, stats = self._solve_lb_milp_problem(nlpdata)
             self.internal_lb = float(solution["f"])
         return get_solutions_pool(
-            nlpdata, success, stats, self.settings, solution, self.idx_x_integer
+            nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
         )
 
     def _solve_milp_from_relaxed_solution(self, nlpdata: MinlpData):
@@ -706,7 +707,7 @@ class BendersRegionMasters(BendersMasterMILP):
         f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
         f = f_k + f_lin.T @ dx
         # Order seems to be important!
-        g_cur_lin = self._get_g_linearized(self.sol_best["x"], dx, nlpdata)
+        g_cur_lin = self._get_g_linearized(self.sol_best["x"], nlpdata)
 
         g_total = (
             g_cur_lin
@@ -757,7 +758,7 @@ class BendersRegionMasters(BendersMasterMILP):
         solution, success, stats = self._solve_br_miqp_problem(nlpdata, constraint)
         if success:
             nlpdata = get_solutions_pool(
-                nlpdata, success, stats, self.settings, solution, self.idx_x_integer
+                nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
             )
         else:
             if self.sol_best_feasible:

@@ -124,8 +124,18 @@ class NlpSolver(SolverClass):
             if not success:
                 logger.warning(colored("NLP not solved.", "yellow"))
 
-            success_out.append(success)
-            sols_out.append(sol_new)
+            if len(sols_out) == 0:
+                success_out.append(success)
+                sols_out.append(sol_new)
+            else:  # append only solutions that are different!
+                tmp = []
+                for s in sols_out:
+                    tmp.append(np.allclose(to_0d(s["x"]), to_0d(sol_new["x"])))
+                if any(tmp):
+                    pass
+                else:
+                    success_out.append(success)
+                    sols_out.append(sol_new)
 
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out

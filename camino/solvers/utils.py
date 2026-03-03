@@ -103,21 +103,22 @@ def any_equal(sol, refs, idx_x_integer):
     return False
 
 
-def get_solutions_pool(nlpdata, success, stats, s: Settings, solution, idx_x_integer) -> MinlpData:
+def get_solutions_pool(nlpdata, success, stats, s: Settings, current_solution, best_solution, idx_x_integer) -> MinlpData:
     """Get pool of solutions if exists."""
-    if s.USE_SOLUTION_POOL and stats and "pool_sol_nr" in stats:
-        sols = [solution]
-        x_sols = [solution["x"]]
-
-        for i in range(1, stats["pool_sol_nr"]):
+    if s.USE_SOLUTION_POOL and stats and "pool_sol_nr" in stats and stats["pool_sol_nr"]:
+        sols = []
+        x_sols = []
+        for i in range(stats["pool_sol_nr"]):
             x = ca.DM(stats["pool_solutions"][i])
-            if not any_equal(x, x_sols, idx_x_integer):
+            if i>0 and np.allclose(to_0d(x)[idx_x_integer], to_0d(best_solution)[idx_x_integer]):
+                pass
+            else:
                 sols.append({"f": stats["pool_obj_val"][i], "x": x})
                 x_sols.append(x)
         nlpdata.prev_solutions = sols
         nlpdata.solved_all = [success for i in sols]
     else:
-        nlpdata.prev_solutions = [solution]
+        nlpdata.prev_solutions = [{"f": current_solution['f'], "x": current_solution['x']}]  # [nlpdata.prev_solutions[-1]]
         nlpdata.solved_all = [success]
 
     return nlpdata

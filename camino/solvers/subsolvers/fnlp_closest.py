@@ -96,8 +96,19 @@ class FindClosestNlpSolver(SolverClass):
                 sol_new["solver_wall_time"] = solver_time
                 success, _ = self.collect_stats("FC-NLP", sol=sol_new)
                 if success:
-                    success_out.append(False)
-                    sols_out.append(sol_new)
+                    if len(sols_out) == 0:
+                        success_out.append(False)
+                        sols_out.append(sol_new)
+                    else:  # append only solutions that are different!
+                        tmp = []
+                        for s in sols_out:
+                            tmp.append(np.allclose(to_0d(s["x_infeasible"]), to_0d(sol_new["x_infeasible"])))
+                        if any(tmp):
+                            pass
+                        else:
+                            success_out.append(False)
+                            sols_out.append(sol_new)
+
                 else:
                     fc_nlp_failed += 1
                     logger.warning(colored("FC-NLP not solved", "yellow"))
