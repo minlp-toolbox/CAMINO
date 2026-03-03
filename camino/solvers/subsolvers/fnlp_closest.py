@@ -102,7 +102,10 @@ class FindClosestNlpSolver(SolverClass):
                     else:  # append only solutions that are different!
                         tmp = []
                         for s in sols_out:
-                            tmp.append(np.allclose(to_0d(s["x_infeasible"]), to_0d(sol_new["x_infeasible"])))
+                            if "x_infeasible" in s.keys():
+                                tmp.append(np.allclose(to_0d(s["x_infeasible"]), to_0d(sol_new["x_infeasible"])))
+                            else:
+                                tmp.append(False)
                         if any(tmp):
                             pass
                         else:
