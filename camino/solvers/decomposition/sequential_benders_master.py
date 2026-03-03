@@ -449,19 +449,26 @@ class BendersRegionMasters(BendersMasterMILP):
             else:
                 f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
             if self.hessian_not_psd:
-                mask = ca.fabs(f_hess) >= self.settings.EPS**2 # Clip to zero values with abs < 1e-12
-                f_hess *= mask
                 eigen_values = np.linalg.eigh(f_hess.full())[0]
-                if not np.any(eigen_values) or eigen_values[0] < -1e8:  # all eigval are zero or smallest eigval is a very large negative number
-                    f_hess = None  # discard hessian term
-                    logger.info(colored("Hessian discarded, eigenvalue all zero or smallest eigenvalue <-1e8"))
+                if np.all(np.abs(eigen_values) < 1e-12) or eigen_values[0] < -1e8:
+                    f_hess = None
+                    logger.info(colored("Hessian discarded (all zero or unstable spikes)"))
                 else:
-                    smallest_eigval_notnull = eigen_values[eigen_values != 0][0]
-                    eta = abs(smallest_eigval_notnull)/max(abs(smallest_eigval_notnull), abs(eigen_values[-1]))  # a kind of inverse of the condition number
-                    if eta >= TRIM_THRESH:
-                        f_hess -= smallest_eigval_notnull * ca.DM.eye(self.nr_x_orig)  # make hessian PSD
-                        logger.info(colored(f"Smallest eigenvalue is negative | Value = {smallest_eigval_notnull}"))
-                        logger.info(colored("Make Hessian PSD by (+ ||lambda_min|| @ I)", color="green"))
+                    lambda_min = eigen_values[0]
+                    spectral_radius = np.max(np.abs(eigen_values)) # max |lambda|
+                    # Only proceed if it is actually negative
+                    if lambda_min < 0:
+                        # Calculate eta: relative magnitude
+                        eta = abs(lambda_min) / spectral_radius
+                        if eta >= TRIM_THRESH:
+                            # Significant negative curvature found
+                            shift = abs(lambda_min)
+                            total_shift = abs(lambda_min) + 1e-8
+                            f_hess += total_shift * ca.DM.eye(self.nr_x_orig)
+                            logger.info(colored(f"Negative curvature detected | Eig_min = {lambda_min:.2e} | eta = {eta:.2e}"))
+                            logger.info(colored(f"Regularizing Hessian by shift = {total_shift:.2e}", color="green"))
+                        else:
+                            logger.debug(f"Ignoring small negative eigenvalue (noise): {lambda_min:.2e}")
 
             if f_hess is None:
                 f = f_k + f_lin.T @ dx
