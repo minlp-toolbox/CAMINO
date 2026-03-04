@@ -443,7 +443,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
-            f_lin = ca.sparsify(self.grad_f_x(self.sol_best["x"], nlpdata.p))
+            f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
             if self.f_hess.size1_in(1) == 0:  # Identify GN hessian by checking if lam_g field has shape zero!
                 f_hess = self.f_hess(self.sol_best["x"], [], nlpdata.p)
             else:
