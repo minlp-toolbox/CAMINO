@@ -15,7 +15,7 @@ from camino.utils import colored
 logger = logging.getLogger(__name__)
 
 
-def create_from_nl_file(file, compiled=True):
+def create_from_nl_file(file, compiled=False):
     """Load from NL file."""
     from camino.utils.cache import CachedFunction, return_func
     import hashlib
@@ -52,8 +52,8 @@ def create_from_nl_file(file, compiled=True):
             idx_x_integer=idx[0].tolist(),
             p=[],
         )
-    if nl.f.is_constant():
-        raise Exception("No objective!")
+#    if nl.f.is_constant():
+#        raise Exception("No objective!")
 
     problem.hessian_not_psd = True
     data = MinlpData(
