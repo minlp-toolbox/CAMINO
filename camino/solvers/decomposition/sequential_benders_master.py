@@ -878,7 +878,7 @@ class BendersRegionMasters(BendersMasterMILP):
         )  # OA cut for objective: f_i + grad_f_i (x - x_i) <= 0
         self.g_infeasibility = LowerApproximation(
             self._x_bin, 0
-        )  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) + sigma <= 0
+        )  # Infeasibility cut (y_hat - y_bar).T (y - y_bar) <= 0
         self.g_oa_cvx_constraints = LowerApproximation(
             self._x, 0
         )  # If g_i is cvx: g_i - ubg_i + jac_g_i.T (x - x_sol) <= 0
