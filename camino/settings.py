@@ -99,6 +99,7 @@ class Settings:
     CONSTRAINT_TOL: float = 1e-4
     BENDERS_LB: float = -1e16
     _MIP_SOLVER: str = "highs"
+    FLOAT_TOLERANCE_ABS = 1e-8
 
     WITH_DEBUG: bool = to_bool(environ.get("DEBUG", False))
     WITH_LOG_DATA: bool = to_bool(environ.get("LOG_DATA", False))

@@ -18,9 +18,6 @@ from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
 
-TRIM_THRESH = 1e-8
-
-
 class LowerApproximation:
     """Store info on lower approximation cuts."""
 
@@ -45,10 +42,10 @@ class LowerApproximation:
             self.is_corrected.append(True)
 
         mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
-        point = mask(point, TRIM_THRESH)
-        gradient = mask(gradient, TRIM_THRESH)
-        gradient_corrected = mask(gradient_corrected, TRIM_THRESH)
-        offset = mask(offset, TRIM_THRESH)
+        point = mask(point, Settings.FLOAT_TOLERANCE_ABS)
+        gradient = mask(gradient, Settings.FLOAT_TOLERANCE_ABS)
+        gradient_corrected = mask(gradient_corrected, Settings.FLOAT_TOLERANCE_ABS)
+        offset = mask(offset, Settings.FLOAT_TOLERANCE_ABS)
         # ===========================================================
         self.nr += 1
         self.x_lin.append(point)
@@ -392,7 +389,7 @@ class BendersRegionMasters(BendersMasterMILP):
         # TODO: (to improve computation speed) if the best point does not change, check only the last point
         x_sol_best_bin = self.sol_best["x"][self.idx_x_integer]
         lam_x_sol = to_0d(lam_x_sol)
-        lam_x_sol[np.abs(lam_x_sol) < TRIM_THRESH] = 0
+        lam_x_sol[np.abs(lam_x_sol) < Settings.FLOAT_TOLERANCE_ABS] = 0
         lam_x_sol = ca.DM(lam_x_sol)
 
         # On the last integer point: check, correct (if needed) and add to g_lowerapprox
@@ -425,10 +422,10 @@ class BendersRegionMasters(BendersMasterMILP):
             jac_g = self.jac_g(x_best, nlpdata.p)
 
             mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
-            jac_g = mask(jac_g, TRIM_THRESH)
+            jac_g = mask(jac_g, Settings.FLOAT_TOLERANCE_ABS)
             offset = g_lin - jac_g @ x_best
-            lbg = mask(nlpdata.lbg - offset, TRIM_THRESH)
-            ubg = mask(nlpdata.ubg - offset, TRIM_THRESH)
+            lbg = mask(nlpdata.lbg - offset, Settings.FLOAT_TOLERANCE_ABS)
+            ubg = mask(nlpdata.ubg - offset, Settings.FLOAT_TOLERANCE_ABS)
 
             return Constraints(
                 g_lin.numel(),
@@ -460,7 +457,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     if lambda_min < 0:
                         # Calculate eta: relative magnitude
                         eta = abs(lambda_min) / spectral_radius
-                        if eta >= TRIM_THRESH:
+                        if eta >= Settings.FLOAT_TOLERANCE_ABS:
                             # Significant negative curvature found
                             shift = abs(lambda_min)
                             total_shift = abs(lambda_min) + 1e-8
@@ -644,7 +641,7 @@ class BendersRegionMasters(BendersMasterMILP):
                         self.sol_best["lam_g"] = ca.DM(np.nan)  # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
                     else:
                         lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
-                        lam_g_correction[np.abs(lam_g_correction) < TRIM_THRESH] = 0
+                        lam_g_correction[np.abs(lam_g_correction) < Settings.FLOAT_TOLERANCE_ABS] = 0
                         self.sol_best["lam_g"] = ca.DM(lam_g_correction)
                 self.internal_lb = float(sol["f"])
 
