@@ -33,7 +33,7 @@ class SolverClass(ABC):
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """Solve the problem."""
 
-    def collect_stats(self, algo_name, solver=None, sol=None):
+    def collect_stats(self, algo_name, solver=None, sol: dict = None):
         """Collect statistics."""
         logger.info(f"Solved {algo_name}")
         if solver is None:
@@ -50,15 +50,12 @@ class SolverClass(ABC):
             stats.get("n_call_solver", 0), stats["iter_count"]
         )
         self.stats[f"{algo_name}.runs"] += 1
-        try:
-            self.stats["solver_wall_time"] += sol["solver_wall_time"]
-        except:
-            self.stats["solver_wall_time"] += np.nan
         self.stats["success"] = stats["success"]
         self.stats["iter_type"] = algo_name
         if sol is not None:
             self.stats["sol_x"] = to_0d(sol["x"])
             self.stats["sol_obj"] = to_float(sol["f"])
+            self.stats["solver_wall_time"] += sol.get("solver_wall_time", np.nan)
         if self.settings.WITH_LOG_DATA:
             self.stats.save()
         return stats["success"], stats
