@@ -2,7 +2,8 @@
 # Copyright (C) 2024  Andrea Ghezzi, Wim Van Roy, Sebastian Sager, Moritz Diehl
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Master solver used in sequential Benders-baded MIQP algorithm."""
+"""Master solver used in sequential Benders-based MIQP algorithm."""
+
 import numpy as np
 import casadi as ca
 import copy
@@ -17,6 +18,7 @@ import logging
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
+
 
 class LowerApproximation:
     """Store info on lower approximation cuts."""
@@ -41,7 +43,9 @@ class LowerApproximation:
         else:
             self.is_corrected.append(True)
 
-        mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
+        mask = lambda casadi_dm, trim_thresh: casadi_dm * (
+            ca.fabs(casadi_dm) > trim_thresh
+        )
         point = mask(point, Settings.FLOAT_TOLERANCE_ABS)
         gradient = mask(gradient, Settings.FLOAT_TOLERANCE_ABS)
         gradient_corrected = mask(gradient_corrected, Settings.FLOAT_TOLERANCE_ABS)
@@ -163,7 +167,7 @@ class BendersRegionMasters(BendersMasterMILP):
 
         if problem.gn_hessian is None:
             if problem.g.is_zero():
-                mu_bar = ca.GenMX_zeros(0,0)
+                mu_bar = ca.GenMX_zeros(0, 0)
                 hess_symbolic = problem.f
             else:
                 mu_bar = GlobalSettings.CASADI_VAR.sym("mu_bar", problem.g.shape[0])
@@ -175,7 +179,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 [ca.hessian(hess_symbolic, problem.x)[0]],
             )
         else:
-            mu_bar = ca.GenMX_zeros(0,0)
+            mu_bar = ca.GenMX_zeros(0, 0)
             self.f_hess = ca.Function(
                 "hess_f_x", [problem.x, mu_bar, problem.p], [problem.gn_hessian]
             )
@@ -421,7 +425,9 @@ class BendersRegionMasters(BendersMasterMILP):
             g_lin = self.g(x_best, nlpdata.p)
             jac_g = self.jac_g(x_best, nlpdata.p)
 
-            mask = lambda casadi_dm, trim_thresh: casadi_dm * (ca.fabs(casadi_dm) > trim_thresh)
+            mask = lambda casadi_dm, trim_thresh: casadi_dm * (
+                ca.fabs(casadi_dm) > trim_thresh
+            )
             jac_g = mask(jac_g, Settings.FLOAT_TOLERANCE_ABS)
             offset = g_lin - jac_g @ x_best
             lbg = mask(nlpdata.lbg - offset, Settings.FLOAT_TOLERANCE_ABS)
@@ -441,18 +447,26 @@ class BendersRegionMasters(BendersMasterMILP):
         if self.f_qp is None:
             f_k = self.f(self.sol_best["x"], nlpdata.p)
             f_lin = self.grad_f_x(self.sol_best["x"], nlpdata.p)
-            if self.f_hess.size1_in(1) == 0:  # Identify GN hessian by checking if lam_g field has shape zero!
+            if (
+                self.f_hess.size1_in(1) == 0
+            ):  # Identify GN hessian by checking if lam_g field has shape zero!
                 f_hess = self.f_hess(self.sol_best["x"], [], nlpdata.p)
             else:
-                f_hess = self.f_hess(self.sol_best["x"], self.sol_best["lam_g"][:self.nr_g_orig], nlpdata.p)
+                f_hess = self.f_hess(
+                    self.sol_best["x"],
+                    self.sol_best["lam_g"][: self.nr_g_orig],
+                    nlpdata.p,
+                )
             if self.hessian_not_psd:
                 eigen_values = np.linalg.eigh(f_hess.full())[0]
                 if np.all(np.abs(eigen_values) < 1e-12) or eigen_values[0] < -1e8:
                     f_hess = None
-                    logger.info(colored("Hessian discarded (all zero or unstable spikes)"))
+                    logger.info(
+                        colored("Hessian discarded (all zero or unstable spikes)")
+                    )
                 else:
                     lambda_min = eigen_values[0]
-                    spectral_radius = np.max(np.abs(eigen_values)) # max |lambda|
+                    spectral_radius = np.max(np.abs(eigen_values))  # max |lambda|
                     # Only proceed if it is actually negative
                     if lambda_min < 0:
                         # Calculate eta: relative magnitude
@@ -462,10 +476,10 @@ class BendersRegionMasters(BendersMasterMILP):
                             shift = abs(lambda_min)
                             total_shift = abs(lambda_min) + 1e-8
                             f_hess += total_shift * ca.DM.eye(self.nr_x_orig)
-                            logger.info(colored(f"Negative curvature detected | Eig_min = {lambda_min:.2e} | eta = {eta:.2e}"))
-                            logger.info(colored(f"Regularizing Hessian by shift = {total_shift:.2e}", color="green"))
+                            logger.info(colored(f"Negative curvature detected | Eig_min = {lambda_min:.2e} | eta = {eta:.2e}"))  # fmt: skip
+                            logger.info(colored(f"Regularizing Hessian by shift = {total_shift:.2e}", color="green"))  # fmt: skip
                         else:
-                            logger.debug(f"Ignoring small negative eigenvalue (noise): {lambda_min:.2e}")
+                            logger.debug(f"Ignoring small negative eigenvalue (noise): {lambda_min:.2e}")  # fmt: skip
 
             if f_hess is None:
                 f = f_k + f_lin.T @ dx
@@ -529,7 +543,7 @@ class BendersRegionMasters(BendersMasterMILP):
         ):
             success = True
         elif not success:
-            logger.info(colored(f"Failed solving BR-MIQP, return status: {stats['return_status']}"))
+            logger.info(colored(f"Failed solving BR-MIQP, return status: {stats['return_status']}"))  # fmt: skip
         return solution, success, stats
 
     def _solve_lb_milp_problem(self, nlpdata: MinlpData) -> MinlpData:
@@ -590,9 +604,7 @@ class BendersRegionMasters(BendersMasterMILP):
         if stats["return_status"] == "TIME_LIMIT" and not np.any(
             np.isnan(solution["x"].full())
         ):
-            logger.info(colored(
-                f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})"
-            ))
+            logger.info(colored(f"LB-MILP finished due to time limit, returning best incumbent solution (mip gap > {self.mipgap_milp})"))  # fmt: skip
             success = True
             if solution["f"] == self.y_N_val:
                 solution["f"] = self.internal_lb
@@ -638,10 +650,11 @@ class BendersRegionMasters(BendersMasterMILP):
                     # warm start with relaxed solution
                     self.sol_best["x"] = sol["x"][: self.nr_x_orig]
                     if self.f_hess.size1_in(1) == 0:
-                        self.sol_best["lam_g"] = ca.DM(np.nan)  # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
+                        self.sol_best["lam_g"] = ca.DM(np.nan)
+                        # TODO: to fix, when use dwell time constraints I need to reconstruct the vector of multipliers. atm only GN Hessian is possible.
                     else:
                         lam_g_correction = to_0d(sol["lam_g"][: self.nr_g_orig])
-                        lam_g_correction[np.abs(lam_g_correction) < Settings.FLOAT_TOLERANCE_ABS] = 0
+                        lam_g_correction[np.abs(lam_g_correction) < Settings.FLOAT_TOLERANCE_ABS] = 0  # fmt: skip
                         self.sol_best["lam_g"] = ca.DM(lam_g_correction)
                 self.internal_lb = float(sol["f"])
 
@@ -655,7 +668,7 @@ class BendersRegionMasters(BendersMasterMILP):
         # This new condition avoid solving BR-MIQP when the linearization point doesn't change and only
         # new constraints are added to it. Indeed for this case, the objective of BR-MIQP cannot improve.
         need_lb_milp = np.isinf(self.internal_lb) or \
-            ((self.stats["iter_nr"] != self.stats["best_iter"]) and (self.stats["iter_nr"] > 0) and self.sol_best_feasible)
+            ((self.stats["iter_nr"] != self.stats["best_iter"]) and (self.stats["iter_nr"] > 0) and self.sol_best_feasible)  # fmt: skip
 
         if not need_lb_milp:
             constraint = self.internal_lb + self.alpha_kronqvist * (
@@ -671,7 +684,7 @@ class BendersRegionMasters(BendersMasterMILP):
                         stats,
                         self.settings,
                         solution,
-                        self.sol_best['x'],
+                        self.sol_best["x"],
                         self.idx_x_integer,
                     )
                     need_lb_milp = True
@@ -680,7 +693,7 @@ class BendersRegionMasters(BendersMasterMILP):
                     [sol["x"] for sol in nlpdata.best_solutions],
                     self.idx_x_integer,
                 ):
-                    logger.info(colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow"))
+                    logger.info(colored("BR-MIQP stagnates, need LB-MILP problem.", "yellow"))  # fmt: skip
                     need_lb_milp = True
             else:
                 self.trust_region_fails = True
@@ -691,7 +704,13 @@ class BendersRegionMasters(BendersMasterMILP):
             self.internal_lb = float(solution["f"])
 
         nlpdata = get_solutions_pool(
-            nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
+            nlpdata,
+            success,
+            stats,
+            self.settings,
+            solution,
+            self.sol_best["x"],
+            self.idx_x_integer,
         )
 
         if not need_lb_milp:
@@ -708,7 +727,13 @@ class BendersRegionMasters(BendersMasterMILP):
             solution, success, stats = self._solve_lb_milp_problem(nlpdata)
             self.internal_lb = float(solution["f"])
         return get_solutions_pool(
-            nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
+            nlpdata,
+            success,
+            stats,
+            self.settings,
+            solution,
+            self.sol_best["x"],
+            self.idx_x_integer,
         )
 
     def _solve_milp_from_relaxed_solution(self, nlpdata: MinlpData):
@@ -771,7 +796,13 @@ class BendersRegionMasters(BendersMasterMILP):
         solution, success, stats = self._solve_br_miqp_problem(nlpdata, constraint)
         if success:
             nlpdata = get_solutions_pool(
-                nlpdata, success, stats, self.settings, solution, self.sol_best['x'], self.idx_x_integer
+                nlpdata,
+                success,
+                stats,
+                self.settings,
+                solution,
+                self.sol_best["x"],
+                self.idx_x_integer,
             )
         else:
             if self.sol_best_feasible:
@@ -789,7 +820,7 @@ class BendersRegionMasters(BendersMasterMILP):
     def update_sol_infeas(self, sol, obj_inf_sol):
         """Update if infeasible."""
         self.sol_infeasibility = float(obj_inf_sol)
-        logger.info(colored(f"Infeasible solution new upper bound: {self.sol_infeasibility:.3f}", "red"))
+        logger.info(colored(f"Infeasible solution new upper bound: {self.sol_infeasibility:.3f}", "red"))  # fmt: skip
         if not self.sol_best_feasible:
             self.sol_best = sol
 
@@ -816,7 +847,7 @@ class BendersRegionMasters(BendersMasterMILP):
                 )
                 if solved:
                     self._gradient_correction(sol["x"], sol["lam_x"], nlpdata)
-                    logger.info(colored(f"Adding Benders cut | obj val = {float(sol['f']):.3f} | nonzero coeff: {nonzero}/{self.nr_x_bin}.", "blue"))
+                    logger.info(colored(f"Adding Benders cut | obj val = {float(sol['f']):.3f} | nonzero coeff: {nonzero}/{self.nr_x_bin}.", "blue"))  # fmt: skip
                     self._lowerapprox_oa(sol["x"], nlpdata)
                     logger.info(colored(f"Adding OA objective cut.", "blue"))
                     needs_trust_region_update = True
@@ -846,7 +877,8 @@ class BendersRegionMasters(BendersMasterMILP):
                     self._add_infeasibility_cut(sol, nlpdata)
 
             if self.with_oa_conv_cuts:
-                if self.idx_g_conv is not None:  # Add OA constraint cuts only for first solution in the pool to avoid slow down
+                if self.idx_g_conv is not None:
+                    # Add OA constraint cuts only for first solution in the pool to avoid slow down
                     self._add_oa(nlpdata.prev_solutions[0]["x"], nlpdata)
 
             if needs_trust_region_update:

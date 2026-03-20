@@ -83,9 +83,7 @@ class FindClosestNlpSolver(SolverClass):
                     x0=nlpdata.x0,
                     lbx=lbx,
                     ubx=ubx,
-                    lbg=ca.vertcat(
-                        to_0d(nlpdata.lbg[self.idx_g_without_dwelltime]), 0
-                    ),
+                    lbg=ca.vertcat(to_0d(nlpdata.lbg[self.idx_g_without_dwelltime]), 0),
                     ubg=ca.vertcat(
                         to_0d(nlpdata.ubg[self.idx_g_without_dwelltime]), distance
                     ),
@@ -103,7 +101,12 @@ class FindClosestNlpSolver(SolverClass):
                         tmp = []
                         for s in sols_out:
                             if "x_infeasible" in s.keys():
-                                tmp.append(np.allclose(to_0d(s["x_infeasible"]), to_0d(sol_new["x_infeasible"])))
+                                tmp.append(
+                                    np.allclose(
+                                        to_0d(s["x_infeasible"]),
+                                        to_0d(sol_new["x_infeasible"]),
+                                    )
+                                )
                             else:
                                 tmp.append(False)
                         if any(tmp):

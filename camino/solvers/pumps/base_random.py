@@ -63,10 +63,11 @@ class PumpBaseRandom(MiSolverClass):
             random_obj_f = float(self.pump.f(nlpdata.x_sol, nlpdata.p))
             lb = min(random_obj_f, lb)
 
-            logger.info(colored(f"Current random NLP objective: {random_obj_f:.3e}", "blue"))
+            logger.info(colored(f"Current random NLP objective: {random_obj_f:.3e}", "blue"))   # fmt: skip
             if random_obj_f < best_obj:
                 datarounded = self.nlp.solve(
-                    create_rounded_data(nlpdata, self.idx_x_integer), integers_relaxed=False
+                    create_rounded_data(nlpdata, self.idx_x_integer),
+                    integers_relaxed=False,
                 )
                 if datarounded.solved:
                     logger.debug(

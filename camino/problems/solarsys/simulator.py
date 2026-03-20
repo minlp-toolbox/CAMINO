@@ -14,7 +14,6 @@ from camino.problems.solarsys.ambient import Ambient, Timing
 from camino.utils.cache import CachedFunction
 from camino.utils.conversion import convert_to_flat_list
 
-
 logger = logging.getLogger(__name__)
 
 

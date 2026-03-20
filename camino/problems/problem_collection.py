@@ -137,8 +137,10 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
         }
     )
 
-    if not ca.has_linsol('ma27'):
-        logger.info(colored("Could not find ma27. Setting IPOPT linear solver to mumps."))
+    if not ca.has_linsol("ma27"):
+        logger.info(
+            colored("Could not find ma27. Setting IPOPT linear solver to mumps.")
+        )
         s.IPOPT_SETTINGS.update({"ipopt.linear_solver": "mumps"})
         s.BONMIN_SETTINGS.update({"bonmin.linear_solver": "mumps"})
 

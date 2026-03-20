@@ -377,8 +377,9 @@ def create_stcs_problem(simplified=False, with_slack=True):
     #     f"scts_{n_steps}_{with_slack}", inspect_problem, prob, data
     # ))
     logger.info(colored("Solving this problem requires IPOPT with ma57."))
-    logger.info(colored("If ma57 is not available set 'ipopt.linear_solver' to 'mumps'."))
-
+    logger.info(
+        colored("If ma57 is not available set 'ipopt.linear_solver' to 'mumps'.")
+    )
 
     return prob, data, s
 

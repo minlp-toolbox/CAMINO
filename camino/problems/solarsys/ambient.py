@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 from camino.settings import GlobalSettings
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 

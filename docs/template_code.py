@@ -4,7 +4,6 @@
 
 from camino.solver import MinlpSolver, MinlpProblem, MinlpData, Settings, Stats
 
-
 # A template to fill-in
 problem = MinlpProblem(...)
 data = MinlpData(...)

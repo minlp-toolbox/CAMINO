@@ -55,14 +55,24 @@ class MinlpData:
         if self._prev_solutions is not None:
             return self._prev_solutions[0]
         else:
-            return {"f": -ca.inf, "x": ca.DM(self.x0), "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape)}
+            return {
+                "f": -ca.inf,
+                "x": ca.DM(self.x0),
+                "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape),
+            }
 
     @property
     def solutions_all(self):
         if self._prev_solutions is not None:
             return self._prev_solutions
         else:
-            return [{"f": -ca.inf, "x": ca.DM(self.x0), "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape)}]
+            return [
+                {
+                    "f": -ca.inf,
+                    "x": ca.DM(self.x0),
+                    "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape),
+                }
+            ]
 
     @property
     def prev_solution(self):
@@ -80,7 +90,6 @@ class MinlpData:
         elif isinstance(val, ca.DM):
             return val.full()[0][0]
         return val
-
 
     @property
     def x_sol(self):

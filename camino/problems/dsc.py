@@ -4,7 +4,6 @@
 
 """An easier way to define a problem, similar to casadi opti."""
 
-
 import copy
 from typing import Optional, Union, List, Tuple
 from camino.settings import GlobalSettings

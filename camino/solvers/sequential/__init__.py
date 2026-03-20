@@ -75,7 +75,7 @@ class SequentialTrustRegionMILP(MiSolverClass):
                     else:
                         self.delta = self.delta / self.kappa
                     self.delta = min(self.delta, self.delta_max)
-                    logger.info(colored(f"Step accepted, trust radius {self.delta}", "green"))
+                    logger.info(colored(f"Step accepted, trust radius {self.delta}", "green"))  # fmt: skip
             else:
                 raise NotImplementedError(
                     "The original paper doesn't handle nonlinear constraints, "
