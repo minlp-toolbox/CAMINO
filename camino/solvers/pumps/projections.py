@@ -14,7 +14,7 @@ from camino.solvers import (
     regularize_options,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import logging
+from camino.utils import logging, toc
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ class LinearProjection(SolverClass):
             ubx = nlpdata.ubx
 
             x_bin_var = to_0d(sol["x"][self.idx_x_integer])
+            solver_time = toc()
             new_sol = self.solver(
                 x0=ca.vertcat(nlpdata.x0, np.zeros(self.nr_x_bin)),
                 lbx=ca.vertcat(lbx, np.zeros(self.nr_x_bin)),
@@ -77,7 +78,8 @@ class LinearProjection(SolverClass):
                 ubg=ca.vertcat(nlpdata.ubg, ca.inf * np.ones(2 * self.nr_x_bin)),
                 p=ca.vertcat(nlpdata.p, x_bin_var),
             )
-
+            solver_time = toc() - solver_time
+            new_sol["solver_wall_time"] = solver_time
             success, _ = self.collect_stats("FP", sol=new_sol)
             if not success:
                 logger.debug("Infeasible solution!")
@@ -145,6 +147,7 @@ class ObjectiveLinearProjection(SolverClass):
             ubx = nlpdata.ubx
 
             x_bin_var = to_0d(sol["x"][self.idx_x_integer])
+            solver_time = toc()
             new_sol = self.solver(
                 x0=ca.vertcat(nlpdata.x0, np.zeros(self.nr_x_bin)),
                 lbx=ca.vertcat(lbx, np.zeros(self.nr_x_bin)),
@@ -155,7 +158,8 @@ class ObjectiveLinearProjection(SolverClass):
                     nlpdata.p, x_bin_var, np.array([self.alpha, int_error, obj_val])
                 ),
             )
-
+            solver_time = toc() - solver_time
+            new_sol["solver_wall_time"] = solver_time
             success, _ = self.collect_stats("OFP", sol=new_sol)
             if not success:
                 logger.debug("Infeasible solution!")

@@ -84,6 +84,8 @@ obj_tolerance_heuristic = {
     "bonmin-qg": -100,
     "bonmin-hyb": -100,
     "nlp-fxd": -100,
+    "s-b-miqp-early-exit": -100,
+    "s-b-milp": -3,
 }
 sol_not_valid = ["nlp", "cia"]
 

@@ -14,7 +14,7 @@ from camino.solvers import (
     regularize_options,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import colored
+from camino.utils import colored, toc
 from camino.utils.conversion import to_0d
 import logging
 
@@ -78,6 +78,7 @@ class FindClosestNlpSolver(SolverClass):
                 else:
                     distance = ca.dot(x_best - x_bin_var, x_best - x_bin_var)
 
+                solver_time = toc()
                 sol_new = self.solver(
                     x0=nlpdata.x0,
                     lbx=lbx,
@@ -91,10 +92,26 @@ class FindClosestNlpSolver(SolverClass):
                     p=ca.vertcat(nlpdata.p, x_bin_var, x_best),
                 )
                 sol_new["x_infeasible"] = sol["x"]
+                solver_time = toc() - solver_time
+                sol_new["solver_wall_time"] = solver_time
                 success, _ = self.collect_stats("FC-NLP", sol=sol_new)
                 if success:
-                    success_out.append(False)
-                    sols_out.append(sol_new)
+                    if len(sols_out) == 0:
+                        success_out.append(False)
+                        sols_out.append(sol_new)
+                    else:  # append only solutions that are different!
+                        tmp = []
+                        for s in sols_out:
+                            if "x_infeasible" in s.keys():
+                                tmp.append(np.allclose(to_0d(s["x_infeasible"]), to_0d(sol_new["x_infeasible"])))
+                            else:
+                                tmp.append(False)
+                        if any(tmp):
+                            pass
+                        else:
+                            success_out.append(False)
+                            sols_out.append(sol_new)
+
                 else:
                     fc_nlp_failed += 1
                     logger.warning(colored("FC-NLP not solved", "yellow"))

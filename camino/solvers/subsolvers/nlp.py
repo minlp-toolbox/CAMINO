@@ -15,7 +15,7 @@ from camino.solvers import (
     regularize_options,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import colored
+from camino.utils import colored, toc
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,7 @@ class NlpSolver(SolverClass):
                     # breakpoint()
                     pass
 
+            solver_time = toc()
             sol_new = self.solver(
                 p=nlpdata.p,
                 x0=nlpdata.x0,
@@ -99,7 +100,8 @@ class NlpSolver(SolverClass):
                 lbg=lbg,
                 ubg=ubg,
             )
-
+            solver_time = toc() - solver_time
+            sol_new["solver_wall_time"] = solver_time
             success, stats = self.collect_stats("NLP", sol=sol_new)
             if not success:
                 return_status_ok = stats["return_status"] in [
@@ -122,8 +124,18 @@ class NlpSolver(SolverClass):
             if not success:
                 logger.warning(colored("NLP not solved.", "yellow"))
 
-            success_out.append(success)
-            sols_out.append(sol_new)
+            if len(sols_out) == 0:
+                success_out.append(success)
+                sols_out.append(sol_new)
+            else:  # append only solutions that are different!
+                tmp = []
+                for s in sols_out:
+                    tmp.append(np.allclose(to_0d(s["x"]), to_0d(sol_new["x"])))
+                if any(tmp):
+                    pass
+                else:
+                    success_out.append(success)
+                    sols_out.append(sol_new)
 
         nlpdata.prev_solutions = sols_out
         nlpdata.solved_all = success_out

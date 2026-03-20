@@ -18,7 +18,7 @@ from camino.solvers import (
     extract_bounds,
 )
 from camino.settings import GlobalSettings, Settings
-from camino.utils import colored
+from camino.utils import colored, toc
 from camino.utils.conversion import to_0d
 
 logger = logging.getLogger(__name__)
@@ -204,10 +204,13 @@ class VoronoiTrustRegionMIQP(SolverClass):
             self.options,
         )
 
-        nlpdata.prev_solution = solver(
+        solver_time = toc()
+        solution = solver(
             x0=x_sol_best, lbx=nlpdata.lbx, ubx=nlpdata.ubx, lbg=lbg, ubg=ubg
         )
-
+        solver_time = toc() - solver_time
+        solution["solver_wall_time"] = solver_time
+        nlpdata.prev_solution = solution
         nlpdata.solved, stats = self.collect_stats("VTR-MIQP", solver, solution)
         return nlpdata
 

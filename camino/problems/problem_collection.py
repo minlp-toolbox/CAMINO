@@ -124,7 +124,7 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
             "gurobi.IntFeasTol": s.CONSTRAINT_INT_TOL,
             #  "gurobi.Threads": 1,
             "gurobi.PoolSearchMode": 0,
-            "gurobi.PoolSolutions": 3,
+            "gurobi.PoolSolutions": 5,
             # "gurobi.NodeMethod": 2,
             # "gurobi.Method": 2,
         }
@@ -188,7 +188,9 @@ def create_dummy_problem(p_val=[1000, 3]):
     )
     problem = opti.get_problem()
     data = opti.get_data()
-    return problem, data
+    s = Settings()
+    s.USE_RELAXED_SOL_AS_LINEARIZATION = False
+    return problem, data, s
 
 
 def create_dummy_problem_2():

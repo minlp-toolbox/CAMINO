@@ -33,7 +33,7 @@ class SolverClass(ABC):
     def solve(self, nlpdata: MinlpData) -> MinlpData:
         """Solve the problem."""
 
-    def collect_stats(self, algo_name, solver=None, sol=None):
+    def collect_stats(self, algo_name, solver=None, sol: dict = None):
         """Collect statistics."""
         logger.info(f"Solved {algo_name}")
         if solver is None:
@@ -50,12 +50,12 @@ class SolverClass(ABC):
             stats.get("n_call_solver", 0), stats["iter_count"]
         )
         self.stats[f"{algo_name}.runs"] += 1
-        # self.stats["t_solver_total"] += max(t_wall, t_proc)
         self.stats["success"] = stats["success"]
         self.stats["iter_type"] = algo_name
         if sol is not None:
             self.stats["sol_x"] = to_0d(sol["x"])
             self.stats["sol_obj"] = to_float(sol["f"])
+            self.stats["solver_wall_time"] += sol.get("solver_wall_time", np.nan)
         if self.settings.WITH_LOG_DATA:
             self.stats.save()
         return stats["success"], stats
@@ -83,9 +83,7 @@ class MiSolverClass(SolverClass):
                 obj_val = float(data.prev_solutions[i]["f"])
                 if success:
                     if obj_val + self.settings.EPS < self.stats["ub"]:
-                        logger.info(
-                            f"Decreased UB from {self.stats['ub']} to {obj_val}"
-                        )
+                        logger.info(colored(f"New upper bound: {obj_val}", "green"))
                         self.stats["ub"] = obj_val
                         self.best_solutions.append(data.prev_solutions[i])
                         self.stats["best_iter"] = copy(self.stats["iter_nr"])

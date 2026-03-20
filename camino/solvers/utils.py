@@ -103,21 +103,22 @@ def any_equal(sol, refs, idx_x_integer):
     return False
 
 
-def get_solutions_pool(nlpdata, success, stats, s: Settings, solution, idx_x_integer) -> MinlpData:
+def get_solutions_pool(nlpdata, success, stats, s: Settings, current_solution, best_solution, idx_x_integer) -> MinlpData:
     """Get pool of solutions if exists."""
-    if s.USE_SOLUTION_POOL and stats and "pool_sol_nr" in stats:
-        sols = [solution]
-        x_sols = [solution["x"]]
-
-        for i in range(1, stats["pool_sol_nr"]):
+    if s.USE_SOLUTION_POOL and stats and "pool_sol_nr" in stats and stats["pool_sol_nr"]:
+        sols = []
+        x_sols = []
+        for i in range(stats["pool_sol_nr"]):
             x = ca.DM(stats["pool_solutions"][i])
-            if not any_equal(x, x_sols, idx_x_integer):
+            if i>0 and np.allclose(to_0d(x)[idx_x_integer], to_0d(best_solution)[idx_x_integer]):
+                pass
+            else:
                 sols.append({"f": stats["pool_obj_val"][i], "x": x})
                 x_sols.append(x)
         nlpdata.prev_solutions = sols
         nlpdata.solved_all = [success for i in sols]
     else:
-        nlpdata.prev_solutions = [solution]
+        nlpdata.prev_solutions = [{"f": current_solution['f'], "x": current_solution['x']}]  # [nlpdata.prev_solutions[-1]]
         nlpdata.solved_all = [success]
 
     return nlpdata
@@ -138,7 +139,7 @@ def get_termination_condition(
     def max_time(ret, s, stats):
         done = False
         if s.TIME_LIMIT_SOLVER_ONLY:
-            done = stats["t_solver_total"] > s.TIME_LIMIT or toc() > s.TIME_LIMIT * 3
+            done = stats["solver_wall_time"] > s.TIME_LIMIT or toc() > s.TIME_LIMIT * 3
         else:
             done = toc() > s.TIME_LIMIT
 
@@ -214,9 +215,10 @@ def get_termination_condition(
             ret = (lb + tol_abs - ub) >= 0
             if ret:
                 logger.info(colored(f"Terminated.", "green"))
+                logger.info(colored(f"LB = {lb:.8f} | UB = {ub:.8f} | TOL = {tol_abs:.8f}", "green"))
             else:
                 logger.info(colored(f"Not Terminated."))
-            logger.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | ABS_TOL = {tol_abs:.3f}"))
+                logger.info(colored(f"LB = {lb:.3f} | UB = {ub:.3f} | TOL = {tol_abs:.3f}"))
             return max_time(ret, s, stats)
 
     else:
