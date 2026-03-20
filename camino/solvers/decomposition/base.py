@@ -89,7 +89,9 @@ class GenericDecomposition(MiSolverClass):
                 if self.stats["lb"] < data.obj_val:  # Update LB
                     # if (self.stats.mode == "s-b-miqp-early-exit") and (len(data.best_solutions)>0):  TODO?
                     self.stats["lb"] = data.obj_val
-                    logger.info(colored(f"New lower bound: {self.stats['lb']}", "green"))
+                    logger.info(
+                        colored(f"New lower bound: {self.stats['lb']}", "green")
+                    )
             x_hat = data.x_sol
             logger.debug(
                 f"x_hat = {to_0d(x_hat).tolist() if len(to_0d(x_hat).tolist()) < 5 else  to_0d(x_hat).tolist()[:5]} ..."
@@ -102,7 +104,9 @@ class GenericDecomposition(MiSolverClass):
             self.stats["iter_nr"] += 1
 
         self.stats["total_wall_time"] = toc(reset=True)
-        self.stats["python_wall_time"] = self.stats["total_wall_time"] - self.stats["solver_wall_time"]
+        self.stats["python_wall_time"] = (
+            self.stats["total_wall_time"] - self.stats["solver_wall_time"]
+        )
         return self.get_best_solutions(data)
 
     def _get_x_star(self):

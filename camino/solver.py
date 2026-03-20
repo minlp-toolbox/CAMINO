@@ -65,7 +65,9 @@ SOLVER_MODES = {
     ),
     "cia": CiaSolver,
     "nlp": lambda *args, **kwargs: NlpSolver(*args, **kwargs, integers_relaxed=True),
-    "nlp-fxd": lambda *args, **kwargs: NlpSolver(*args, **kwargs, integers_relaxed=False),
+    "nlp-fxd": lambda *args, **kwargs: NlpSolver(
+        *args, **kwargs, integers_relaxed=False
+    ),
     "mip": MipSolver,
 }
 

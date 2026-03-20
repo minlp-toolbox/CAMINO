@@ -101,7 +101,8 @@ class PumpBase(MiSolverClass):
             # Added heuristic, not present in the original implementation
             if distances[-1] < self.settings.CONSTRAINT_INT_TOL:
                 datarounded = self.nlp.solve(
-                    create_rounded_data(data, self.idx_x_integer), integers_relaxed=False
+                    create_rounded_data(data, self.idx_x_integer),
+                    integers_relaxed=False,
                 )
                 if self.update_best_solutions(datarounded):
                     return self.get_best_solutions(datarounded)

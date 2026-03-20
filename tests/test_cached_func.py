@@ -9,7 +9,6 @@ from os import path, makedirs, listdir
 from shutil import rmtree
 from camino.utils.cache import CachedFunction, ca
 
-
 FILE_DIR = ".test"
 FILE_PATH = path.join(FILE_DIR, "test")
 

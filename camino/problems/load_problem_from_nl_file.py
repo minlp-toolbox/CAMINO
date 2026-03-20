@@ -52,8 +52,8 @@ def create_from_nl_file(file, compiled=False):
             idx_x_integer=idx[0].tolist(),
             p=[],
         )
-#    if nl.f.is_constant():
-#        raise Exception("No objective!")
+    #    if nl.f.is_constant():
+    #        raise Exception("No objective!")
 
     problem.hessian_not_psd = True
     data = MinlpData(
@@ -109,7 +109,7 @@ def create_from_nl_file(file, compiled=False):
         "gurobi.TimeLimit": s.TIME_LIMIT / 5,
         "gurobi.NonConvex": 2,
         "gurobi.OutputFlag": 0,
-        "gurobi.LogToConsole": 0
+        "gurobi.LogToConsole": 0,
     }
     s.BONMIN_SETTINGS = {
         "bonmin.time_limit": s.TIME_LIMIT,
@@ -125,11 +125,11 @@ def create_from_nl_file(file, compiled=False):
     s.WITH_DEBUG = False
     s.WITH_LOG_DATA = False
 
-    if not ca.has_linsol('ma27'):
-        logger.info(colored("Could not find ma27. Setting IPOPT linear solver to mumps."))
+    if not ca.has_linsol("ma27"):
+        logger.info(
+            colored("Could not find ma27. Setting IPOPT linear solver to mumps.")
+        )
         s.IPOPT_SETTINGS.update({"ipopt.linear_solver": "mumps"})
         s.BONMIN_SETTINGS.update({"bonmin.linear_solver": "mumps"})
-
-
 
     return problem, data, s
