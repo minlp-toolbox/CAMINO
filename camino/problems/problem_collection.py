@@ -63,13 +63,13 @@ def create_ocp_unstable_system(p_val=[0.9, 0.7]):
                     idx_2 = k - (it + 2)
 
                     if idx_1 >= 0:
-                        b_idx_1 = int(np.array(dsc.get_indices("Uk")[idx_1]))
+                        b_idx_1 = dsc.get_indices("Uk")[idx_1][0]
                         b_idx_1 = dsc.w[b_idx_1]
                     else:
                         b_idx_1 = 0
 
                     if idx_2 >= 0:
-                        b_idx_2 = int(np.array(dsc.get_indices("Uk")[idx_2]))
+                        b_idx_2 = dsc.get_indices("Uk")[idx_2][0]
                         b_idx_2 = dsc.w[b_idx_2]
                     else:
                         b_idx_2 = 0

@@ -58,7 +58,7 @@ class MinlpData:
             return {
                 "f": -ca.inf,
                 "x": ca.DM(self.x0),
-                "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape),
+                "lam_g": ca.GenDM.zeros(ca.DM(self._lbg).shape),
             }
 
     @property
@@ -70,7 +70,7 @@ class MinlpData:
                 {
                     "f": -ca.inf,
                     "x": ca.DM(self.x0),
-                    "lam_g": ca.GenDM_zeros(ca.DM(self._lbg).shape),
+                    "lam_g": ca.GenDM.zeros(ca.DM(self._lbg).shape),
                 }
             ]
 
